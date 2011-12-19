@@ -11,11 +11,19 @@ endif
 
 foreach en (pers.ind)
   sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab,g' syn.props >! tmp.props
-  java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
+#   java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
+  mv kiki.mods en.$en.mods
 end
-java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier kiki.mods -testFile test.groups.pers.ind.tab > test.log
+# java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile test.groups.pers.ind.tab > test.log
 
-java -cp bin ester.Eval test.log NO
+cut -f2 test.log >! testgold.log
+cut -f3 test.log >! testrec.log
+sed 's,\(.*\)B$,B-\1,g' testgold.log | sed 's,\(.*\)I$,I-\1,g' >! testgold.col
+sed 's,\(.*\)B$,B-\1,g' testrec.log | sed 's,\(.*\)I$,I-\1,g' >! testrec.col
+cut -f1 test.log >! words.col
+paste words.col testgold.col testrec.col | ./conlleval.pl -d '\t' -o NO
+
+# java -cp bin ester.Eval test.log NO
 
 # java -Xmx5g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier kicz.mods -testFile $testfile > test.log
 # dans git/ponct:
