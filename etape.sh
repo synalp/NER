@@ -11,17 +11,13 @@ endif
 
 set ens = (pers.ind pers.coll loc.add.elec loc.add.phys loc.adm.nat loc.adm.reg loc.adm.sup loc.adm.town loc.fac loc.oro loc.phys.astro loc.phys.geo loc.phys.hydro loc.unk org.adm org.ent amount time.date.abs time.date.rel time.hour.abs time.hour.rel prod.art prod.award prod.doctr prod.fin prod.media prod.object prod.rule prod.serv prod.soft func.coll func.ind event)
 
-echo "train"
+rm res.log
+touch res.log
 foreach en ($ens)
   sed 's,trainFile=synfeats0.tab,trainFile=corpus/train/groups.'$en'.tab,g' syn.props >! tmp.props
   java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
   mv kiki.mods en.$en.mods
-end
 
-echo "test"
-rm res.log
-touch res.log
-foreach en ($ens)
   java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile corpus/test/groups.$en.tab >! test.log
   cut -f2 test.log >! testgold.log
   cut -f3 test.log >! testrec.log
