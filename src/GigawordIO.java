@@ -73,6 +73,7 @@ public class GigawordIO {
 				if (!istext) continue;
 				if (s.charAt(0)=='<') continue;
 				// tokenisation tres simple, car la segmentation plus complexe est bcp trop lente...
+				s=s.replace("-", " - ");
 				s=s.replace(";", " ;");
 				s=s.replace(":", " :");
 				s=s.replace("!", " !");
@@ -80,7 +81,7 @@ public class GigawordIO {
 				s=s.replace("``", " `` ");
 				s=s.replace("''", " ''");
 				s=s.replace("/", " / ");
-				s=s.replace("\"", " \"");
+				s=s.replace("\"", " \" ");
 				s=s.replace("[", " [ ");
 				s=s.replace("]", " ] ");
 				s=s.replace("{", " { ");
@@ -125,7 +126,25 @@ public class GigawordIO {
 						y=x+1;
 					}
 				}
-				
+
+				// apostrophe
+				{
+					int x=0,y=0;
+					for (;;) {
+						x=s.indexOf('\'',y);
+						if (x<0) break;
+						if (x>0) {
+							if (s.substring(x+1).toLowerCase().startsWith("hui")) {
+								// on le laisse dans le mot
+							} else {
+								++x;
+								s=s.substring(0,x)+' '+s.substring(x);
+							}
+						}
+						y=x+1;
+					}
+				}
+
 				s=s.replaceAll("  +", " ");
 				s=s.trim();
 				String[] st = s.split(" ");
@@ -138,7 +157,7 @@ public class GigawordIO {
 						idx++;
 					}
 				}
-				gs.add(g);
+				if (g.getNbMots()>0) gs.add(g);
 			}
 			f.close();
 			
@@ -151,8 +170,9 @@ public class GigawordIO {
 	
 	public static void main(String args[]) {
 		GigawordIO m = new GigawordIO();
-		List<DetGraph> gs = m.getChunk(0);
+		int i = Integer.parseInt(args[0]);
+		List<DetGraph> gs = m.getChunk(i);
 		GraphIO gio = new GraphIO(null);
-		gio.save(gs, "c0.xml");
+		gio.save(gs, "c"+i+".xml");
 	}
 }

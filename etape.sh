@@ -40,6 +40,15 @@ end
 
 exit
 
+giga:
+# pour transformer le gigaword French au format JSafran:
+set i = 0
+while ($i < 341)
+  java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" GigawordIO $i
+  @ i++
+end
+
+exit
 
 EN a utiliser:
 pers.*
