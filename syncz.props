@@ -1,5 +1,6 @@
-map = word=0,tag=1,answer=2
+map = word=0,lemma=1,tag=1,answer=3
 useWord=true
+useLemmas=true
 useTags=true
 usePrev=true
 useNext=true
