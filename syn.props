@@ -1,9 +1,9 @@
-map = word=0,tag=1,answer=2
+map = word=0,tag=1,synt1=2,answer=3
 useWord=true
 useTags=true
 usePrev=true
 useNext=true
-useSynt1=false
+useSynt1=true
 useSynt2=false
 useSynt3=false
 

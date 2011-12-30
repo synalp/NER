@@ -1,0 +1,24 @@
+alphaW ~ Gam(1,1)
+alphaH ~ Gam(1,1)
+alphaE ~ Gam(0.1,1)
+
+thetaW ~ DirSym(alphaW, VW)
+thetaH ~ DirSym(alphaH, VH)
+thetaE_{k,l} ~ DirSym(alphaE, Nen) , k \in [1,VW] , l \in [1,VH]
+
+w_{n} ~ Mult(thetaW) , n \in [1,N]
+h_{n} ~ Mult(thetaH) , n \in [1,N]
+e_{n} ~ Mult(thetaE_{w_{n},h_{n}}) , n \in [1,N]
+
+--# --define Nen 6
+--# --define alphaW 1
+--# --define alphaH 1
+--# --define alphaE 0.1
+
+--# --loadD enV h VH N ;
+--# --loadD enO w VW N ;
+
+--# --collapse thetaH
+--# --collapse thetaW
+--# --collapse thetaE
+

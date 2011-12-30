@@ -63,6 +63,7 @@ public class GigawordIO {
 			for (int z=0;;z++) {
 				String s = f.readLine();
 				if (s==null) break;
+				if (s.length()==0) continue;
 				if (z%10000==0) System.out.println("lines "+z);
 				if (s.indexOf("<TEXT>")>=0) {
 					istext=true; continue;
@@ -73,6 +74,7 @@ public class GigawordIO {
 				if (!istext) continue;
 				if (s.charAt(0)=='<') continue;
 				// tokenisation tres simple, car la segmentation plus complexe est bcp trop lente...
+				s=s.replace('=', ' ');
 				s=s.replace("-", " - ");
 				s=s.replace(";", " ;");
 				s=s.replace(":", " :");
