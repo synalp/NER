@@ -12,6 +12,74 @@ endif
 goto deb
 
 # ##################################################
+# nouveau modele inverse: il n'est plus generatif ?
+# deb:
+
+echo "extrait les deps (NOM,HEAD) du Gigaword + du train + du test"
+set LARGECORP = ../../git/jsafran/c0b.conll
+set TRAIN = ../../git6/peps/corpus/etape/radios.xml
+set TEST  = ../../git6/peps/corpus/etape/devtvs.xml
+java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -train $LARGECORP $TRAIN $TEST
+# TODO: sur le train, forcer le sampling !
+
+#deb:
+echo "unsup clustering de E"
+set d = ""`pwd`
+cd $HOME
+cp -f $d/enV .
+cp -f $d/enO .
+./eninv.out >! $d/en.log
+cd $d
+
+# on a maintenant directement les samples des mots du train et du test
+# mais il ne faut pas conserver un seul sample: chaque sample suit p(E)=P(E|sample,reste), donc
+# on estime p(E) a partir des samples: p(E=e) = #(E=e)/#(E=*)
+# et on veut l'EN la plus probable: 
+# \hat E = argmax_e P(E=e)
+deb:
+echo "construction des fichiers de train et test pour le CRF"
+
+java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -putclass ../../git6/peps/corpus/etape/radios.xml en.log 0 pers.ind
+java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -putclass ../../git6/peps/corpus/etape/devtvs.xml en.log 1 pers.ind
+
+
+exit
+
+deb:
+echo "affichage des classes E"
+java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -test en.log |& tee verbsuj.classes
+
+echo "construction des fichiers de train et test pour le CRF"
+
+set ens = (pers.ind pers.coll loc.add.elec loc.add.phys loc.adm.nat loc.adm.reg loc.adm.sup loc.adm.town loc.fac loc.oro loc.phys.astro loc.phys.geo loc.phys.hydro loc.unk org.adm org.ent amount time.date.abs time.date.rel time.hour.abs time.hour.rel prod.art prod.award prod.doctr prod.fin prod.media prod.object prod.rule prod.serv prod.soft func.coll func.ind event)
+set ens = (pers.ind)
+
+java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -putclass ../../git6/peps/corpus/etape/radios.xml en.log
+mv -f groups.* corpus/train/
+java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -putclass ../../git6/peps/corpus/etape/devtvs.xml en.log
+mv -f groups.* corpus/test/
+
+rm res.log
+touch res.log
+foreach en ($ens)
+  sed 's,trainFile=synfeats0.tab,trainFile=corpus/train/groups.'$en'.tab,g' syn.props >! tmp.props
+  java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
+  mv kiki.mods en.$en.mods
+
+  java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile corpus/test/groups.$en.tab >! test.log
+  cut -f2 test.log >! testgold.log
+  cut -f3 test.log >! testrec.log
+  sed 's,\(.*\)B$,B-\1,g' testgold.log | sed 's,\(.*\)I$,I-\1,g' >! testgold.col
+  sed 's,\(.*\)B$,B-\1,g' testrec.log | sed 's,\(.*\)I$,I-\1,g' >! testrec.col
+  cut -f1 test.log >! words.col
+  paste words.col testgold.col testrec.col | awk '{if (NF==3) print}' >! oo.log
+  ./conlleval.pl -d '\t' -o NO < oo.log | grep $en >> res.log
+end
+
+exit
+
+
+# ##################################################
 # deb:
 
 echo "extrait les deps (NOM,HEAD) du Gigaword"

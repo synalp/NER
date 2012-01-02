@@ -1,4 +1,8 @@
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,7 +36,7 @@ public class PrepHDB {
 
 	public static void main(String args[]) throws Exception {
 		if (args[0].equals("-train")) {
-			train(args[1]);
+			train(args[1],args[2],args[3]);
 		} else if (args[0].equals("-test")) {
 			test(args[1]);
 		} else if (args[0].equals("-meanres")) {
@@ -40,7 +44,7 @@ public class PrepHDB {
 		} else if (args[0].equals("-putclass")) {
 			GraphIO gio = new GraphIO(null);
 			List<DetGraph> gs = gio.loadAllGraphs(args[1]);
-			saveGroups(gs, args[2]);
+			saveGroups(gs, args[2], Integer.parseInt(args[3]),args[4]);
 		}
 	}
 
@@ -78,74 +82,108 @@ public class PrepHDB {
 		}
 	}
 
-	public static void saveGroups(java.util.List<DetGraph> gs, String logWithClasses) {
+	public static void saveGroups(java.util.List<DetGraph> gs, String logen, int trainOrTest, String en) {
 		try {
-			HashMap<String, Integer> lemme2classe = new HashMap<String, Integer>();
-			// lecture des classes
-			BufferedReader f = new BufferedReader(new FileReader(logWithClasses));
-			for (;;) {
+			// lecture des indexes
+			DataInputStream fin = new DataInputStream(new FileInputStream("indexes.hdb"));
+			long idxTrain = fin.readLong();
+			long idxTest  = fin.readLong();
+			long idxEnd   = fin.readLong();
+			fin.close();
+			long idxdeb=idxTrain;
+			long idxend=idxTest;
+			if (trainOrTest==1) {
+				idxdeb=idxTest;
+				idxend=idxEnd;
+			}
+			
+			// nb de classes ??
+			int nclasses = 0, ninst=0;
+			BufferedReader f = new BufferedReader(new FileReader(logen));
+			for (int i=0;i<100;i++) {
 				String s = f.readLine();
 				if (s==null) break;
-				if (s.startsWith("classe ")) {
-					String[] st = s.split(" ");
-					int clid = Integer.parseInt(st[1]);
-					for (int j=3;j<st.length;j++) {
-						int i=st[j].indexOf('(');
-						while (st[j].charAt(i+1)=='(') i++;
-						int k=st[j].lastIndexOf(')');
-						float p = Float.parseFloat(st[j].substring(i+1,k));
-						if (true||p>0.7) {
-							String verbe = st[j].substring(0, i).trim();
-							lemme2classe.put(verbe, clid);
-						}
+				if (s.startsWith("e = ")) {
+					int p1=4;
+					for (int j=0;j<idxdeb;j++) p1=s.indexOf(' ',p1)+1;
+					ninst=0;
+					for (int j=(int)idxdeb, k=0;j<idxend;j++,k++) {
+						int l=s.indexOf(' ',p1);
+						int ent=Integer.parseInt(s.substring(p1,l));
+						ninst++;
+						if (ent+1>nclasses) nclasses=ent+1;
+						p1=l+1;
 					}
 				}
 			}
 			f.close();
+			assert ninst==idxend-idxdeb;
+			System.out.println("nclasses "+nclasses+" "+ninst);
+			
+			// lecture des classes samplees: pour chaque instance, on a un sample de E par iter. qui suit posterior P(E|sample)
+			// on conserve la distribution empirique P(E|inst) = #(E=e)/#(E=*)
+			int[][] counts = new int[ninst][nclasses];
+			for (int i=0;i<ninst;i++) Arrays.fill(counts, 0);
+			f = new BufferedReader(new FileReader(logen));
+			for (;;) {
+				String s = f.readLine();
+				if (s==null) break;
+				if (s.startsWith("e = ")) {
+					int i=4;
+					for (int j=0;j<idxdeb;j++) i=s.indexOf(' ',i)+1;
+					int inst=0;
+					for (int j=(int)idxdeb;j<idxend;j++) {
+						int l=s.indexOf(' ',i);
+						int classe=Integer.parseInt(s.substring(i,l));
+						counts[inst][classe]++;
+						inst++;
+						i=l+1;
+					}
+				}
+			}
+			f.close();
+			
+			// pour chaque instance, on a P(E|inst); on calcule la valeur max de P(E|inst)
+			int[] obs2classe = new int[(int)(idxend-idxdeb)];
+			System.out.println("create obs2classe "+obs2classe.length);
+			for (int j=(int)idxdeb, k=0;j<idxend;j++,k++) {
+				int cmax=0;
+				for (int l=1;l<counts[k].length;l++)
+					if (counts[k][l]>counts[k][cmax]) cmax=l;
+				obs2classe[k]=counts[k][cmax];
+			}
 
-			// nb de groupes differents
-			HashSet<String> groups = new HashSet<String>();
+			// lecture des obs
+			PrintWriter fout = FileUtils.writeFileUTF("groups."+en+".tab");
+			int widx=0;
 			for (int i=0;i<gs.size();i++) {
 				DetGraph g = gs.get(i);
-				if (g.groupnoms!=null)
-					groups.addAll(g.groupnoms);
-			}
-
-			for (String gr : groups) {
-				PrintWriter fout = FileUtils.writeFileUTF("groups."+gr+".tab");
-				for (int i=0;i<gs.size();i++) {
-					DetGraph g = gs.get(i);
-					boolean isInGroup = false;
-					for (int j=0;j<g.getNbMots();j++) {
-						String lab = "NO";
-						int[] grps = g.getGroups(j);
-						boolean grfound = false;
-						if (grps!=null&&grps.length>0) {
-							for (int k=0;k<grps.length;k++)
-								if (g.groupnoms.get(grps[k]).equals(gr)) {
-									grfound=true;
-									break;
-								}
-						}
-						String classesuj = "NOCL";
-						if (g.getMot(j).getPOS().charAt(0)=='N'){
-							int d = g.getDep(j);
-							if (d>=0) {
-								//								if (d>=0 && g.getDepLabel(d).toLowerCase().equals("suj")) {
-								String verb = g.getMot(g.getHead(d)).getLemme();
-								Integer vcl = lemme2classe.get(verb);
-								if (vcl!=null) classesuj = "CLSUJ"+vcl;
+				int nexinutt=0;
+				for (int j=0;j<g.getNbMots();j++) {
+					if (!isAnExemple(g, j)) continue;
+					nexinutt++;
+					
+					// calcul du label
+					String lab = "NO";
+					int[] groups = g.getGroups(j);
+					if (groups!=null)
+						for (int gr : groups) {
+							if (g.groupnoms.get(gr).equals(en)) {
+								int debdugroupe = g.groups.get(gr).get(0).getIndexInUtt()-1;
+								if (debdugroupe==j) lab = en+"B";
+								else lab = en+"I";
+								break;
 							}
 						}
-						if (!isInGroup&&grfound) lab=gr+"B";
-						else if (isInGroup&&grfound) lab=gr+"I";
-						isInGroup=grfound;
-						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+classesuj+"\t"+lab);
-					}
-					fout.println();
+					
+					// calcul des features
+					fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+obs2classe[widx]+"\t"+lab);
+					widx++;
 				}
-				fout.close();
+				if (nexinutt>0)
+					fout.println();
 			}
+			fout.close();
 			ErrorsReporting.report("groups saved in groups.*.tab");
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -168,7 +206,7 @@ public class PrepHDB {
 			}			
 		}
 		for (int word=0;word<nOcc.length;word++) {
-			if (vocinv[word].charAt(0)=='@') continue;
+//			if (vocinv[word].charAt(0)=='@') continue;
 			int nw=0;
 			for (int cl=0;cl<nOcc[word].length;cl++) {
 				nw += nOcc[word][cl];
@@ -205,11 +243,7 @@ public class PrepHDB {
 	}
 
 	/**
-	 * parse la sortie de HBC et recupere les samples de la variable Z ou E:
-	 * - si on recupere vocV et enV, on a alors Z = type du head
-	 * - si on recupere vocO et enO, on a alors E = EN du gouverné
-	 * 
-	 * TODO: recuperer plutot les "EN" affectees aux instances de O...
+	 * parse la sortie de HBC et recupere les samples de la variable E:
 	 * 
 	 * @param logfile
 	 * @param nclasses
@@ -217,10 +251,6 @@ public class PrepHDB {
 	 */
 	public static void test(String logfile) throws Exception {
 
-		// on veut pour chaque verbe sa distribution des classes:
-		// new: a la place des verbes, un head quelconque
-
-		// il y a 2 variables: V=VERB=HEAD et O=GOV
 		HashMap<String, Integer> voc = new HashMap<String, Integer>();
 		{
 			// lecture des indices des verbes
@@ -258,6 +288,7 @@ public class PrepHDB {
 		}
 
 		int nclasses=0;
+		// distribution empirique #(W,E)
 		int[][] nOccs = new int[voc.size()][nclassesMax];
 		{
 			// lecture et cumul des classes par verbe
@@ -287,151 +318,148 @@ public class PrepHDB {
 			}
 			f.close();
 		}
-
-		if (false) {
-			// a partir de la, on ne travaille plus avec les instances
-
-			// affichage des classes de verbes
-			class VerbClassPdf implements Comparable<VerbClassPdf> {
-				int verbe;
-				float[] pdf;
-				int bestclass;
-				public VerbClassPdf(int verb, int[] noccs, int sum) {
-					verbe=verb;
-					pdf = new float[noccs.length];
-					bestclass=0;
-					for (int i=0;i<pdf.length;i++) {
-						pdf[i]=(float)noccs[i]/(float)sum;
-						if (pdf[i]>pdf[bestclass]) bestclass=i;
-					}
-				}
-				@Override
-				public int compareTo(VerbClassPdf p) {
-					if (pdf[bestclass]>p.pdf[p.bestclass]) return -1;
-					else if (pdf[bestclass]<p.pdf[p.bestclass]) return 1;
-					else return 0;
-				}
-			}
-			// calcule la PDF + la classe de chaque verbe du dico
-			VerbClassPdf[] verbspdf = new VerbClassPdf[nOccs.length];
-			int nv=0;
-			for (int i=0;i<nOccs.length;i++) {
-				int sum=0; for (int j=0;j<nOccs[i].length;j++) sum+=nOccs[i][j];
-				// on s'interesse aux verbes qui apparaissent au moins 5 fois
-				if (sum>5) {
-					verbspdf[i] = new VerbClassPdf(i,nOccs[i],sum);
-					nv++;
-				}
-			}
-			System.out.println("nverbs "+nv);
-			// calcule la liste ordonnee des verbes representatifs d'une classe
-			// TODO: ordonner en tenant compte du nombre d'occurrences ?
-			TreeSet<VerbClassPdf>[] verbsPerClass = new TreeSet[nclassesMax];
-			for (int i=0;i<nclassesMax;i++) verbsPerClass[i] = new TreeSet<VerbClassPdf>();
-			for (int i=0;i<verbspdf.length;i++) {
-				if (verbspdf[i]!=null)
-					verbsPerClass[verbspdf[i].bestclass].add(verbspdf[i]);
-			}
-
-			for (int i=0;i<nclasses;i++) {
-				System.out.print("classe "+i+" : ");
-				for (VerbClassPdf v : verbsPerClass[i]) {
-					System.out.print(vocinv[v.verbe]+"("+v.pdf[v.bestclass]+") ");
-				}
-				System.out.println();
-			}
-		}
 	}
 
+	private static boolean isAnExemple(DetGraph g, int w) {
+		if (!g.getMot(w).getPOS().startsWith("N")) return false;
+		return true;
+	}
+	
+	static HashMap<String, Integer> vocV = new HashMap<String, Integer>();
+	static HashMap<String, Integer> vocO = new HashMap<String, Integer>();
+	static HashMap<Integer, Integer> noccV = new HashMap<Integer, Integer>();
+	static HashMap<Integer, Integer> noccO = new HashMap<Integer, Integer>();
+	private static long saveObs(List<DetGraph> gs, PrintWriter fv, PrintWriter fo) {
+		long nobs=0;
+		for (DetGraph g :gs) {
+			for (int i=0;i<g.getNbMots();i++) {
+				if (!isAnExemple(g,i)) continue;
+				String headword = "NO_HEAD";
+				String govword = g.getMot(i).getLemme();
+				int d = g.getDep(i);
+				if (d>=0) {
+					// j'accepte tous les HEADs, qqsoit le deplabel
+					// mais seulement les HEADs qui sont des NOMS ou des VERBES
+					Mot head = g.getMot(g.getHead(d));
+					if (head.getPOS().startsWith("P")) {
+						// preposition: on va chercher un head plus haut
+						int h = g.getHead(d);
+						d=g.getDep(h);
+						if (d>=0) {
+							head = g.getMot(g.getHead(d));
+							if (head.getPOS().startsWith("N")) {
+								// nom = OK
+								headword = head.getLemme();
+							} else if (head.getPOS().startsWith("V")) {
+								// verb = OK
+								headword = head.getLemme();
+							}
+						}
+					} else if (head.getPOS().startsWith("N")) {
+						// nom = OK
+						headword = head.getLemme();
+					} else if (head.getPOS().startsWith("V")) {
+						// verb = OK
+						headword = head.getLemme();
+					}
+				}
+
+				Integer oi = vocO.get(govword);
+				if (oi==null) {
+					oi=vocO.size();
+					vocO.put(govword,oi);
+				}
+				Integer vi = vocV.get(headword);
+				if (vi==null) {
+					vi=vocV.size();
+					vocV.put(headword,vi);
+				}
+				fo.println((oi+1));
+				fv.println((vi+1));
+				nobs++;
+						
+				{
+					Integer noc = noccV.get(vi);
+					if (noc==null) noc=1;
+					else noc++;
+					noccV.put(vi, noc);
+				}
+				{
+					Integer noc = noccO.get(oi);
+					if (noc==null) noc=1;
+					else noc++;
+					noccO.put(oi, noc);
+				}
+			}
+		}
+		return nobs;
+	}
+	
 	// cree le fichier d'exemples qui passera dans le programme en.hier -> en.c
-	public static void train(String corp) throws Exception {
+	// 1 exemple = tous les mots de type N*
+	public static void train(String unlabeled, String train, String test) throws Exception {
 		//		final static String corp = "../../git/jsafran/train2011.xml";
 		//		final static String corp = "../../git/jsafran/c0b.conll";
 
-		GraphIO gio = new GraphIO(null);
-		List<DetGraph> gs = gio.loadAllGraphs(corp);
 		PrintWriter fv = new PrintWriter(new FileWriter("enV.0"));
 		PrintWriter fo = new PrintWriter(new FileWriter("enO.0"));
-		HashMap<String, Integer> vocV = new HashMap<String, Integer>();
-		HashMap<String, Integer> vocO = new HashMap<String, Integer>();
-		HashMap<Integer, Integer> nocc = new HashMap<Integer, Integer>();
-
-		for (DetGraph g :gs) {
-			for (int i=0;i<g.getNbMots();i++) {
-				if (!g.getMot(i).getPOS().startsWith("N")) continue;
-				int d = g.getDep(i);
-				if (d>=0) {
-					String deplab = g.getDepLabel(d);
-					// j'accepte tous les HEADs, qqsoit le deplabel
-					// mais seulement les HEADs qui sont des NOMS ou des VERBES
-					if (true||deplab.equals("suj")) {
-						String o = g.getMot(i).getLemme();
-						Mot head = g.getMot(g.getHead(d));
-						if (head.getPOS().startsWith("P")) {
-							// preposition: on va chercher un head plus haut
-							int h = g.getHead(d);
-							d=g.getDep(h);
-							if (d>=0) {
-								head = g.getMot(g.getHead(d));
-								if (head.getPOS().startsWith("N")) {
-									// nom = OK
-								} else if (head.getPOS().startsWith("V")) {
-									// verb = OK
-								} else continue;
-							} else continue;
-						} else if (head.getPOS().startsWith("N")) {
-							// nom = OK
-						} else if (head.getPOS().startsWith("V")) {
-							// verb = OK
-						} else continue;
-
-						String v = head.getLemme();
-						Integer oi = vocO.get(o);
-						if (oi==null) {
-							oi=vocO.size();
-							vocO.put(o,oi);
-						}
-						Integer vi = vocV.get(v);
-						if (vi==null) {
-							vi=vocV.size();
-							vocV.put(v,vi);
-						}
-						fo.println((oi+1));
-						fv.println((vi+1));
-						Integer noc = nocc.get(vi);
-						if (noc==null) noc=1;
-						else noc++;
-						nocc.put(vi, noc);
-					}
-				}
-			}
-		}
+		GraphIO gio = new GraphIO(null);
+		List<DetGraph> gs = gio.loadAllGraphs(unlabeled);
+		long idxTrain = saveObs(gs, fv, fo);
+		gs = gio.loadAllGraphs(train);
+		long idxTest  = idxTrain+saveObs(gs, fv, fo);
+		gs = gio.loadAllGraphs(test);
+		long idxEnd   = idxTest+saveObs(gs, fv, fo);
 		fv.close();
 		fo.close();
+		
+		System.out.println("debugidx "+idxTrain+" "+idxTest+" "+idxEnd);
+		
 		saveVoc(vocV,"vocV");
 		saveVoc(vocO,"vocO");
 
-		// supprime les obs avec head trop peu frequentes
-		final int MINOCC = 10;
+		// supprime les obs trop peu frequentes
+		final int MINOCC = 1000;
 
 		PrintWriter f = new PrintWriter(new FileWriter("enV"));
 		PrintWriter g = new PrintWriter(new FileWriter("enO"));
 		BufferedReader f0 = new BufferedReader(new FileReader("enV.0"));
 		BufferedReader g0 = new BufferedReader(new FileReader("enO.0"));
-		for (;;) {
+		long nUnlabDel = 0;
+		long nTrainDel = 0;
+		long nTestDel = 0;
+		for (int idx=0;;idx++) {
 			String s = f0.readLine();
 			if (s==null) break;
 			int v = Integer.parseInt(s);
-			Integer noc = nocc.get(v-1);
-			if (noc>MINOCC) {
+			s = g0.readLine();
+			int o = Integer.parseInt(s);
+			Integer noco = noccO.get(o-1);
+			Integer nocv = noccV.get(v-1);
+			if (nocv>MINOCC&&noco>MINOCC) {
 				f.println(v);
-				g.println(g0.readLine());
+				g.println(o);
+			} else {
+				// supprime une obs
+				if (idx<idxTrain) nUnlabDel++;
+				else if (idx<idxTest) nTrainDel++;
+				else nTestDel++;
 			}
 		}
 		g0.close();
 		f0.close();
 		f.close();
 		g.close();
+		
+		// sauve les index
+		idxTrain-=nUnlabDel;
+		idxTest-=nUnlabDel+nTrainDel;
+		DataOutputStream ff = new DataOutputStream(new FileOutputStream("indexes.hdb"));
+		ff.writeLong(idxTrain);
+		ff.writeLong(idxTest);
+		ff.writeLong(idxEnd);
+		System.out.println("indexes: "+idxTrain+" "+idxTest+" "+idxEnd);
+		ff.close();
 	}
 
 	private static void saveVoc(Map<String, Integer> voc, String fn) {

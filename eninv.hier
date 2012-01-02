@@ -20,5 +20,5 @@ e_{n} ~ Mult(thetaE_{w_{n},h_{n}}) , n \in [1,N]
 
 --# --collapse thetaH
 --# --collapse thetaW
---# --collapse thetaE
+-- impossible de collapser thetaE 
 
