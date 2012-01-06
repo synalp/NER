@@ -86,28 +86,47 @@ public class PrepHDB {
 		try {
 			// lecture des indexes
 			DataInputStream fin = new DataInputStream(new FileInputStream("indexes.hdb"));
+			// ces 3 indexes font reference a la "big list", en considerant toutes les instances possibles
 			long idxTrain = fin.readLong();
 			long idxTest  = fin.readLong();
 			long idxEnd   = fin.readLong();
-			fin.close();
-			long idxdeb=idxTrain;
-			long idxend=idxTest;
-			if (trainOrTest==1) {
-				idxdeb=idxTest;
-				idxend=idxEnd;
+			long idxTrainkept = fin.readLong();
+			long idxTestkept  = fin.readLong();
+			long idxEndkept   = fin.readLong();
+			int nlist = fin.readInt();
+			// idem pour ce tableau d'index
+			long[] indexeskept = new long[nlist];
+			for (int i=0;i<nlist;i++) {
+				indexeskept[i]=fin.readLong();
 			}
+			fin.close();
+			long idxdebInBigList=idxTrain;
+			long idxendInBigList=idxTest;
+			long idxdebInKeptList=idxTrainkept;
+			long idxendInKeptList=idxTestkept;
+			if (trainOrTest==1) {
+				idxdebInBigList=idxTest;
+				idxendInBigList=idxEnd;
+				idxdebInKeptList=idxTestkept;
+				idxendInKeptList=idxEndkept;
+			}
+			System.out.println("indexes      "+idxTrain+" "+idxTest+" "+idxEnd+" "+indexeskept.length);
+			System.out.println("indexes kept "+idxTrainkept+" "+idxTestkept+" "+idxEndkept+" "+indexeskept.length);
 			
-			// nb de classes ??
+			// calcul du nb de classes
+			// les tokens sur la ligne e correspondent aux instances de la "keptList" (et non de la BigList)
 			int nclasses = 0, ninst=0;
 			BufferedReader f = new BufferedReader(new FileReader(logen));
 			for (int i=0;i<100;i++) {
 				String s = f.readLine();
 				if (s==null) break;
 				if (s.startsWith("e = ")) {
+					// cette ligne contient toutes les instances des 3 corpus: unlab + train + test
 					int p1=4;
-					for (int j=0;j<idxdeb;j++) p1=s.indexOf(' ',p1)+1;
+					// on "saute" toutes les instances de unlab, et eventuellement du train
+					for (int j=0;j<idxdebInKeptList;j++) p1=s.indexOf(' ',p1)+1;
 					ninst=0;
-					for (int j=(int)idxdeb, k=0;j<idxend;j++,k++) {
+					for (int j=(int)idxdebInKeptList, k=0;j<idxendInKeptList;j++,k++) {
 						int l=s.indexOf(' ',p1);
 						int ent=Integer.parseInt(s.substring(p1,l));
 						ninst++;
@@ -117,22 +136,23 @@ public class PrepHDB {
 				}
 			}
 			f.close();
-			assert ninst==idxend-idxdeb;
+			System.out.println("ninst read "+ninst+" "+(idxendInKeptList-idxdebInKeptList));
+			assert ninst==idxendInKeptList-idxdebInKeptList;
 			System.out.println("nclasses "+nclasses+" "+ninst);
 			
 			// lecture des classes samplees: pour chaque instance, on a un sample de E par iter. qui suit posterior P(E|sample)
 			// on conserve la distribution empirique P(E|inst) = #(E=e)/#(E=*)
 			int[][] counts = new int[ninst][nclasses];
-			for (int i=0;i<ninst;i++) Arrays.fill(counts, 0);
+			for (int i=0;i<ninst;i++) Arrays.fill(counts[i], 0);
 			f = new BufferedReader(new FileReader(logen));
 			for (;;) {
 				String s = f.readLine();
 				if (s==null) break;
 				if (s.startsWith("e = ")) {
 					int i=4;
-					for (int j=0;j<idxdeb;j++) i=s.indexOf(' ',i)+1;
+					for (int j=0;j<idxdebInKeptList;j++) i=s.indexOf(' ',i)+1;
 					int inst=0;
-					for (int j=(int)idxdeb;j<idxend;j++) {
+					for (int j=(int)idxdebInKeptList;j<idxendInKeptList;j++) {
 						int l=s.indexOf(' ',i);
 						int classe=Integer.parseInt(s.substring(i,l));
 						counts[inst][classe]++;
@@ -144,9 +164,9 @@ public class PrepHDB {
 			f.close();
 			
 			// pour chaque instance, on a P(E|inst); on calcule la valeur max de P(E|inst)
-			int[] obs2classe = new int[(int)(idxend-idxdeb)];
+			int[] obs2classe = new int[(int)(idxendInKeptList-idxdebInKeptList)];
 			System.out.println("create obs2classe "+obs2classe.length);
-			for (int j=(int)idxdeb, k=0;j<idxend;j++,k++) {
+			for (int j=(int)idxdebInKeptList, k=0;j<idxendInKeptList;j++,k++) {
 				int cmax=0;
 				for (int l=1;l<counts[k].length;l++)
 					if (counts[k][l]>counts[k][cmax]) cmax=l;
@@ -155,7 +175,13 @@ public class PrepHDB {
 
 			// lecture des obs
 			PrintWriter fout = FileUtils.writeFileUTF("groups."+en+".tab");
-			int widx=0;
+			
+			// widx=indexe de l'instance dans les graphes
+			// il faut donc positionner nextinstinlist a idxdeb
+			long curInstInBigList=idxdebInBigList;
+			int idxkept=(int)idxdebInKeptList;
+			// indexe de la prochaine instance dans le tableau obs2classe
+			int obs2classeidx=0;
 			for (int i=0;i<gs.size();i++) {
 				DetGraph g = gs.get(i);
 				int nexinutt=0;
@@ -177,8 +203,21 @@ public class PrepHDB {
 						}
 					
 					// calcul des features
-					fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+obs2classe[widx]+"\t"+lab);
-					widx++;
+					if (obs2classeidx>=obs2classe.length&&idxkept<idxendInKeptList)
+						System.out.println("ERROR too many words "+obs2classeidx+" "+obs2classe.length);
+					else {
+						String BayesFeat = "CLUNK";
+//						System.out.println("devyf "+obs2classeidx+" "+idxdebInBigList+" "+(curInstInBigList)+" next="+indexeskept[idxkept]+" "+(idxkept-idxendInKeptList));
+						// normalement, ne peut pas etre >
+						if (idxkept<indexeskept.length&&curInstInBigList>=indexeskept[idxkept]) {
+							idxkept++;
+							BayesFeat = "CL"+obs2classe[obs2classeidx++];
+						} else {
+							// c'est un exemple qui n'a pas été pris en compte (trop rare)
+						}
+						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+"CL"+BayesFeat+"\t"+lab);
+					}
+					curInstInBigList++;
 				}
 				if (nexinutt>0)
 					fout.println();
@@ -272,7 +311,7 @@ public class PrepHDB {
 
 		int[] wordAtInstance;
 		{
-			// lecture de quel verbe se trouve � l'instance t
+			// lecture de quel verbe se trouve � l'instance t
 			BufferedReader f = new BufferedReader(new FileReader("enO"));
 			ArrayList<Integer> seq = new ArrayList<Integer>();
 			for (;;) {
@@ -405,15 +444,18 @@ public class PrepHDB {
 		PrintWriter fo = new PrintWriter(new FileWriter("enO.0"));
 		GraphIO gio = new GraphIO(null);
 		List<DetGraph> gs = gio.loadAllGraphs(unlabeled);
+		System.out.println("unlab "+gs.size());
 		long idxTrain = saveObs(gs, fv, fo);
 		gs = gio.loadAllGraphs(train);
+		System.out.println("train "+gs.size());
 		long idxTest  = idxTrain+saveObs(gs, fv, fo);
 		gs = gio.loadAllGraphs(test);
+		System.out.println("test  "+gs.size());
 		long idxEnd   = idxTest+saveObs(gs, fv, fo);
 		fv.close();
 		fo.close();
 		
-		System.out.println("debugidx "+idxTrain+" "+idxTest+" "+idxEnd);
+		System.out.println("indexs "+idxTrain+" "+idxTest+" "+idxEnd);
 		
 		saveVoc(vocV,"vocV");
 		saveVoc(vocO,"vocO");
@@ -421,6 +463,7 @@ public class PrepHDB {
 		// supprime les obs trop peu frequentes
 		final int MINOCC = 1000;
 
+		ArrayList<Long> instkept = new ArrayList<Long>();
 		PrintWriter f = new PrintWriter(new FileWriter("enV"));
 		PrintWriter g = new PrintWriter(new FileWriter("enO"));
 		BufferedReader f0 = new BufferedReader(new FileReader("enV.0"));
@@ -428,7 +471,7 @@ public class PrepHDB {
 		long nUnlabDel = 0;
 		long nTrainDel = 0;
 		long nTestDel = 0;
-		for (int idx=0;;idx++) {
+		for (long idx=0;;idx++) {
 			String s = f0.readLine();
 			if (s==null) break;
 			int v = Integer.parseInt(s);
@@ -439,6 +482,7 @@ public class PrepHDB {
 			if (nocv>MINOCC&&noco>MINOCC) {
 				f.println(v);
 				g.println(o);
+				instkept.add(idx);
 			} else {
 				// supprime une obs
 				if (idx<idxTrain) nUnlabDel++;
@@ -451,13 +495,20 @@ public class PrepHDB {
 		f.close();
 		g.close();
 		
-		// sauve les index
-		idxTrain-=nUnlabDel;
-		idxTest-=nUnlabDel+nTrainDel;
+		// sauve les index des mots gardes
 		DataOutputStream ff = new DataOutputStream(new FileOutputStream("indexes.hdb"));
 		ff.writeLong(idxTrain);
 		ff.writeLong(idxTest);
 		ff.writeLong(idxEnd);
+		idxTrain-=nUnlabDel;
+		idxTest-=nUnlabDel+nTrainDel;
+		idxEnd-=nUnlabDel+nTrainDel+nTestDel;
+		ff.writeLong(idxTrain);
+		ff.writeLong(idxTest);
+		ff.writeLong(idxEnd);
+		ff.writeInt(instkept.size());
+		for (int i=0;i<instkept.size();i++)
+			ff.writeLong(instkept.get(i));
 		System.out.println("indexes: "+idxTrain+" "+idxTest+" "+idxEnd);
 		ff.close();
 	}

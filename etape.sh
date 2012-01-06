@@ -1,6 +1,6 @@
 #!/bin/tcsh
 
-set JCP = "bin:../utils/bin:../jsafran/jsafran.jar:../../softs/mallet-2.0.5/dist/mallet.jar:../../softs/mallet-2.0.5/dist/mallet-deps.jar:../../softs/mallet-2.0.5/lib/trove-2.0.2.jar"
+set JCP = "bin:../utils/bin:../../git/jsafran/jsafran.jar:../../softs/mallet-2.0.5/dist/mallet.jar:../../softs/mallet-2.0.5/dist/mallet-deps.jar:../../softs/mallet-2.0.5/lib/trove-2.0.2.jar"
 
 if ("$TERM" == "cygwin") then
 	set JCP = `echo "$JCP" | sed 's,:,;,g'`
@@ -19,16 +19,15 @@ echo "extrait les deps (NOM,HEAD) du Gigaword + du train + du test"
 set LARGECORP = ../../git/jsafran/c0b.conll
 set TRAIN = ../../git6/peps/corpus/etape/radios.xml
 set TEST  = ../../git6/peps/corpus/etape/devtvs.xml
-java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -train $LARGECORP $TRAIN $TEST
-# TODO: sur le train, forcer le sampling !
+java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
 
-#deb:
+# deb:
 echo "unsup clustering de E"
 set d = ""`pwd`
-cd $HOME
+cd $HOME/softs/hbc_v0_7_linux
 cp -f $d/enV .
 cp -f $d/enO .
-./eninv.out >! $d/en.log
+./en.out >! $d/en.log
 cd $d
 
 # on a maintenant directement les samples des mots du train et du test
@@ -39,9 +38,22 @@ cd $d
 deb:
 echo "construction des fichiers de train et test pour le CRF"
 
-java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -putclass ../../git6/peps/corpus/etape/radios.xml en.log 0 pers.ind
-java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -putclass ../../git6/peps/corpus/etape/devtvs.xml en.log 1 pers.ind
+set en = pers.ind
 
+java -Xmx1g -cp "$JCP" PrepHDB -putclass ../../git6/peps/corpus/etape/radios.xml en.log 0 $en
+sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab,g' syn.props >! tmp.props
+java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
+mv kiki.mods en.$en.mods
+
+java -Xmx1g -cp "$JCP" PrepHDB -putclass ../../git6/peps/corpus/etape/devtvs.xml en.log 1 pers.ind
+java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab >! test.log
+cut -f2 test.log >! testgold.log
+cut -f3 test.log >! testrec.log
+sed 's,\(.*\)B$,B-\1,g' testgold.log | sed 's,\(.*\)I$,I-\1,g' >! testgold.col
+sed 's,\(.*\)B$,B-\1,g' testrec.log | sed 's,\(.*\)I$,I-\1,g' >! testrec.col
+cut -f1 test.log >! words.col
+paste words.col testgold.col testrec.col | awk '{if (NF==3) print}' >! oo.log
+./conlleval.pl -d '\t' -o NO < oo.log | grep $en >> res.log
 
 exit
 
