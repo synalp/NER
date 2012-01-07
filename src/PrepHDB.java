@@ -22,6 +22,7 @@ import utils.FileUtils;
 
 import jsafran.DetGraph;
 import jsafran.GraphIO;
+import jsafran.GroupManager;
 import jsafran.JSafran;
 import jsafran.Mot;
 
@@ -99,7 +100,23 @@ public class PrepHDB {
 			for (int i=0;i<nlist;i++) {
 				indexeskept[i]=fin.readLong();
 			}
+			// gold classes
+			int[] golds = new int[nlist];
+			for (int i=0;i<nlist;i++) {
+				golds[i]=fin.readInt();
+			}
 			fin.close();
+
+			// save les golds pour le programme en.out
+			{
+				PrintWriter fg = new PrintWriter(new FileWriter("tmpgolds.txt"));
+				for (int i=0;i<nlist;i++) {
+					fg.println(golds[i]);
+				}				
+				fg.close();
+				golds=null;
+			}
+
 			long idxdebInBigList=idxTrain;
 			long idxendInBigList=idxTest;
 			long idxdebInKeptList=idxTrainkept;
@@ -433,7 +450,69 @@ public class PrepHDB {
 		}
 		return nobs;
 	}
-	
+
+	// tous les graphes donnent des instances dont les index apparaissent dans la liste indexeskept.
+	// mais les graphes ne commencent pas à 0, ils commencent à offdeb, qui est l'index absolu du 1er elt des graphes
+	private static int[] getGoldClass(List<DetGraph> gs, long offdeb, long offend, List<Long> indexeskept) {
+		// liste des ens que l'on garde
+		final String[] ens = {"none","loc","org","pers"};
+		
+		// calcul du nombre d'elements de indexeskept qui font partie de ces graphes
+		int ninst = 0;
+		{
+			int i;
+			for (i=0;i<indexeskept.size();i++) if (indexeskept.get(i)>=offdeb) break;
+			int deb=i;
+			for (;i<indexeskept.size();i++) if (indexeskept.get(i)>=offend) break;
+			int end=i;
+			ninst = end-deb;
+			System.out.println("gold class: found n="+ninst);
+		}
+		
+		int[] gold = new int[ninst];
+		int goldidx=0;
+		long curidx=offdeb;
+		for (DetGraph g :gs) {
+			for (int i=0;i<g.getNbMots();i++) {
+				if (!isAnExemple(g,i)) continue;
+				if (!indexeskept.contains(curidx++)) continue;
+
+				int[] grps = g.getGroups(i);
+				if (grps==null||grps.length==0) {
+					gold[goldidx++]=0;
+					continue;
+				}
+				// quels sont les groupes qui nous interessent qui apparaissent sur ce mot ?
+				ArrayList<Integer> enidxfound = new ArrayList<Integer>();
+				for (int gr : grps) {
+					String grpnom = g.groupnoms.get(gr);
+					int gidx=0;
+					for (int j=1;j<ens.length;j++)
+						if (grpnom.startsWith(ens[j])) {gidx=j; break;}
+					if (gidx!=0) enidxfound.add(gr);
+				}
+				if (enidxfound.isEmpty()) {
+					gold[goldidx++]=0;
+					continue;
+				}
+				// il y a des groupes: je prends le plus "petit" = le plus proche du mot
+				int smallest=0;
+				int smallestLen = g.groups.get(enidxfound.get(0)).get(g.groups.get(enidxfound.get(0)).size()-1).getIndexInUtt()-g.groups.get(enidxfound.get(0)).get(0).getIndexInUtt();
+				for (int j=1;j<enidxfound.size();j++) {
+					int len = g.groups.get(enidxfound.get(j)).get(g.groups.get(enidxfound.get(j)).size()-1).getIndexInUtt()-g.groups.get(enidxfound.get(j)).get(0).getIndexInUtt();
+					if (len<smallestLen) {
+						smallestLen=len; smallest=j;
+					}
+				}
+				String grpnom = g.groupnoms.get(enidxfound.get(smallest));
+				for (int j=1;j<ens.length;j++)
+					if (grpnom.startsWith(ens[j])) {gold[goldidx++]=j; break;}
+			}
+		}
+		assert goldidx==gold.length;
+		return gold;
+	}
+
 	// cree le fichier d'exemples qui passera dans le programme en.hier -> en.c
 	// 1 exemple = tous les mots de type N*
 	public static void train(String unlabeled, String train, String test) throws Exception {
@@ -495,20 +574,36 @@ public class PrepHDB {
 		f.close();
 		g.close();
 		
+		// calcule les classes "gold" pour le train seulement
+		int[] golds = getGoldClass(gs, idxTrain, idxTest, instkept);
+		
 		// sauve les index des mots gardes
 		DataOutputStream ff = new DataOutputStream(new FileOutputStream("indexes.hdb"));
 		ff.writeLong(idxTrain);
 		ff.writeLong(idxTest);
 		ff.writeLong(idxEnd);
-		idxTrain-=nUnlabDel;
-		idxTest-=nUnlabDel+nTrainDel;
-		idxEnd-=nUnlabDel+nTrainDel+nTestDel;
-		ff.writeLong(idxTrain);
-		ff.writeLong(idxTest);
-		ff.writeLong(idxEnd);
+		long idxTrain2=idxTrain-nUnlabDel;
+		long idxTest2=idxTest-nUnlabDel-nTrainDel;
+		long idxEnd2=idxEnd-nUnlabDel-nTrainDel-nTestDel;
+		ff.writeLong(idxTrain2);
+		ff.writeLong(idxTest2);
+		ff.writeLong(idxEnd2);
 		ff.writeInt(instkept.size());
 		for (int i=0;i<instkept.size();i++)
 			ff.writeLong(instkept.get(i));
+		// sauve les classes gold ou -1 lorsqu'il n'y en a pas
+		{
+			int i=0;
+			while (instkept.get(i)<idxTrain2) {
+				ff.writeInt(-1); i++;
+			}
+			for (int j=0;j<golds.length;j++,i++) {
+				ff.writeInt(golds[j]);
+			}
+			for (;i<instkept.size();i++) {
+				ff.writeInt(-1);
+			}
+		}
 		System.out.println("indexes: "+idxTrain+" "+idxTest+" "+idxEnd);
 		ff.close();
 	}

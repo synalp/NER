@@ -1,58 +1,77 @@
-#!/bin/tcsh
+#!/bin/bash
 
-set JCP = "bin:../utils/bin:../../git/jsafran/jsafran.jar:../../softs/mallet-2.0.5/dist/mallet.jar:../../softs/mallet-2.0.5/dist/mallet-deps.jar:../../softs/mallet-2.0.5/lib/trove-2.0.2.jar"
+JCP="bin:../utils/bin:../../git/jsafran/jsafran.jar:../../softs/mallet-2.0.5/dist/mallet.jar:../../softs/mallet-2.0.5/dist/mallet-deps.jar:../../softs/mallet-2.0.5/lib/trove-2.0.2.jar"
 
-if ("$TERM" == "cygwin") then
-	set JCP = `echo "$JCP" | sed 's,:,;,g'`
-	setenv PATH "$PATH"":../../tools"
+if [ "$TERM" = "cygwin" ]; then
+	echo "transform paths..."
+	JCP=`echo "$JCP" | sed 's,:,;,g'`
+	export PATH="$PATH"":../../tools"
 else
-	setenv PATH $PATH":../../tools"
-endif
-
-goto deb
-
-# ##################################################
-# nouveau modele inverse: il n'est plus generatif ?
-# deb:
+	export PATH=$PATH":../../tools"
+fi
 
 echo "extrait les deps (NOM,HEAD) du Gigaword + du train + du test"
-set LARGECORP = ../../git/jsafran/c0b.conll
-set TRAIN = ../../git6/peps/corpus/etape/radios.xml
-set TEST  = ../../git6/peps/corpus/etape/devtvs.xml
-java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
+LARGECORP=../../git/jsafran/c0b.conll
+TRAIN=../../git6/peps/corpus/etape/radios.xml
+TEST=../../git6/peps/corpus/etape/devtvs.xml
+#java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
 
-# deb:
 echo "unsup clustering de E"
-set d = ""`pwd`
-cd $HOME/softs/hbc_v0_7_linux
-cp -f $d/enV .
-cp -f $d/enO .
-./en.out >! $d/en.log
-cd $d
+# puis je lance ./en.out
+# il faut d'abord compiler a la main en.hier dans la machine virtuelle Ubuntu, puis recopier le
+# en.c produit dans le rep courant
+gcc -O3 stats.c samplib.c en.c -o en.out -lm
+./en.out > en.log
+exit
 
 # on a maintenant directement les samples des mots du train et du test
 # mais il ne faut pas conserver un seul sample: chaque sample suit p(E)=P(E|sample,reste), donc
 # on estime p(E) a partir des samples: p(E=e) = #(E=e)/#(E=*)
 # et on veut l'EN la plus probable: 
 # \hat E = argmax_e P(E=e)
-deb:
 echo "construction des fichiers de train et test pour le CRF"
 
-set en = pers.ind
+en=pers.ind
 
 java -Xmx1g -cp "$JCP" PrepHDB -putclass ../../git6/peps/corpus/etape/radios.xml en.log 0 $en
-sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab,g' syn.props >! tmp.props
-java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
+sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab,g' syn.props > tmp.props
+#java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
 mv kiki.mods en.$en.mods
 
 java -Xmx1g -cp "$JCP" PrepHDB -putclass ../../git6/peps/corpus/etape/devtvs.xml en.log 1 pers.ind
-java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab >! test.log
-cut -f2 test.log >! testgold.log
-cut -f3 test.log >! testrec.log
-sed 's,\(.*\)B$,B-\1,g' testgold.log | sed 's,\(.*\)I$,I-\1,g' >! testgold.col
-sed 's,\(.*\)B$,B-\1,g' testrec.log | sed 's,\(.*\)I$,I-\1,g' >! testrec.col
-cut -f1 test.log >! words.col
-paste words.col testgold.col testrec.col | awk '{if (NF==3) print}' >! oo.log
+java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab > test.log
+cut -f2 test.log > testgold.log
+cut -f3 test.log > testrec.log
+sed 's,\(.*\)B$,B-\1,g' testgold.log | sed 's,\(.*\)I$,I-\1,g' > testgold.col
+sed 's,\(.*\)B$,B-\1,g' testrec.log | sed 's,\(.*\)I$,I-\1,g' > testrec.col
+cut -f1 test.log > words.col
+
+awk '
+	BEGIN {
+		while ( getline < "words.col" > 0 )
+		{
+			f1_co++
+			f1[f1_co] = $0
+		}
+	}
+	{
+		print f1[NR]"\t"$0
+	} ' testgold.col > tty
+
+awk '
+	BEGIN {
+		while ( getline < "tty" > 0 )
+		{
+			f1_co++
+			f1[f1_co] = $0
+		}
+	}
+	{
+		print f1[NR]"\t"$0
+	} ' testrec.col > ttyy
+awk '{if (NF==3) print}' ttyy > oo.log
+
+# paste words.col testgold.col testrec.col | awk '{if (NF==3) print}' > oo.log
 ./conlleval.pl -d '\t' -o NO < oo.log | grep $en >> res.log
 
 exit
@@ -196,8 +215,6 @@ java -Xmx1g -jar malt.jar -c ftbmods -i c0.conll -m parse -o c0b.conll
 
 unsup:
 
-set d = ""`pwd`
-
 goto tmpx
 
 # puis j'extrais les couples (verbe,sujet)
@@ -205,8 +222,7 @@ set LARGECORP = ../../git/jsafran/c0b.conll
 # set LARGECORP = synthdata.conll
 java -Xmx1g -cp "../../git/jsafran/jsafran.jar;bin" PrepHDB -train $LARGECORP
 
-# puis je lance ./en.out
-# cd /cygdrive/d/xtof/share/virtualshare/hbc_v0_7_linux
+
 cd $HOME
 cp -f $d/enV .
 cp -f $d/enO .
