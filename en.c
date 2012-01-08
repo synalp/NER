@@ -48,6 +48,7 @@ Generated using the command:
 #include <math.h>
 #include "stats.h"
 
+int *gold;
 
 /**************************** SAMPLING ****************************/
 
@@ -200,6 +201,9 @@ void resample_e(int N, double alphaE, double alphaH, int* e, int* h, double** po
     post_thetaE[w[n_16-1]-1][e[n_16-1]-1] += (0.0) - ((1.0) * ((((w[n_16-1]) == (w[n_16-1])) ? 1 : 0)));
     post_thetaH[e[n_16-1]-1][(VH) + (1)-1] += (0.0) - ((1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0)));
     post_thetaH[e[n_16-1]-1][h[n_16-1]-1] += (0.0) - ((1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0)));
+
+    if (gold[n_16-1]>0) e[n_16]=gold[n_16-1];
+    else {
     /* Implements multinomial sampling from the following distribution: */
     /*   (Mult(h_{n@16} | .+(alphaH, sub(post_thetaH, e_{n@16}))))(Mult(e_{n@16} | .+(alphaE, sub(post_thetaE, w_{n@16})))) */
     for (dvv_loop_var_1=1; dvv_loop_var_1<=Nen; dvv_loop_var_1++) {
@@ -211,6 +215,8 @@ void resample_e(int N, double alphaE, double alphaH, int* e, int* h, double** po
     }
     normalizeLog(tmp_post_e_1, 1, Nen);
     e[n_16-1] = sample_Mult(tmp_post_e_1, 1, Nen);
+    }
+
     post_thetaH[e[n_16-1]-1][(VH) + (1)-1] += (1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0));
     post_thetaH[e[n_16-1]-1][h[n_16-1]-1] += (1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0));
     post_thetaE[w[n_16-1]-1][(Nen) + (1)-1] += (1.0) * ((((w[n_16-1]) == (w[n_16-1])) ? 1 : 0));
@@ -478,16 +484,13 @@ int main(int ARGC, char *ARGV[]) {
   fprintf(stderr, "Allocating memory...%d\n",N);
   fflush(stderr);
   e = (int*) malloc(sizeof(int) * (1+N));
-
-  fflush(stderr);
-  int* gold = (int *)malloc(sizeof(int)*N);
-  fflush(stderr);
+  gold = (int *)malloc(sizeof(int)*N);
   if (0==0) {
 	/* lecture des classes gold pour une partie du corpus */
 	FILE *f = fopen("tmpgolds.txt","r");
 	int tmp;
 	int k=0,max=0,min=1000;
-  	while (true) {
+  	for (;;) {
     		fscanf(f, "%d", &tmp);
 		if (feof(f)) break;
 		if (k>=N) {
@@ -536,21 +539,15 @@ int main(int ARGC, char *ARGV[]) {
   {
 	int i;
 	for (i=0;i<N;i++) {
-		if (gold[i]>0) e[i+1]=gold[i];
+//		if (gold[i]>0) e[i+1]=gold[i];
 	}
   }
 
-  for (iter=1; iter<=100; iter++) {
+  for (iter=1; iter<=1000; iter++) {
     fprintf(stderr, "iter %d", iter);
     fflush(stderr);
     resample_e(N, alphaE, alphaH, e, h, post_thetaE, post_thetaH, w, Nen, VH);
-  {
-	int i;
-	for (i=0;i<N;i++) {
-		if (gold[i]>0) e[i+1]=gold[i];
-	}
-  }
-    if (iter>=20) {
+    if (iter>=50) {
       printf("\n");
       dump_e(N,e);
     }
