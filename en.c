@@ -462,7 +462,7 @@ int main(int ARGC, char *ARGV[]) {
 
 
   /* variables defined with --define */
-  Nen = 3;
+  Nen = 4;
   alphaH = 0.1;
   alphaE = 0.1;
   alphaW = 0.1;
@@ -475,19 +475,53 @@ int main(int ARGC, char *ARGV[]) {
 
   /* variables defined with --loadM or --loadMI */
 
-  fprintf(stderr, "Allocating memory...\n");
+  fprintf(stderr, "Allocating memory...%d\n",N);
   fflush(stderr);
-  e = (int*) malloc(sizeof(int) * (1+((N) + (1))-(1)));
+  e = (int*) malloc(sizeof(int) * (1+N));
+
+  fflush(stderr);
+  int* gold = (int *)malloc(sizeof(int)*N);
+  fflush(stderr);
+  if (0==0) {
+	/* lecture des classes gold pour une partie du corpus */
+	FILE *f = fopen("tmpgolds.txt","r");
+	int tmp;
+	int k=0,max=0,min=1000;
+  	while (true) {
+    		fscanf(f, "%d", &tmp);
+		if (feof(f)) break;
+		if (k>=N) {
+			fprintf(stderr,"ROOROR ! %d %d\n",k,N);
+		}
+		if (tmp>max) max=tmp;
+		if (tmp<min) min=tmp;
+		if (tmp<0) gold[k]=-1;
+		else gold[k]=tmp+1; // car les classes commencent à 1 ici
+    		k++;
+  	}
+	fclose(f);
+	fprintf(stderr,"detson gold loaded %d %d %d %d\n",k,N,min,max);
+	fflush(stderr);
+  }
+
+  fprintf(stderr, "debug1...%d\n",VO);
+  fflush(stderr);
 
   post_thetaE = (double**) malloc(sizeof(double*) * (1+(VO)-(1)));
   for (malloc_dim_1=1; malloc_dim_1<=VO; malloc_dim_1++) {
     post_thetaE[malloc_dim_1-1] = (double*) malloc(sizeof(double) * (1+((Nen) + (1))-(1)));
   }
 
+  fprintf(stderr, "debug1...\n");
+  fflush(stderr);
+
   post_thetaH = (double**) malloc(sizeof(double*) * (1+(Nen)-(1)));
   for (malloc_dim_1=1; malloc_dim_1<=Nen; malloc_dim_1++) {
     post_thetaH[malloc_dim_1-1] = (double*) malloc(sizeof(double) * (1+((VH) + (1))-(1)));
   }
+
+  fprintf(stderr, "debug1...\n");
+  fflush(stderr);
 
   post_thetaW = (double*) malloc(sizeof(double) * (1+((VO) + (1))-(1)));
 
@@ -499,10 +533,27 @@ int main(int ARGC, char *ARGV[]) {
   initialize_post_thetaE(post_thetaE, N, Nen, VO, e, w);
   initialize_post_thetaW(post_thetaW, N, VO, w);
 
+  {
+	int i;
+	for (i=0;i<N;i++) {
+		if (gold[i]>0) e[i+1]=gold[i];
+	}
+  }
+
   for (iter=1; iter<=100; iter++) {
     fprintf(stderr, "iter %d", iter);
     fflush(stderr);
     resample_e(N, alphaE, alphaH, e, h, post_thetaE, post_thetaH, w, Nen, VH);
+  {
+	int i;
+	for (i=0;i<N;i++) {
+		if (gold[i]>0) e[i+1]=gold[i];
+	}
+  }
+    if (iter>=20) {
+      printf("\n");
+      dump_e(N,e);
+    }
 
     loglik = compute_log_posterior(N, Nen, VH, VO, alphaE, alphaH, alphaW, e, h, post_thetaE, post_thetaH, post_thetaW, w);
     fprintf(stderr, "\t%g", loglik);

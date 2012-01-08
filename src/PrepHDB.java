@@ -100,22 +100,7 @@ public class PrepHDB {
 			for (int i=0;i<nlist;i++) {
 				indexeskept[i]=fin.readLong();
 			}
-			// gold classes
-			int[] golds = new int[nlist];
-			for (int i=0;i<nlist;i++) {
-				golds[i]=fin.readInt();
-			}
 			fin.close();
-
-			// save les golds pour le programme en.out
-			{
-				PrintWriter fg = new PrintWriter(new FileWriter("tmpgolds.txt"));
-				for (int i=0;i<nlist;i++) {
-					fg.println(golds[i]);
-				}				
-				fg.close();
-				golds=null;
-			}
 
 			long idxdebInBigList=idxTrain;
 			long idxendInBigList=idxTest;
@@ -591,21 +576,26 @@ public class PrepHDB {
 		ff.writeInt(instkept.size());
 		for (int i=0;i<instkept.size();i++)
 			ff.writeLong(instkept.get(i));
-		// sauve les classes gold ou -1 lorsqu'il n'y en a pas
-		{
-			int i=0;
-			while (instkept.get(i)<idxTrain2) {
-				ff.writeInt(-1); i++;
-			}
-			for (int j=0;j<golds.length;j++,i++) {
-				ff.writeInt(golds[j]);
-			}
-			for (;i<instkept.size();i++) {
-				ff.writeInt(-1);
-			}
-		}
+		
 		System.out.println("indexes: "+idxTrain+" "+idxTest+" "+idxEnd);
 		ff.close();
+
+		// save les golds pour le programme en.out
+		{
+			PrintWriter fg = new PrintWriter(new FileWriter("tmpgolds.txt"));
+			int i=0;
+			while (instkept.get(i)<idxTrain2) {
+				fg.println("-1"); i++;
+			}
+			for (int j=0;j<golds.length;j++,i++) {
+				fg.println(golds[j]);
+			}
+			for (;i<instkept.size();i++) {
+				fg.println("-1");
+			}				
+			fg.close();
+			golds=null;
+		}
 	}
 
 	private static void saveVoc(Map<String, Integer> voc, String fn) {

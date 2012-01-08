@@ -14,14 +14,14 @@ echo "extrait les deps (NOM,HEAD) du Gigaword + du train + du test"
 LARGECORP=../../git/jsafran/c0b.conll
 TRAIN=../../git6/peps/corpus/etape/radios.xml
 TEST=../../git6/peps/corpus/etape/devtvs.xml
-#java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
+# java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
 
 echo "unsup clustering de E"
 # puis je lance ./en.out
 # il faut d'abord compiler a la main en.hier dans la machine virtuelle Ubuntu, puis recopier le
 # en.c produit dans le rep courant
-gcc -O3 stats.c samplib.c en.c -o en.out -lm
-./en.out > en.log
+gcc -g stats.c samplib.c en.c -o en.exe -lm
+./en.exe > en.log
 exit
 
 # on a maintenant directement les samples des mots du train et du test
