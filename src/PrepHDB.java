@@ -36,10 +36,16 @@ public class PrepHDB {
 	final static int nclassesMax=100;
 
 	public static void main(String args[]) throws Exception {
+		if (args.length==0) {
+			debug();
+			return;
+		}
 		if (args[0].equals("-train")) {
 			train(args[1],args[2],args[3]);
 		} else if (args[0].equals("-test")) {
 			test(args[1]);
+		} else if (args[0].equals("-debug")) {
+			debug();
 		} else if (args[0].equals("-meanres")) {
 			meanres();
 		} else if (args[0].equals("-putclass")) {
@@ -436,11 +442,12 @@ public class PrepHDB {
 		return nobs;
 	}
 
+	// liste des ens que l'on garde
+	final static String[] ens = {"none","loc","org","pers"};
+	
 	// tous les graphes donnent des instances dont les index apparaissent dans la liste indexeskept.
-	// mais les graphes ne commencent pas à 0, ils commencent à offdeb, qui est l'index absolu du 1er elt des graphes
+	// mais les graphes ne commencent pas ï¿½ 0, ils commencent ï¿½ offdeb, qui est l'index absolu du 1er elt des graphes
 	private static int[] getGoldClass(List<DetGraph> gs, long offdeb, long offend, List<Long> indexeskept) {
-		// liste des ens que l'on garde
-		final String[] ens = {"none","loc","org","pers"};
 		
 		// calcul du nombre d'elements de indexeskept qui font partie de ces graphes
 		int ninst = 0;
@@ -491,7 +498,10 @@ public class PrepHDB {
 				}
 				String grpnom = g.groupnoms.get(enidxfound.get(smallest));
 				for (int j=1;j<ens.length;j++)
-					if (grpnom.startsWith(ens[j])) {gold[goldidx++]=j; break;}
+					if (grpnom.startsWith(ens[j])) {
+						System.out.println("debugEN "+ens[j]+" "+g.getMot(i));
+						gold[goldidx++]=j; break;
+					}
 			}
 		}
 		assert goldidx==gold.length;
@@ -525,7 +535,7 @@ public class PrepHDB {
 		saveVoc(vocO,"vocO");
 
 		// supprime les obs trop peu frequentes
-		final int MINOCC = 1000;
+		final int MINOCC = 100;
 
 		ArrayList<Long> instkept = new ArrayList<Long>();
 		PrintWriter f = new PrintWriter(new FileWriter("enV"));
@@ -603,6 +613,67 @@ public class PrepHDB {
 			PrintWriter f = new PrintWriter(new FileWriter(fn));
 			for (String s : voc.keySet()) {
 				f.println(s+" "+voc.get(s));
+			}
+			f.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void debug() {
+		try {
+			ArrayList<Integer> heads = new ArrayList<Integer>();
+			ArrayList<Integer> govs  = new ArrayList<Integer>();
+			BufferedReader f0 = new BufferedReader(new FileReader("enV"));
+			BufferedReader g0 = new BufferedReader(new FileReader("enO"));
+			for (long idx=0;;idx++) {
+				String s = f0.readLine();
+				if (s==null) break;
+				int v = Integer.parseInt(s);
+				heads.add(v);
+				s = g0.readLine();
+				int o = Integer.parseInt(s);
+				govs.add(o);
+			}
+			g0.close();
+			f0.close();
+			System.out.println("instances: "+heads.size()+" "+govs.size());
+			
+			HashMap<Integer, String> vocV = new HashMap<Integer, String>();
+			{
+				BufferedReader f = new BufferedReader(new FileReader("vocV"));
+				for (;;) {
+					String s=f.readLine();
+					if (s==null) break;
+					int i=s.lastIndexOf(' ');
+					int j=Integer.parseInt(s.substring(i+1));
+					vocV.put(j, s.substring(0,i).trim());
+				}
+				f.close();
+			}
+			System.out.println("vocv: "+vocV.size());
+			HashMap<Integer, String> vocO = new HashMap<Integer, String>();
+			{
+				BufferedReader f = new BufferedReader(new FileReader("vocO"));
+				for (;;) {
+					String s=f.readLine();
+					if (s==null) break;
+					int i=s.lastIndexOf(' ');
+					int j=Integer.parseInt(s.substring(i+1));
+					vocO.put(j, s.substring(0,i).trim());
+				}
+				f.close();
+			}
+			System.out.println("voco: "+vocO.size());
+			
+			BufferedReader f = new BufferedReader(new FileReader("tmpgolds.txt"));
+			for (int i=0;;i++) {
+				String s=f.readLine();
+				if (s==null) break;
+				int cl = Integer.parseInt(s);
+				if (cl>0) {
+					System.out.println("goldclass "+ens[cl]+" "+vocO.get(govs.get(i))+" "+vocV.get(heads.get(i)));
+				}
 			}
 			f.close();
 		} catch (IOException e) {

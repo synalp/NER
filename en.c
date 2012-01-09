@@ -469,9 +469,9 @@ int main(int ARGC, char *ARGV[]) {
 
   /* variables defined with --define */
   Nen = 4;
-  alphaH = 0.1;
+  alphaH = 0.5;
   alphaE = 0.1;
-  alphaW = 0.1;
+  alphaW = 0.8;
 
   fprintf(stderr, "Loading data...\n");
   fflush(stderr);
@@ -543,11 +543,11 @@ int main(int ARGC, char *ARGV[]) {
 	}
   }
 
-  for (iter=1; iter<=1000; iter++) {
+  for (iter=1; iter<=200; iter++) {
     fprintf(stderr, "iter %d", iter);
     fflush(stderr);
     resample_e(N, alphaE, alphaH, e, h, post_thetaE, post_thetaH, w, Nen, VH);
-    if (iter>=50) {
+    if (iter>=20) {
       printf("\n");
       dump_e(N,e);
     }

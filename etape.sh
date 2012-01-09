@@ -21,8 +21,7 @@ echo "unsup clustering de E"
 # il faut d'abord compiler a la main en.hier dans la machine virtuelle Ubuntu, puis recopier le
 # en.c produit dans le rep courant
 gcc -g stats.c samplib.c en.c -o en.exe -lm
-./en.exe > en.log
-exit
+# ./en.exe > en.log
 
 # on a maintenant directement les samples des mots du train et du test
 # mais il ne faut pas conserver un seul sample: chaque sample suit p(E)=P(E|sample,reste), donc
@@ -35,7 +34,7 @@ en=pers.ind
 
 java -Xmx1g -cp "$JCP" PrepHDB -putclass ../../git6/peps/corpus/etape/radios.xml en.log 0 $en
 sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab,g' syn.props > tmp.props
-#java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
+java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
 mv kiki.mods en.$en.mods
 
 java -Xmx1g -cp "$JCP" PrepHDB -putclass ../../git6/peps/corpus/etape/devtvs.xml en.log 1 pers.ind
