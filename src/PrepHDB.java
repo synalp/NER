@@ -90,6 +90,7 @@ public class PrepHDB {
 	}
 
 	public static void saveGroups(java.util.List<DetGraph> gs, String logen, int trainOrTest, String en) {
+
 		try {
 			// lecture des indexes
 			DataInputStream fin = new DataInputStream(new FileInputStream("indexes.hdb"));
@@ -125,7 +126,7 @@ public class PrepHDB {
 			// les tokens sur la ligne e correspondent aux instances de la "keptList" (et non de la BigList)
 			int nclasses = 0, ninst=0;
 			BufferedReader f = new BufferedReader(new FileReader(logen));
-			for (int i=0;i<100;i++) {
+			for (int iter=0;;) {
 				String s = f.readLine();
 				if (s==null) break;
 				if (s.startsWith("e = ")) {
@@ -134,13 +135,15 @@ public class PrepHDB {
 					// on "saute" toutes les instances de unlab, et eventuellement du train
 					for (int j=0;j<idxdebInKeptList;j++) p1=s.indexOf(' ',p1)+1;
 					ninst=0;
-					for (int j=(int)idxdebInKeptList, k=0;j<idxendInKeptList;j++,k++) {
+					for (int inst=(int)idxdebInKeptList, k=0;inst<idxendInKeptList;inst++,k++) {
 						int l=s.indexOf(' ',p1);
 						int ent=Integer.parseInt(s.substring(p1,l));
+						System.out.println("debugcl "+inst+" "+k+" "+ens[ent-1]);
 						ninst++;
 						if (ent+1>nclasses) nclasses=ent+1;
 						p1=l+1;
 					}
+					iter++;
 				}
 			}
 			f.close();
@@ -178,7 +181,7 @@ public class PrepHDB {
 				int cmax=0;
 				for (int l=1;l<counts[k].length;l++)
 					if (counts[k][l]>counts[k][cmax]) cmax=l;
-				obs2classe[k]=counts[k][cmax];
+				obs2classe[k]=cmax;
 			}
 
 			// lecture des obs
@@ -223,7 +226,7 @@ public class PrepHDB {
 						} else {
 							// c'est un exemple qui n'a pas été pris en compte (trop rare)
 						}
-						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+"CL"+BayesFeat+"\t"+lab);
+						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+BayesFeat+"\t"+lab);
 					}
 					curInstInBigList++;
 				}

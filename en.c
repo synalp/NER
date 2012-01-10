@@ -202,7 +202,7 @@ void resample_e(int N, double alphaE, double alphaH, int* e, int* h, double** po
     post_thetaH[e[n_16-1]-1][(VH) + (1)-1] += (0.0) - ((1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0)));
     post_thetaH[e[n_16-1]-1][h[n_16-1]-1] += (0.0) - ((1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0)));
 
-    if (gold[n_16-1]>0) e[n_16]=gold[n_16-1];
+    if (gold[n_16-1]>0) e[n_16-1]=gold[n_16-1];
     else {
     /* Implements multinomial sampling from the following distribution: */
     /*   (Mult(h_{n@16} | .+(alphaH, sub(post_thetaH, e_{n@16}))))(Mult(e_{n@16} | .+(alphaE, sub(post_thetaE, w_{n@16})))) */
@@ -489,7 +489,7 @@ int main(int ARGC, char *ARGV[]) {
 	/* lecture des classes gold pour une partie du corpus */
 	FILE *f = fopen("tmpgolds.txt","r");
 	int tmp;
-	int k=0,max=0,min=1000;
+	int k=0,max=0,min=1000,first=-1;
   	for (;;) {
     		fscanf(f, "%d", &tmp);
 		if (feof(f)) break;
@@ -499,11 +499,14 @@ int main(int ARGC, char *ARGV[]) {
 		if (tmp>max) max=tmp;
 		if (tmp<min) min=tmp;
 		if (tmp<0) gold[k]=-1;
-		else gold[k]=tmp+1; // car les classes commencent à 1 ici
+		else {
+			gold[k]=tmp+1; // car les classes commencent à 1 ici
+			if (first<0) first=k;
+		 }
     		k++;
   	}
 	fclose(f);
-	fprintf(stderr,"detson gold loaded %d %d %d %d\n",k,N,min,max);
+	fprintf(stderr,"detson gold loaded %d %d %d %d %d\n",k,N,min,max,first);
 	fflush(stderr);
   }
 

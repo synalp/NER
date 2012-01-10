@@ -14,15 +14,14 @@ echo "extrait les deps (NOM,HEAD) du Gigaword + du train + du test"
 LARGECORP=../../git/jsafran/c0b.conll
 TRAIN=../../git6/peps/corpus/etape/radios.xml
 TEST=../../git6/peps/corpus/etape/devtvs.xml
-java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
-exit
+# java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
 
 echo "unsup clustering de E"
 # puis je lance ./en.out
 # il faut d'abord compiler a la main en.hier dans la machine virtuelle Ubuntu, puis recopier le
 # en.c produit dans le rep courant
 gcc -g stats.c samplib.c en.c -o en.exe -lm
-# ./en.exe > en.log
+#./en.exe > en.log
 
 # on a maintenant directement les samples des mots du train et du test
 # mais il ne faut pas conserver un seul sample: chaque sample suit p(E)=P(E|sample,reste), donc
@@ -33,12 +32,13 @@ echo "construction des fichiers de train et test pour le CRF"
 
 en=pers.ind
 
-java -Xmx1g -cp "$JCP" PrepHDB -putclass ../../git6/peps/corpus/etape/radios.xml en.log 0 $en
+java -Xmx1g -cp "$JCP" PrepHDB -putclass $TRAIN en.log 0 $en > putclasstrain.log
+cp -f groups.$en.tab groups.$en.tab.train
 sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab,g' syn.props > tmp.props
 java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
 mv kiki.mods en.$en.mods
 
-java -Xmx1g -cp "$JCP" PrepHDB -putclass ../../git6/peps/corpus/etape/devtvs.xml en.log 1 pers.ind
+java -Xmx1g -cp "$JCP" PrepHDB -putclass $TEST en.log 1 $en > putclasstest.log
 java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab > test.log
 cut -f2 test.log > testgold.log
 cut -f3 test.log > testrec.log
