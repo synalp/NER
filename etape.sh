@@ -14,7 +14,8 @@ echo "extrait les deps (NOM,HEAD) du Gigaword + du train + du test"
 LARGECORP=../../git/jsafran/c0b.conll
 TRAIN=../../git6/peps/corpus/etape/radios.xml
 TEST=../../git6/peps/corpus/etape/devtvs.xml
-# java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
+java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
+exit
 
 echo "unsup clustering de E"
 # puis je lance ./en.out

@@ -464,9 +464,12 @@ public class PrepHDB {
 		int[] gold = new int[ninst];
 		int goldidx=0;
 		long curidx=offdeb;
-		for (DetGraph g :gs) {
+		int ninstings=0;
+		for (int xidx=0;xidx<gs.size();xidx++) {
+			DetGraph g = gs.get(xidx);
 			for (int i=0;i<g.getNbMots();i++) {
 				if (!isAnExemple(g,i)) continue;
+				ninstings++;
 				if (!indexeskept.contains(curidx++)) continue;
 
 				int[] grps = g.getGroups(i);
@@ -499,11 +502,12 @@ public class PrepHDB {
 				String grpnom = g.groupnoms.get(enidxfound.get(smallest));
 				for (int j=1;j<ens.length;j++)
 					if (grpnom.startsWith(ens[j])) {
-						System.out.println("debugEN "+ens[j]+" "+g.getMot(i));
+						System.out.println("debugEN "+ens[j]+" "+g.getMot(i)+" "+goldidx+" "+xidx+" "+i);
 						gold[goldidx++]=j; break;
 					}
 			}
 		}
+		System.out.println("out of gold "+curidx+" "+goldidx+" "+offdeb+" "+offend+" "+indexeskept.size()+" ninstings="+ninstings);
 		assert goldidx==gold.length;
 		return gold;
 	}
@@ -570,6 +574,7 @@ public class PrepHDB {
 		g.close();
 		
 		// calcule les classes "gold" pour le train seulement
+		gs = gio.loadAllGraphs(train);
 		int[] golds = getGoldClass(gs, idxTrain, idxTest, instkept);
 		
 		// sauve les index des mots gardes
@@ -587,20 +592,20 @@ public class PrepHDB {
 		for (int i=0;i<instkept.size();i++)
 			ff.writeLong(instkept.get(i));
 		
-		System.out.println("indexes: "+idxTrain+" "+idxTest+" "+idxEnd);
+		System.out.println("indexes: "+idxTrain2+" "+idxTest2+" "+idxEnd2+" "+instkept.size());
 		ff.close();
 
 		// save les golds pour le programme en.out
 		{
 			PrintWriter fg = new PrintWriter(new FileWriter("tmpgolds.txt"));
 			int i=0;
-			while (instkept.get(i)<idxTrain2) {
+			while (instkept.get(i)<idxTrain) {
 				fg.println("-1"); i++;
 			}
 			for (int j=0;j<golds.length;j++,i++) {
 				fg.println(golds[j]);
 			}
-			for (;i<instkept.size();i++) {
+			for (;i<idxEnd2;i++) {
 				fg.println("-1");
 			}				
 			fg.close();
@@ -630,10 +635,10 @@ public class PrepHDB {
 				String s = f0.readLine();
 				if (s==null) break;
 				int v = Integer.parseInt(s);
-				heads.add(v);
+				heads.add(v-1);
 				s = g0.readLine();
 				int o = Integer.parseInt(s);
-				govs.add(o);
+				govs.add(o-1);
 			}
 			g0.close();
 			f0.close();
