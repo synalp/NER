@@ -197,7 +197,6 @@ public class PrepHDB {
 				DetGraph g = gs.get(i);
 				int nexinutt=0;
 				for (int j=0;j<g.getNbMots();j++) {
-					if (!isAnExemple(g, j)) continue;
 					nexinutt++;
 					
 					// calcul du label
@@ -213,21 +212,27 @@ public class PrepHDB {
 							}
 						}
 					
+					String BayesFeat = "CLUNK";
+					if (!isAnExemple(g, j)) {
+						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+BayesFeat+"\t"+lab);
+						continue;
+					}
+
 					// calcul des features
-					if (obs2classeidx>=obs2classe.length&&idxkept<idxendInKeptList)
-						System.out.println("ERROR too many words "+obs2classeidx+" "+obs2classe.length);
-					else {
-						String BayesFeat = "CLUNK";
+//					if (obs2classeidx>=obs2classe.length&&idxkept<idxendInKeptList)
+//						System.out.println("ERROR too many words "+obs2classeidx+" "+obs2classe.length);
+//					else {
 //						System.out.println("devyf "+obs2classeidx+" "+idxdebInBigList+" "+(curInstInBigList)+" next="+indexeskept[idxkept]+" "+(idxkept-idxendInKeptList));
 						// normalement, ne peut pas etre >
 						if (idxkept<indexeskept.length&&curInstInBigList>=indexeskept[idxkept]) {
 							idxkept++;
-							BayesFeat = "CL"+obs2classe[obs2classeidx++];
+							BayesFeat = "CL"+obs2classe[obs2classeidx];
+							obs2classeidx++;
 						} else {
 							// c'est un exemple qui n'a pas été pris en compte (trop rare)
 						}
 						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+BayesFeat+"\t"+lab);
-					}
+//					}
 					curInstInBigList++;
 				}
 				if (nexinutt>0)
@@ -371,6 +376,7 @@ public class PrepHDB {
 	}
 
 	private static boolean isAnExemple(DetGraph g, int w) {
+		if (g.getMot(w).getPOS().startsWith("NUM")) return false;
 		if (!g.getMot(w).getPOS().startsWith("N")) return false;
 		return true;
 	}

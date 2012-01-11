@@ -14,7 +14,9 @@ echo "extrait les deps (NOM,HEAD) du Gigaword + du train + du test"
 LARGECORP=../../git/jsafran/c0b.conll
 TRAIN=../../git6/peps/corpus/etape/radios.xml
 TEST=../../git6/peps/corpus/etape/devtvs.xml
-# java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
+allens="pers.ind pers.coll loc.add.elec loc.add.phys loc.adm.nat loc.adm.reg loc.adm.sup loc.adm.town loc.fac loc.oro loc.phys.astro loc.phys.geo loc.phys.hydro loc.unk org.adm org.ent amount time.date.abs time.date.rel time.hour.abs time.hour.rel prod.art prod.award prod.doctr prod.fin prod.media prod.object prod.rule prod.serv prod.soft func.coll func.ind event"
+
+#java -Xmx1g -cp "$JCP" PrepHDB -train $LARGECORP $TRAIN $TEST
 
 echo "unsup clustering de E"
 # puis je lance ./en.out
@@ -30,7 +32,8 @@ gcc -g stats.c samplib.c en.c -o en.exe -lm
 # \hat E = argmax_e P(E=e)
 echo "construction des fichiers de train et test pour le CRF"
 
-en=pers.ind
+for en in $allens
+do
 
 java -Xmx1g -cp "$JCP" PrepHDB -putclass $TRAIN en.log 0 $en > putclasstrain.log
 cp -f groups.$en.tab groups.$en.tab.train
@@ -73,6 +76,7 @@ awk '{if (NF==3) print}' ttyy > oo.log
 
 # paste words.col testgold.col testrec.col | awk '{if (NF==3) print}' > oo.log
 ./conlleval.pl -d '\t' -o NO < oo.log | grep $en >> res.log
+done
 
 exit
 
