@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import utils.FileUtils;
@@ -71,7 +72,7 @@ public class STMNEParser {
 					i=s.indexOf("startTime=");
 					int j=s.indexOf('"',i);
 					int k=s.indexOf('"',j+1);
-					lastsync=Float.parseFloat(s.substring(j,k));
+					lastsync=Float.parseFloat(s.substring(j+1,k));
 					uttdebs.add(lastsync);
 					uttidx.add(utts.size());
 					if (uttidx.size()>1&&uttidx.get(uttidx.size()-1)==uttidx.get(uttidx.size()-2)) {
@@ -81,9 +82,8 @@ public class STMNEParser {
 					i=s.indexOf("endTime=");
 					j=s.indexOf('"',i);
 					k=s.indexOf('"',j+1);
-					endturntime=Float.parseFloat(s.substring(j,k));
+					endturntime=Float.parseFloat(s.substring(j+1,k));
 				} else if (s.indexOf("</Turn>")>=0) {
-					float uttdeb = lastsync;
 					lastsync=endturntime;
 					uttdebs.add(lastsync);
 					uttidx.add(utts.size());
@@ -94,7 +94,7 @@ public class STMNEParser {
 				} else if ((i=s.indexOf("<Sync time="))>=0) {
 					int j=s.indexOf('"',i);
 					int k=s.indexOf('"',j+1);
-					lastsync=Float.parseFloat(s.substring(j,k));
+					lastsync=Float.parseFloat(s.substring(j+1,k));
 					uttdebs.add(lastsync);
 					uttidx.add(utts.size());
 					if (uttidx.size()>1&&uttidx.get(uttidx.size()-1)==uttidx.get(uttidx.size()-2)) {
@@ -128,9 +128,26 @@ public class STMNEParser {
 			SuiteDeMots sgs = new SuiteDeMots(motsgs);
 			sgs.align(strs);
 			
-			ArrayList<Integer> endebsintrs = new ArrayList<Integer>();
-			ArrayList<Integer> enendsintrs = new ArrayList<Integer>();
-			ArrayList<String> entypintrs   = new ArrayList<String>();
+			class EnInTRS implements Comparable<EnInTRS> {
+				int deb, end;
+				String en;
+				public EnInTRS(int d, int f, String t) {
+					deb=d; end=f; en=t;
+				}
+				@Override
+				public int compareTo(EnInTRS o) {
+					if (deb<o.deb) return -1;
+					else if (deb>o.deb) return 1;
+					else {
+						if (end<o.end) return -1;
+						else if (end>o.end) return 1;
+						else {
+							return en.compareTo(o.en);
+						}
+					}
+				}
+			}
+			ArrayList<EnInTRS> ensintrs = new ArrayList<EnInTRS>();
 			int gwordIdx=0;
 			for (DetGraph g : gs) {
 				if (g.groups!=null&&g.groups.size()>0) {
@@ -147,18 +164,20 @@ public class STMNEParser {
 								System.out.println("WARNING: groupe perdu !");
 							} else {
 								int endintrs = intrs[intrs.length-1];
-								endebsintrs.add(debintrs);
-								enendsintrs.add(endintrs);
-								entypintrs.add(g.groupnoms.get(gr));
+								ensintrs.add(new EnInTRS(debintrs, endintrs, g.groupnoms.get(gr)));
 							}
 						}
 					}
 				}
 				gwordIdx+=g.getNbMots();
 			}
+			Collections.sort(ensintrs);
+			int enidx=0;
+			ArrayList<EnInTRS> withinEN = new ArrayList<EnInTRS>();
 			
 			PrintWriter fstmne = new PrintWriter(new FileWriter(outfile));
 			// TODO: check that we do not forget words in the end
+			int motidx=0;
 			for (int i=0;i<uttdebs.size()-1;i++) {
 				float debtime = uttdebs.get(i);
 				float endtime = uttdebs.get(i+1);
@@ -169,8 +188,28 @@ public class STMNEParser {
 				for (int u=uidx1;u<uidx2;u++) {
 					String[] mots = utts.get(u);
 					for (String m : mots) {
+						if (motidx>ensintrs.get(enidx).deb) {
+							System.out.println("ERROR "+motidx+" "+ensintrs.get(enidx));
+						} else if (motidx==ensintrs.get(enidx).deb) {
+							while (motidx==ensintrs.get(enidx).deb) {
+								utt.append('['); utt.append(ensintrs.get(enidx).en); utt.append(' ');
+								withinEN.add(ensintrs.get(enidx++));
+							}
+						}
 						utt.append(m);
 						utt.append(' ');
+						ArrayList<Integer> toremove = new ArrayList<Integer>();
+						for (int z=0;z<withinEN.size();z++) {
+							EnInTRS eni=withinEN.get(z);
+							if (eni.end==motidx) {
+								utt.append("] ");
+								toremove.add(z);
+							} else if (eni.end<motidx) System.out.println("ERROR3 "+motidx+" "+eni);
+						}
+						for (int z=toremove.size()-1;z>=0;z--) {
+							withinEN.remove(toremove.get(z));
+						}
+						motidx++;
 					}
 				}
 				fstmne.println(prefix+debtime+" "+endtime+" <o,f3,male> "+utt);

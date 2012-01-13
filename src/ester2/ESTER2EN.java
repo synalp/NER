@@ -25,6 +25,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import jsafran.DetGraph;
 import jsafran.GraphIO;
+import jsafran.JSafran;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -730,12 +731,12 @@ public class ESTER2EN {
 	}
 
 	private static void mergeENs(String xmllist, String[] ens) {
-		final int recol=2;
+		final int recol=1;
 		try {
 			GraphIO gio = new GraphIO(null);
 			BufferedReader fl = new BufferedReader(new FileReader(xmllist));
 			BufferedReader fens[] = new BufferedReader[ens.length];
-			for (int i=0;i<ens.length;i++) fens[i]=new BufferedReader(new FileReader("groups."+ens[i]+".tab"));
+			for (int i=0;i<ens.length;i++) fens[i]=new BufferedReader(new FileReader("test."+ens[i]+".log"));
 			int debin[] = new int[ens.length];
 			Arrays.fill(debin, -1);
 			for (;;) {
@@ -744,12 +745,15 @@ public class ESTER2EN {
 				List<DetGraph> gs = gio.loadAllGraphs(gsfilename);
 				for (int i=0;i<gs.size();i++) {
 					DetGraph g = gs.get(i);
+					g.clearGroups();
 					for (int j=0;j<g.getNbMots();j++) {
 						for (int k=0;k<ens.length;k++) {
 							String sen = fens[k].readLine();
 							String[] ss = sen.split("\t");
 							if (ss[recol].equals(ens[k]+'B')) {
-								if (debin[k]>=0) g.addgroup(debin[k], j-1, ens[k]);
+								if (debin[k]>=0) {
+									g.addgroup(debin[k], j-1, ens[k]);
+								}
 								debin[k]=j;
 							} else if (ss[recol].equals(ens[k]+'I')) {
 								if (debin[k]<0) {
@@ -757,9 +761,17 @@ public class ESTER2EN {
 									debin[k]=j;
 								}
 							} else {
-								if (debin[k]>=0) g.addgroup(debin[k], j-1, ens[k]);
+								if (debin[k]>=0) {
+									g.addgroup(debin[k], j-1, ens[k]);
+								}
 								debin[k]=-1;
 							}
+						}
+					}
+					for (int k=0;k<ens.length;k++) {
+						if (debin[k]>=0) {
+							g.addgroup(debin[k], g.getNbMots()-1, ens[k]);
+							debin[k]=-1;
 						}
 					}
 					if (g.getNbMots()>0) {
@@ -770,7 +782,6 @@ public class ESTER2EN {
 					}
 				}
 				gio.save(gs, gsfilename+".merged.xml");
-				STMNEParser.saveSTMNE(gs, gsfilename+".stm-ne");
 			}
 			for (int i=0;i<ens.length;i++) fens[i].close();
 			fl.close();

@@ -39,21 +39,23 @@ fi
 
 ###############################################################
 if [ "1" == "0" ]; then
+echo "create the graphs.xml files from the gold test TRS"
 rm -rf test
 mkdir test
+touch test/trs2xml.list
 for i in /home/xtof/corpus/ESTER2ftp/EN/test/*.trs
 do
   j=`echo $i | sed 's,/, ,g;s,\.trs$,,g' | awk '{print $NF}'`
   echo $i" "$j".xml"
   echo $i > tmp.trsl
   java -cp "$JCP" ester2.STMNEParser tmp.trsl
-  mv yy.stm-ne test/$j.stm-ne
-  ici=`pwd`
-  sed 's,'$ici'/yy.stm-ne,'$ici'/test/'$j'.stm-ne,g' output.xml > test/$j".xml"
+  mv output.xml test/$j".xml"
+  echo $i" test/"$j".xml" >> test/trs2xml.list
 done
 fi
 
 if [ "1" == "0" ]; then
+echo "create the TAB files from the groups in the graphs.xml files"
 ls test/*.xml | grep -v -e merged > tmp.xmll
 for i in $allens
 do
@@ -65,13 +67,14 @@ fi
 if [ "1" == "0" ]; then
 for en in $allens
 do
+  echo "test the CRF for $en"
   java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab > test.$en.log
 done
 fi
 
 # eval chaque EN individuellement
-echo "evals individuelles baseline" >> res.log
 if [ "1" == "0" ]; then
+echo "evals individuelles baseline" >> res.log
 for en in $allens
 do
   ./conlleval.pl -d '\t' -o NO < test.$en.log | grep $en >> res.log
@@ -80,18 +83,22 @@ fi
 
 # merge les res dans un seul stmne
 if [ "0" == "0" ]; then
+echo "put all CRF outputs into a single xml file"
 ls test/*.xml | grep -v -e merged > tmp.xmll
 java -Xmx1g -cp "$JCP" ester2.ESTER2EN -mergeens tmp.xmll $allens
+echo "convert the graph.xml into a .stm-ne file"
+nl=`wc -l test/trs2xml.list | cut -d' ' -f1`
+for (( c=1; c<=$nl; c++ ))
+do
+  trs=`awk '{if (NR=='$c') print $1}' test/trs2xml.list`
+  grs=`awk '{if (NR=='$c') print $2}' test/trs2xml.list | sed 's,\.xml,.xml.merged.xml,g'`
+  out=`echo $grs | sed 's,\.xml\.merged\.xml,,g'`".stm-ne"
+  java -Xmx1g -cp "$JCP" ester2.STMNEParser -project2stmne $grs $trs $out
+done
 fi
 
 # eval selon protocole ESTER2
 if [ "0" == "0" ]; then
-for i in test/*.xml.stm-ne
-do
-  j=`echo $i | sed 's,\.xml\.stm-ne,.stm-ne,g'`
-  echo "renaming $i into $j"
-  mv -f $i $j
-done
 score-ne -rd $dest2/../../EN/test/ -cfg $dest2/example/ref/NE-ESTER2.cfg -dic $dest2/tools/ESTER1-dictionnary-v1.9.1.dic test/*.stm-ne
 fi
 
