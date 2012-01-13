@@ -2,12 +2,15 @@ package ester2;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import utils.FileUtils;
+import utils.SuiteDeMots;
 
 import jsafran.DetGraph;
 import jsafran.GraphIO;
@@ -15,7 +18,7 @@ import jsafran.Mot;
 import jsafran.POStagger;
 
 public class STMNEParser {
-	
+
 	/**
 	 * sauve un corpus au format .stm sans annotations d'EN (!) 
 	 * utile pour passer sur ce corpus le LIAEN
@@ -40,7 +43,144 @@ public class STMNEParser {
 			e.printStackTrace();
 		}
 	}
-	
+
+	/**
+	 * Load un fichier .stm-ne et aligne dessus des graphes,
+	 * puis projette les groupes depuis ces graphes vers le .stm-ne sous la forme d'entites nommees
+	 * 
+	 * @param gs
+	 * @param stmneOriging
+	 * @param outfile
+	 */
+	public static void projectGroupsInSTMNE(List<DetGraph> gs, String trsOriging, String outfile) {
+		final String prefix = FileUtils.noExtNoDir(trsOriging)+" 1 UNK ";
+		ArrayList<String[]> utts = new ArrayList<String[]>();
+		ArrayList<Float> uttdebs = new ArrayList<Float>();
+		ArrayList<Integer> uttidx = new ArrayList<Integer>();
+		uttdebs.add(0f);
+		uttidx.add(0);
+		try {
+			BufferedReader f=  FileUtils.getReaderGuessEncoding(trsOriging);
+			float endturntime = Float.NaN;
+			float lastsync = 0;
+			for (;;) {
+				String s = f.readLine();
+				if (s==null) break;
+				int i=s.indexOf("<Turn ");
+				if (i>=0) {
+					i=s.indexOf("startTime=");
+					int j=s.indexOf('"',i);
+					int k=s.indexOf('"',j+1);
+					lastsync=Float.parseFloat(s.substring(j,k));
+					uttdebs.add(lastsync);
+					uttidx.add(utts.size());
+					if (uttidx.size()>1&&uttidx.get(uttidx.size()-1)==uttidx.get(uttidx.size()-2)) {
+						uttdebs.remove(uttdebs.size()-2);
+						uttidx.remove(uttidx.size()-2);
+					}
+					i=s.indexOf("endTime=");
+					j=s.indexOf('"',i);
+					k=s.indexOf('"',j+1);
+					endturntime=Float.parseFloat(s.substring(j,k));
+				} else if (s.indexOf("</Turn>")>=0) {
+					float uttdeb = lastsync;
+					lastsync=endturntime;
+					uttdebs.add(lastsync);
+					uttidx.add(utts.size());
+					if (uttidx.size()>1&&uttidx.get(uttidx.size()-1)==uttidx.get(uttidx.size()-2)) {
+						uttdebs.remove(uttdebs.size()-2);
+						uttidx.remove(uttidx.size()-2);
+					}
+				} else if ((i=s.indexOf("<Sync time="))>=0) {
+					int j=s.indexOf('"',i);
+					int k=s.indexOf('"',j+1);
+					lastsync=Float.parseFloat(s.substring(j,k));
+					uttdebs.add(lastsync);
+					uttidx.add(utts.size());
+					if (uttidx.size()>1&&uttidx.get(uttidx.size()-1)==uttidx.get(uttidx.size()-2)) {
+						uttdebs.remove(uttdebs.size()-2);
+						uttidx.remove(uttidx.size()-2);
+					}
+				} else {
+					// on supprime toutes les autres infos, a part les sync times
+					s=s.replaceAll("<[^<>]*>", "");
+					if (s.indexOf('<')>=0) {
+						System.out.println("WARNING parsing trs: unended < ? "+s);
+					}
+					String[] st = FileUtils.simpleTokenization(s);
+					if (st.length>0) utts.add(st);
+				}
+			}
+			f.close();
+			
+			ArrayList<String> allmots = new ArrayList<String>();
+			for (int i=0;i<utts.size();i++) {
+				allmots.addAll(Arrays.asList(utts.get(i)));
+			}
+			String[] motsTRS = allmots.toArray(new String[allmots.size()]);
+			SuiteDeMots strs = new SuiteDeMots(motsTRS);
+			
+			allmots = new ArrayList<String>();
+			for (DetGraph g : gs) {
+				allmots.addAll(Arrays.asList(g.getMots()));
+			}
+			String[] motsgs = allmots.toArray(new String[allmots.size()]);
+			SuiteDeMots sgs = new SuiteDeMots(motsgs);
+			sgs.align(strs);
+			
+			ArrayList<Integer> endebsintrs = new ArrayList<Integer>();
+			ArrayList<Integer> enendsintrs = new ArrayList<Integer>();
+			ArrayList<String> entypintrs   = new ArrayList<String>();
+			int gwordIdx=0;
+			for (DetGraph g : gs) {
+				if (g.groups!=null&&g.groups.size()>0) {
+					for (int gr=0;gr<g.groups.size();gr++) {
+						int debings = gwordIdx+g.groups.get(gr).get(0).getIndexInUtt()-1;
+						int[] intrs = sgs.getLinkedWords(debings);
+						if (intrs==null||intrs.length==0) {
+							System.out.println("WARNING: groupe perdu !");
+						} else {
+							int debintrs = intrs[0];
+							int endings = gwordIdx+g.groups.get(gr).get(g.groups.get(gr).size()-1).getIndexInUtt()-1;
+							intrs = sgs.getLinkedWords(endings);
+							if (intrs==null||intrs.length==0) {
+								System.out.println("WARNING: groupe perdu !");
+							} else {
+								int endintrs = intrs[intrs.length-1];
+								endebsintrs.add(debintrs);
+								enendsintrs.add(endintrs);
+								entypintrs.add(g.groupnoms.get(gr));
+							}
+						}
+					}
+				}
+				gwordIdx+=g.getNbMots();
+			}
+			
+			PrintWriter fstmne = new PrintWriter(new FileWriter(outfile));
+			// TODO: check that we do not forget words in the end
+			for (int i=0;i<uttdebs.size()-1;i++) {
+				float debtime = uttdebs.get(i);
+				float endtime = uttdebs.get(i+1);
+				int uidx1 = uttidx.get(i);
+				int uidx2 = uttidx.get(i+1);
+				StringBuilder utt = new StringBuilder();
+				// TODO insert the groups info
+				for (int u=uidx1;u<uidx2;u++) {
+					String[] mots = utts.get(u);
+					for (String m : mots) {
+						utt.append(m);
+						utt.append(' ');
+					}
+				}
+				fstmne.println(prefix+debtime+" "+endtime+" <o,f3,male> "+utt);
+			}
+			fstmne.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	/**
 	 * sauve un corpus au format STME
 	 * ATTENTION ! Chaque graphe doit avoir une SOURCE indiquee pointant vers un fichier STM(NE) d'origine
@@ -69,7 +209,7 @@ public class STMNEParser {
 					}
 					fsrc.close();
 				}
-				
+
 				for (int j=0;j<g.getNbMots();j++) {
 					// get srcline for this word
 					long poswd = g.getMot(j).getDebPosInTxt();
@@ -117,7 +257,7 @@ public class STMNEParser {
 				outlines.add(""+curoutline);
 				curoutline="";
 			}
-			
+
 			PrintWriter f = FileUtils.writeFileISO(outfile);
 			for (String s : outlines) {
 				f.println(s);
@@ -127,14 +267,14 @@ public class STMNEParser {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static List<DetGraph> loadTRS(final String trsfiles) {
 		final String[] args = {"-trs2stmne",trsfiles};
 		ESTER2EN.main(args);
 		// on a cree le fichier yy.stm-ne
 		return loadSTMNE("yy.stm-ne");
 	}
-	
+
 	/**
 	 * charge un fichier STMNE dans une liste de graphes
 	 * Le nom du fichier TRS de référence se trouve dans le champ "comment" du graphe
@@ -157,7 +297,7 @@ public class STMNEParser {
 					String trs = s.substring(0,i).split(" ")[0];
 					String ss=s.substring(i+6);
 					long posss = posinsrc+i+6;
-//					String[] x = ss.split(" ");
+					//					String[] x = ss.split(" ");
 					DetGraph g = new DetGraph();
 					g.comment=""+trs;
 					g.setSource((new File(stmnefile)).toURI().toURL());
@@ -205,7 +345,7 @@ public class STMNEParser {
 				posinsrc+=s.length()+EOL.length();
 			}
 			f.close();
-			
+
 			GraphIO gio = new GraphIO(null);
 			gio.save(res, "xx.xml");
 		} catch (IOException e) {
@@ -213,13 +353,20 @@ public class STMNEParser {
 		}
 		return res;
 	}
-	
+
 	public static void main(String[] args) {
-		List<DetGraph> gs = STMNEParser.loadTRS(args[0]);
-		for (DetGraph g : gs) {
-			POStagger.tag(g);
+		if (args[0].equals("-project2stmne")) {
+			GraphIO gio = new GraphIO(null);
+			List<DetGraph> gs = gio.loadAllGraphs(args[1]);
+			String trs = args[2];
+			projectGroupsInSTMNE(gs, trs, args[3]);
+		} else {
+			List<DetGraph> gs = STMNEParser.loadTRS(args[0]);
+			for (DetGraph g : gs) {
+				POStagger.tag(g);
+			}
+			GraphIO gio = new GraphIO(null);
+			gio.save(gs, "output.xml");
 		}
-		GraphIO gio = new GraphIO(null);
-		gio.save(gs, "output.xml");
 	}
 }

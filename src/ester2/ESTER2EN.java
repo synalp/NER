@@ -691,7 +691,7 @@ public class ESTER2EN {
 	public static void saveGroups(String xmllist, String en) {
 		try {
 			GraphIO gio = new GraphIO(null);
-			PrintWriter fout = FileUtils.writeFileUTF("groups."+en+".tab");
+			PrintWriter fout = FileUtils.writeFileUTF("test."+en+".tab");
 			BufferedReader fl = new BufferedReader(new FileReader(xmllist));
 			for (;;) {
 				String s = fl.readLine();
@@ -729,6 +729,55 @@ public class ESTER2EN {
 		}
 	}
 
+	private static void mergeENs(String xmllist, String[] ens) {
+		final int recol=2;
+		try {
+			GraphIO gio = new GraphIO(null);
+			BufferedReader fl = new BufferedReader(new FileReader(xmllist));
+			BufferedReader fens[] = new BufferedReader[ens.length];
+			for (int i=0;i<ens.length;i++) fens[i]=new BufferedReader(new FileReader("groups."+ens[i]+".tab"));
+			int debin[] = new int[ens.length];
+			Arrays.fill(debin, -1);
+			for (;;) {
+				String gsfilename = fl.readLine();
+				if (gsfilename==null) break;
+				List<DetGraph> gs = gio.loadAllGraphs(gsfilename);
+				for (int i=0;i<gs.size();i++) {
+					DetGraph g = gs.get(i);
+					for (int j=0;j<g.getNbMots();j++) {
+						for (int k=0;k<ens.length;k++) {
+							String sen = fens[k].readLine();
+							String[] ss = sen.split("\t");
+							if (ss[recol].equals(ens[k]+'B')) {
+								if (debin[k]>=0) g.addgroup(debin[k], j-1, ens[k]);
+								debin[k]=j;
+							} else if (ss[recol].equals(ens[k]+'I')) {
+								if (debin[k]<0) {
+									System.err.println("warning: enIn without Begin "+ens[k]);
+									debin[k]=j;
+								}
+							} else {
+								if (debin[k]>=0) g.addgroup(debin[k], j-1, ens[k]);
+								debin[k]=-1;
+							}
+						}
+					}
+					if (g.getNbMots()>0) {
+						for (int k=0;k<ens.length;k++) {
+							String sen = fens[k].readLine();
+							if (sen.trim().length()>0) System.err.println("warning: decalage des phrases ? "+sen);
+						}
+					}
+				}
+				gio.save(gs, gsfilename+".merged.xml");
+				STMNEParser.saveSTMNE(gs, gsfilename+".stm-ne");
+			}
+			for (int i=0;i<ens.length;i++) fens[i].close();
+			fl.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	public static void main(String args[]) {
 		ESTER2EN m =new ESTER2EN();
@@ -740,6 +789,9 @@ public class ESTER2EN {
 			String trslist = args[1];
 			m.loadTest(trslist);
 			m.saveSTMNE("yy.stm-ne");
+		} else if (args[0].equals("-mergeens")) {
+			String xmllist = args[1];
+			mergeENs(xmllist,Arrays.copyOfRange(args, 2, args.length));
 		} else if (args[0].equals("-saveNER")) {
 			System.out.println("saveNER");
 			String xmllist = args[1];
