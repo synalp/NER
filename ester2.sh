@@ -93,6 +93,7 @@ do
   trs=`awk '{if (NR=='$c') print $1}' test/trs2xml.list`
   grs=`awk '{if (NR=='$c') print $2}' test/trs2xml.list | sed 's,\.xml,.xml.merged.xml,g'`
   out=`echo $grs | sed 's,\.xml\.merged\.xml,,g'`".stm-ne"
+  echo "build stmne from $trs $grs $out"
   java -Xmx1g -cp "$JCP" ester2.STMNEParser -project2stmne $grs $trs $out
 done
 fi

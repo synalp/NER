@@ -46,8 +46,8 @@ public class STMNEParser {
 	}
 
 	/**
-	 * Load un fichier .stm-ne et aligne dessus des graphes,
-	 * puis projette les groupes depuis ces graphes vers le .stm-ne sous la forme d'entites nommees
+	 * Load un fichier .trs et aligne dessus des graphes,
+	 * puis projette les groupes depuis ces graphes vers un .stm-ne sous la forme d'entites nommees
 	 * 
 	 * @param gs
 	 * @param stmneOriging
@@ -108,10 +108,13 @@ public class STMNEParser {
 						System.out.println("WARNING parsing trs: unended < ? "+s);
 					}
 					String[] st = FileUtils.simpleTokenization(s);
-					if (st.length>0) utts.add(st);
+					if (st.length>0) {
+						utts.add(st);
+					}
 				}
 			}
 			f.close();
+			System.out.println("trs loaded "+utts.size()+" "+uttdebs.size()+" "+uttidx.size());
 			
 			ArrayList<String> allmots = new ArrayList<String>();
 			for (int i=0;i<utts.size();i++) {
@@ -125,8 +128,10 @@ public class STMNEParser {
 				allmots.addAll(Arrays.asList(g.getMots()));
 			}
 			String[] motsgs = allmots.toArray(new String[allmots.size()]);
+			System.out.println("nb de mots du TRS: "+motsTRS.length+" "+motsgs.length+" |"+motsTRS[0]+"="+motsgs[0]+" |"+motsTRS[motsTRS.length-1]+"="+motsgs[motsgs.length-1]);
 			SuiteDeMots sgs = new SuiteDeMots(motsgs);
 			sgs.align(strs);
+			System.out.println("alignement fait !");
 			
 			class EnInTRS implements Comparable<EnInTRS> {
 				int deb, end;
@@ -146,6 +151,7 @@ public class STMNEParser {
 						}
 					}
 				}
+				public String toString() {return deb+"-"+end+":"+en;}
 			}
 			ArrayList<EnInTRS> ensintrs = new ArrayList<EnInTRS>();
 			int gwordIdx=0;
@@ -172,6 +178,7 @@ public class STMNEParser {
 				gwordIdx+=g.getNbMots();
 			}
 			Collections.sort(ensintrs);
+			System.out.println("ens indexed with TRS done: found "+ensintrs.size());
 			int enidx=0;
 			ArrayList<EnInTRS> withinEN = new ArrayList<EnInTRS>();
 			
@@ -188,16 +195,21 @@ public class STMNEParser {
 				for (int u=uidx1;u<uidx2;u++) {
 					String[] mots = utts.get(u);
 					for (String m : mots) {
-						if (motidx>ensintrs.get(enidx).deb) {
-							System.out.println("ERROR "+motidx+" "+ensintrs.get(enidx));
-						} else if (motidx==ensintrs.get(enidx).deb) {
-							while (motidx==ensintrs.get(enidx).deb) {
-								utt.append('['); utt.append(ensintrs.get(enidx).en); utt.append(' ');
-								withinEN.add(ensintrs.get(enidx++));
+						// ajoute les ENs qui commencent sur ce mot
+						if (enidx<ensintrs.size()) {
+							if (motidx>ensintrs.get(enidx).deb) {
+								System.out.println("ERROR "+motidx+" "+ensintrs.get(enidx));
+							} else if (motidx==ensintrs.get(enidx).deb) {
+								while (enidx<ensintrs.size()&&motidx==ensintrs.get(enidx).deb) {
+									utt.append('['); utt.append(ensintrs.get(enidx).en); utt.append(' ');
+									withinEN.add(ensintrs.get(enidx++));
+								}
 							}
 						}
 						utt.append(m);
 						utt.append(' ');
+						
+						// supprime les ENs qui sont refermees sur ce mot
 						ArrayList<Integer> toremove = new ArrayList<Integer>();
 						for (int z=0;z<withinEN.size();z++) {
 							EnInTRS eni=withinEN.get(z);
@@ -207,7 +219,7 @@ public class STMNEParser {
 							} else if (eni.end<motidx) System.out.println("ERROR3 "+motidx+" "+eni);
 						}
 						for (int z=toremove.size()-1;z>=0;z--) {
-							withinEN.remove(toremove.get(z));
+							withinEN.remove((int)toremove.get(z));
 						}
 						motidx++;
 					}
