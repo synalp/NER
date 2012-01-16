@@ -692,7 +692,7 @@ public class ESTER2EN {
 	public static void saveGroups(String xmllist, String en) {
 		try {
 			GraphIO gio = new GraphIO(null);
-			PrintWriter fout = FileUtils.writeFileUTF("test."+en+".tab");
+			PrintWriter fout = FileUtils.writeFileUTF("groups."+en+".tab");
 			BufferedReader fl = new BufferedReader(new FileReader(xmllist));
 			for (;;) {
 				String s = fl.readLine();
@@ -731,7 +731,7 @@ public class ESTER2EN {
 	}
 
 	private static void mergeENs(String xmllist, String[] ens) {
-		final int recol=1;
+		final int recol=2;
 		try {
 			GraphIO gio = new GraphIO(null);
 			BufferedReader fl = new BufferedReader(new FileReader(xmllist));

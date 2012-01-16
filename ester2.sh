@@ -7,6 +7,7 @@ dest2="/home/xtof/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extra
 export PATH=$PATH:$dest2/tools
 
 if [ "1" == "0" ]; then
+echo "conversion du train en .xml"
 mkdir train
 for i in /home/xtof/corpus/ESTER2ftp/EN/train/trs_train_EN_v1.1/*.trs
 do
@@ -19,16 +20,30 @@ done
 fi
 
 if [ "1" == "0" ]; then
+echo "parsing du train"
+cp -f ../../git/jsafran/mate.mods .
+mkdir train
+for i in train/*.xml
+do
+  java -cp "$JCP" jsafran.MateParser -parse $i
+  mv output.xml $i
+done
+fi
+
+if [ "1" == "0" ]; then
+echo "create training files for CRF"
 ls train/*.xml > tmp.xmll
 for i in pers fonc org loc prod time amount unk
 do
   echo $i
+  # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
   java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER tmp.xmll $i
   cp -f groups.$i.tab groups.$i.tab.train
 done
 fi
 
 if [ "1" == "0" ]; then
+echo "train CRF"
 for en in pers fonc org loc prod time amount unk
 do
   sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab,g' syn.props > tmp.props
@@ -49,7 +64,7 @@ do
   echo $i" "$j".xml"
   echo $i > tmp.trsl
   java -cp "$JCP" ester2.STMNEParser tmp.trsl
-  mv output.xml test/$j".xml"
+  grep -v -e '^<group> ' output.xml > test/$j".xml"
   echo $i" test/"$j".xml" >> test/trs2xml.list
 done
 fi
@@ -60,6 +75,7 @@ ls test/*.xml | grep -v -e merged > tmp.xmll
 for i in $allens
 do
   echo $i
+  # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
   java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER tmp.xmll $i
 done
 fi
