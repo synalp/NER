@@ -27,3 +27,6 @@ useTypeySequences=true
 wordShape=chris2useLC
 useDisjunctive=true
 
+gazette=prenoms
+sloppyGazette=true
+

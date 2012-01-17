@@ -42,18 +42,18 @@ do
 done
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "train CRF"
 for en in pers fonc org loc prod time amount unk
 do
-  sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab,g' syn.props > tmp.props
+  sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab.train,g' syn.props > tmp.props
   java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
   mv kiki.mods en.$en.mods
 done
 fi
 
 ###############################################################
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "create the graphs.xml files from the gold test TRS"
 rm -rf test
 mkdir test
@@ -69,7 +69,7 @@ do
 done
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
 ls test/*.xml | grep -v -e merged > tmp.xmll
 for i in $allens
@@ -80,7 +80,7 @@ do
 done
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 for en in $allens
 do
   echo "test the CRF for $en"
