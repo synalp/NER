@@ -9,7 +9,7 @@ useSynt3=false
 
 backgroundSymbol=NO
 
-tolerance=0.001
+tolerance=0.00001
 
 trainFile=synfeats0.tab
 serializeTo=kiki.mods
