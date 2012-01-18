@@ -11,7 +11,15 @@
 # 1- lire les "gold E" sur la partie ESTER2 train (cf. en.c qui fait ca)
 # 2- modifier le sampling de H: forcer H a ne prendre des valeurs QUE sur le voisinnage de w
 
-gcc -g stats.c samplib.c en2.c -o en2.exe -lm
+JCP="bin:../utils/bin:../../git/jsafran/jsafran.jar"
+LARGECORP=../../git/jsafran/c0b.conll
+TRAIN=../../git6/peps/corpus/etape/radios.xml
+TEST=../../git6/peps/corpus/etape/devtvs.xml
 
+echo "save enO, enO.contextes et voc0"
+java -cp "$JCP" PrepHDB -save4HBC $LARGECORP $TRAIN $TEST
+exit
+
+gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 ./en2.exe
 

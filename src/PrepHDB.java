@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import sun.security.action.GetLongAction;
 import utils.ErrorsReporting;
 import utils.FileUtils;
 
@@ -42,6 +43,11 @@ public class PrepHDB {
 		}
 		if (args[0].equals("-train")) {
 			train(args[1],args[2],args[3]);
+		} else if (args[0].equals("-save4HBC")) {
+			String unlabeled = args[1];
+			String train     = args[2];
+			String test      = args[3];
+			saveEnO(unlabeled, train, test);
 		} else if (args[0].equals("-test")) {
 			test(args[1]);
 		} else if (args[0].equals("-debug")) {
@@ -694,4 +700,63 @@ public class PrepHDB {
 			e.printStackTrace();
 		}
 	}
+
+	private static long saveObsAndContexte(List<DetGraph> gs, PrintWriter fv, PrintWriter fo) {
+		long nobs=0;
+		for (DetGraph g :gs) {
+			for (int i=0;i<g.getNbMots();i++) {
+				if (!isAnExemple(g,i)) continue;
+				String govword = g.getMot(i).getLemme();
+				Integer oi = vocO.get(govword);
+				if (oi==null) {
+					oi=vocO.size();
+					vocO.put(govword,oi);
+				}
+				HashSet<String> contexte = new HashSet<String>();
+				for (int j=i-10;j<i+10;j++) {
+					if (j==i||j<0||j>=g.getNbMots()) continue;
+					contexte.add(g.getMot(j).getForme());
+				}
+				StringBuilder sb = new StringBuilder();
+				for (String h : contexte) {
+					Integer vi = vocO.get(h);
+					if (vi==null) {
+						vi=vocO.size();
+						vocO.put(h,vi);
+					}
+					sb.append((vi+1)); sb.append(' ');
+				}
+				fo.println((oi+1));
+				fv.println(sb.toString());
+				nobs++;
+			}
+		}
+		return nobs;
+	}
+	// cree le fichier d'exemples qui passera dans le programme en.hier -> en.c
+	/*
+	 * sauve enO
+	 */
+	public static void saveEnO(String unlabeled, String train, String test) throws Exception {
+		PrintWriter fv = new PrintWriter(new FileWriter("enO.contextes"));
+		PrintWriter fo = new PrintWriter(new FileWriter("enO"));
+		GraphIO gio = new GraphIO(null);
+		List<DetGraph> gs = gio.loadAllGraphs(unlabeled);
+		System.out.println("unlab "+gs.size());
+		long idxTrain = saveObsAndContexte(gs, fv, fo);
+		gs = gio.loadAllGraphs(train);
+		System.out.println("train "+gs.size());
+		long idxTest  = idxTrain+saveObsAndContexte(gs, fv, fo);
+		gs = gio.loadAllGraphs(test);
+		System.out.println("test  "+gs.size());
+		long idxEnd   = idxTest+saveObsAndContexte(gs, fv, fo);
+		fv.close();
+		fo.close();
+		
+		System.out.println("indexs "+idxTrain+" "+idxTest+" "+idxEnd);
+		
+		saveVoc(vocO,"vocO");
+	}
+
+
 }
