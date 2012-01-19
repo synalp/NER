@@ -16,10 +16,23 @@ LARGECORP=../../git/jsafran/c0b.conll
 TRAIN=../../git6/peps/corpus/etape/radios.xml
 TEST=../../git6/peps/corpus/etape/devtvs.xml
 
+if [ "1" == "0" ]; then
 echo "save enO, enO.contextes et voc0"
 java -cp "$JCP" PrepHDB -save4HBC $LARGECORP $TRAIN $TEST
-exit
+echo "cluster auto"
+gcc -g stats.c samplib.c en2.c detenc.c -o en2.exe -lm
+./en2.exe | tee en.log
+echo "show les res du clustering"
+java -cp "$JCP" PrepHDB -show en.log
+fi
 
-gcc -g stats.c samplib.c en2.c -o en2.exe -lm
-./en2.exe
+if [ "0" == "0" ]; then
+echo "save Gigaword as .xml"
+for (( i=1; i<341; i++ ))
+do
+java -cp "$JCP" GigawordIO $i
+java -cp "$JCP" jsafran.JSafran -retag c$i.xml
+mv -f output.xml c$i.xml
+done
+fi
 

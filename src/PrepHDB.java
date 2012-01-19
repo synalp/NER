@@ -43,6 +43,8 @@ public class PrepHDB {
 		}
 		if (args[0].equals("-train")) {
 			train(args[1],args[2],args[3]);
+		} else if (args[0].equals("-show")) {
+			show(args[1]);
 		} else if (args[0].equals("-save4HBC")) {
 			String unlabeled = args[1];
 			String train     = args[2];
@@ -127,7 +129,7 @@ public class PrepHDB {
 			}
 			System.out.println("indexes      "+idxTrain+" "+idxTest+" "+idxEnd+" "+indexeskept.length);
 			System.out.println("indexes kept "+idxTrainkept+" "+idxTestkept+" "+idxEndkept+" "+indexeskept.length);
-			
+
 			// calcul du nb de classes
 			// les tokens sur la ligne e correspondent aux instances de la "keptList" (et non de la BigList)
 			int nclasses = 0, ninst=0;
@@ -156,7 +158,7 @@ public class PrepHDB {
 			System.out.println("ninst read "+ninst+" "+(idxendInKeptList-idxdebInKeptList));
 			assert ninst==idxendInKeptList-idxdebInKeptList;
 			System.out.println("nclasses "+nclasses+" "+ninst);
-			
+
 			// lecture des classes samplees: pour chaque instance, on a un sample de E par iter. qui suit posterior P(E|sample)
 			// on conserve la distribution empirique P(E|inst) = #(E=e)/#(E=*)
 			int[][] counts = new int[ninst][nclasses];
@@ -179,7 +181,7 @@ public class PrepHDB {
 				}
 			}
 			f.close();
-			
+
 			// pour chaque instance, on a P(E|inst); on calcule la valeur max de P(E|inst)
 			int[] obs2classe = new int[(int)(idxendInKeptList-idxdebInKeptList)];
 			System.out.println("create obs2classe "+obs2classe.length);
@@ -192,7 +194,7 @@ public class PrepHDB {
 
 			// lecture des obs
 			PrintWriter fout = FileUtils.writeFileUTF("groups."+en+".tab");
-			
+
 			// widx=indexe de l'instance dans les graphes
 			// il faut donc positionner nextinstinlist a idxdeb
 			long curInstInBigList=idxdebInBigList;
@@ -204,7 +206,7 @@ public class PrepHDB {
 				int nexinutt=0;
 				for (int j=0;j<g.getNbMots();j++) {
 					nexinutt++;
-					
+
 					// calcul du label
 					String lab = "NO";
 					int[] groups = g.getGroups(j);
@@ -217,7 +219,7 @@ public class PrepHDB {
 								break;
 							}
 						}
-					
+
 					String BayesFeat = "CLUNK";
 					if (!isAnExemple(g, j)) {
 						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+BayesFeat+"\t"+lab);
@@ -225,20 +227,20 @@ public class PrepHDB {
 					}
 
 					// calcul des features
-//					if (obs2classeidx>=obs2classe.length&&idxkept<idxendInKeptList)
-//						System.out.println("ERROR too many words "+obs2classeidx+" "+obs2classe.length);
-//					else {
-//						System.out.println("devyf "+obs2classeidx+" "+idxdebInBigList+" "+(curInstInBigList)+" next="+indexeskept[idxkept]+" "+(idxkept-idxendInKeptList));
-						// normalement, ne peut pas etre >
-						if (idxkept<indexeskept.length&&curInstInBigList>=indexeskept[idxkept]) {
-							idxkept++;
-							BayesFeat = "CL"+obs2classe[obs2classeidx];
-							obs2classeidx++;
-						} else {
-							// c'est un exemple qui n'a pas été pris en compte (trop rare)
-						}
-						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+BayesFeat+"\t"+lab);
-//					}
+					//					if (obs2classeidx>=obs2classe.length&&idxkept<idxendInKeptList)
+					//						System.out.println("ERROR too many words "+obs2classeidx+" "+obs2classe.length);
+					//					else {
+					//						System.out.println("devyf "+obs2classeidx+" "+idxdebInBigList+" "+(curInstInBigList)+" next="+indexeskept[idxkept]+" "+(idxkept-idxendInKeptList));
+					// normalement, ne peut pas etre >
+					if (idxkept<indexeskept.length&&curInstInBigList>=indexeskept[idxkept]) {
+						idxkept++;
+						BayesFeat = "CL"+obs2classe[obs2classeidx];
+						obs2classeidx++;
+					} else {
+						// c'est un exemple qui n'a pas été pris en compte (trop rare)
+					}
+					fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+BayesFeat+"\t"+lab);
+					//					}
 					curInstInBigList++;
 				}
 				if (nexinutt>0)
@@ -267,13 +269,13 @@ public class PrepHDB {
 			}			
 		}
 		for (int word=0;word<nOcc.length;word++) {
-//			if (vocinv[word].charAt(0)=='@') continue;
+			//			if (vocinv[word].charAt(0)=='@') continue;
 			int nw=0;
 			for (int cl=0;cl<nOcc[word].length;cl++) {
 				nw += nOcc[word][cl];
 			}
 			float pw = (float)nw/(float)ntotw;
-//			pw=1;
+			//			pw=1;
 			for (int cl=0;cl<nOcc[word].length;cl++) {
 				float pe_w = (float)nOcc[word][cl]/(float)nw;
 				float pw_e = pe_w * pw;
@@ -296,7 +298,7 @@ public class PrepHDB {
 				System.out.print("\t classe "+cl+" : ");
 				for (int i=0;i<nbest;i++) {
 					System.out.print(vocinv[bestmot4class[i][cl]]+" ");
-//					System.out.print(vocinv[bestmot4class[i][cl]]+"("+pwe[i][cl]+") ");
+					//					System.out.print(vocinv[bestmot4class[i][cl]]+"("+pwe[i][cl]+") ");
 				}
 				System.out.println();
 			}
@@ -386,7 +388,7 @@ public class PrepHDB {
 		if (!g.getMot(w).getPOS().startsWith("N")) return false;
 		return true;
 	}
-	
+
 	static HashMap<String, Integer> vocV = new HashMap<String, Integer>();
 	static HashMap<String, Integer> vocO = new HashMap<String, Integer>();
 	static HashMap<Integer, Integer> noccV = new HashMap<Integer, Integer>();
@@ -439,7 +441,7 @@ public class PrepHDB {
 				fo.println((oi+1));
 				fv.println((vi+1));
 				nobs++;
-						
+
 				{
 					Integer noc = noccV.get(vi);
 					if (noc==null) noc=1;
@@ -459,11 +461,11 @@ public class PrepHDB {
 
 	// liste des ens que l'on garde
 	final static String[] ens = {"none","loc","org","pers"};
-	
+
 	// tous les graphes donnent des instances dont les index apparaissent dans la liste indexeskept.
 	// mais les graphes ne commencent pas � 0, ils commencent � offdeb, qui est l'index absolu du 1er elt des graphes
 	private static int[] getGoldClass(List<DetGraph> gs, long offdeb, long offend, List<Long> indexeskept) {
-		
+
 		// calcul du nombre d'elements de indexeskept qui font partie de ces graphes
 		int ninst = 0;
 		{
@@ -475,7 +477,7 @@ public class PrepHDB {
 			ninst = end-deb;
 			System.out.println("gold class: found n="+ninst);
 		}
-		
+
 		int[] gold = new int[ninst];
 		int goldidx=0;
 		long curidx=offdeb;
@@ -547,9 +549,9 @@ public class PrepHDB {
 		long idxEnd   = idxTest+saveObs(gs, fv, fo);
 		fv.close();
 		fo.close();
-		
+
 		System.out.println("indexs "+idxTrain+" "+idxTest+" "+idxEnd);
-		
+
 		saveVoc(vocV,"vocV");
 		saveVoc(vocO,"vocO");
 
@@ -587,11 +589,11 @@ public class PrepHDB {
 		f0.close();
 		f.close();
 		g.close();
-		
+
 		// calcule les classes "gold" pour le train seulement
 		gs = gio.loadAllGraphs(train);
 		int[] golds = getGoldClass(gs, idxTrain, idxTest, instkept);
-		
+
 		// sauve les index des mots gardes
 		DataOutputStream ff = new DataOutputStream(new FileOutputStream("indexes.hdb"));
 		ff.writeLong(idxTrain);
@@ -606,7 +608,7 @@ public class PrepHDB {
 		ff.writeInt(instkept.size());
 		for (int i=0;i<instkept.size();i++)
 			ff.writeLong(instkept.get(i));
-		
+
 		System.out.println("indexes: "+idxTrain2+" "+idxTest2+" "+idxEnd2+" "+instkept.size());
 		ff.close();
 
@@ -639,7 +641,7 @@ public class PrepHDB {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void debug() {
 		try {
 			ArrayList<Integer> heads = new ArrayList<Integer>();
@@ -658,7 +660,7 @@ public class PrepHDB {
 			g0.close();
 			f0.close();
 			System.out.println("instances: "+heads.size()+" "+govs.size());
-			
+
 			HashMap<Integer, String> vocV = new HashMap<Integer, String>();
 			{
 				BufferedReader f = new BufferedReader(new FileReader("vocV"));
@@ -685,7 +687,7 @@ public class PrepHDB {
 				f.close();
 			}
 			System.out.println("voco: "+vocO.size());
-			
+
 			BufferedReader f = new BufferedReader(new FileReader("tmpgolds.txt"));
 			for (int i=0;;i++) {
 				String s=f.readLine();
@@ -701,6 +703,13 @@ public class PrepHDB {
 		}
 	}
 
+	/**
+	 * Attention ! ne sauve pas dans enO et enO.contextes directement les indices des mots dans le voc, mais les indices des mots +1 !!
+	 * @param gs
+	 * @param fv
+	 * @param fo
+	 * @return
+	 */
 	private static long saveObsAndContexte(List<DetGraph> gs, PrintWriter fv, PrintWriter fo) {
 		long nobs=0;
 		for (DetGraph g :gs) {
@@ -712,13 +721,13 @@ public class PrepHDB {
 					oi=vocO.size();
 					vocO.put(govword,oi);
 				}
-				HashSet<String> contexte = new HashSet<String>();
-				for (int j=i-10;j<i+10;j++) {
-					if (j==i||j<0||j>=g.getNbMots()) continue;
-					contexte.add(g.getMot(j).getForme());
+				// contexte gauche
+				ArrayList<String> ct = new ArrayList<String>();
+				for (int j=i-1;j>=0&&j>i-10;j--) {
+					ct.add(g.getMot(j).getForme());
 				}
 				StringBuilder sb = new StringBuilder();
-				for (String h : contexte) {
+				for (String h : ct) {
 					Integer vi = vocO.get(h);
 					if (vi==null) {
 						vi=vocO.size();
@@ -726,8 +735,24 @@ public class PrepHDB {
 					}
 					sb.append((vi+1)); sb.append(' ');
 				}
+				sb.append("-1 ");
+				// contexte droit
+				ct.clear();
+				for (int j=i+1;j<g.getNbMots()&&j<i+10;j++) {
+					ct.add(g.getMot(j).getForme());
+				}
+				for (String h : ct) {
+					Integer vi = vocO.get(h);
+					if (vi==null) {
+						vi=vocO.size();
+						vocO.put(h,vi);
+					}
+					sb.append((vi+1)); sb.append(' ');
+				}
+
 				fo.println((oi+1));
-				fv.println(sb.toString());
+				String sv =sb.toString().trim();
+				fv.println(sv);
 				nobs++;
 			}
 		}
@@ -752,11 +777,117 @@ public class PrepHDB {
 		long idxEnd   = idxTest+saveObsAndContexte(gs, fv, fo);
 		fv.close();
 		fo.close();
-		
+
 		System.out.println("indexs "+idxTrain+" "+idxTest+" "+idxEnd);
-		
+
 		saveVoc(vocO,"vocO");
 	}
 
+	public static void show(String enlog) {
+		try {
+			HashMap<String, Integer> voc = new HashMap<String, Integer>();
+			{
+				BufferedReader f = new BufferedReader(new FileReader("vocO"));
+				for (;;) {
+					String s = f.readLine();
+					if (s==null) break;
+					int i=s.lastIndexOf(' ');
+					int idx = Integer.parseInt(s.substring(i+1));
+					// les idx commencent a 0
+					String w = s.substring(0,i);
+					voc.put(w, idx);
+				}
+				f.close();
+				System.out.println("voc read "+voc.size());
+			}
+			// pour afficher, on doit construire le vocabulaire inverse
+			String[] vocinv = new String[voc.size()];
+			for (String x : voc.keySet()) vocinv[voc.get(x)]=x;
 
+			ArrayList<Integer> wordsinst = new ArrayList<Integer>();
+			{
+				BufferedReader f = new BufferedReader(new FileReader("enO"));
+				for (;;) {
+					String s = f.readLine();
+					if (s==null) break;
+					int idx = Integer.parseInt(s);
+					// les idx commencent a 1
+					wordsinst.add(idx-1);
+				}
+				f.close();
+				System.out.println("instances read "+wordsinst.size());
+			}
+			
+			class Word implements Comparable<Word> {
+				int w;
+				int co=0;
+				HashMap<Integer,Integer> heads = new HashMap<Integer, Integer>();
+				public int addHead(int h) {
+					Integer n = heads.get(h);
+					if (n==null) n=1; else n++;
+					heads.put(h, n);
+					co++;
+					return n;
+				}
+				@Override
+				public int compareTo(Word o) {
+					if (o.co<co) return -1;
+					else if (o.co>co) return 1;
+					else return 0;
+				}
+				public int[] getBestHead(int nheads) {
+					int[] hs = new int[nheads];
+					Arrays.fill(hs, -1);
+					for (int h : heads.keySet()) {
+						for (int i=0;i<hs.length;i++) {
+							if (hs[i]<0||heads.get(h)>heads.get(hs[i])) {
+								for (int j=hs.length-1;j>i;j--) hs[j]=hs[j-1];
+								hs[i]=h;
+								break;
+							}
+						}
+					}
+					return hs;
+				}
+			}
+			Word[] words = new Word[voc.size()];
+			for (int i=0;i<words.length;i++) {
+				words[i] = new Word();
+				words[i].w=i;
+			}
+			System.out.println("words alloc OK "+words.length);
+			
+			BufferedReader f = new BufferedReader(new FileReader(enlog));
+			String[] sse = null;
+			for (;;) {
+				String s=f.readLine();
+				if (s==null) break;
+				if (s.startsWith("e = ")) {
+					sse = s.split(" ");
+				}
+				if (s.startsWith("h = ")) {
+					String[] ssh = s.split(" ");
+					assert ssh.length==sse.length;
+					for (int i=2;i<ssh.length;i++) {
+						int w = wordsinst.get(i-2);
+						words[w].addHead(Integer.parseInt(ssh[i]));
+					}
+				}
+			}
+			f.close();
+			
+			Arrays.sort(words);
+			System.out.println("best words");
+			for (int i=0;i<10;i++) {
+				int[] heads = words[i].getBestHead(5);
+				StringBuilder sb = new StringBuilder();
+				for (int h : heads) {
+					sb.append(vocinv[h]+' ');
+				}
+				System.out.println(vocinv[words[i].w]+" : "+words[i].co+" .. "+sb.toString());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }

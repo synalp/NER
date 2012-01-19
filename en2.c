@@ -47,6 +47,9 @@ Generated using the command:
 #include <math.h>
 #include "stats.h"
 
+  int** ctxt;
+  int* Nctxt; //dimension de chaque contexte
+int detsample_Mult_smooth(double eta, double*th, int lo, int hi, int *possibleH, int possibleHlen);
 
 /**************************** SAMPLING ****************************/
 
@@ -198,7 +201,8 @@ void resample_h(int N, double alphaH, int* e, int* h, double** post_thetaH, int 
     post_thetaH[e[n_16-1]-1][h[n_16-1]-1] += (0.0) - ((1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0)));
     /* Implements direct sampling from the following distribution: */
     /*   Mult(h_{n@16} | .+(alphaH, sub(post_thetaH, e_{n@16}))) */
-    h[n_16-1] = sample_Mult_smooth(alphaH, post_thetaH[e[n_16-1]-1], 1, VO);
+    h[n_16-1] = detsample_Mult_smooth(alphaH, post_thetaH[e[n_16-1]-1], 1, VO, ctxt[n_16-1], Nctxt[n_16-1]);
+/*    h[n_16-1] = sample_Mult_smooth(alphaH, post_thetaH[e[n_16-1]-1], 1, VO);*/
     post_thetaH[e[n_16-1]-1][(VO) + (1)-1] += (1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0));
     post_thetaH[e[n_16-1]-1][h[n_16-1]-1] += (1.0) * ((((e[n_16-1]) == (e[n_16-1])) ? 1 : 0));
   }
@@ -440,6 +444,9 @@ int main(int ARGC, char *ARGV[]) {
   int* w;
   int malloc_dim_1;
 
+  int Ndet, VOdet;
+  int i;
+
   fprintf(stderr, "-- This program was automatically generated using HBC (v 0.7 beta) from en2.hier\n--     see http://hal3.name/HBC for more information\n");
   fflush(stderr);
   setall(time(0),time(0));   /* initialize random number generator */
@@ -455,6 +462,20 @@ int main(int ARGC, char *ARGV[]) {
   fflush(stderr);
   /* variables defined with --loadD */
   w = load_discrete1("enO", &N, &VO);
+  fprintf(stderr,"loaded enO\n");
+  ctxt = load_discrete2("enO.contextes", &Ndet, &Nctxt, &VOdet);
+  fprintf(stderr,"loaded context: %d %d %d %d\n",Ndet,VOdet,N,VO);
+  int kkmax=0;
+  for (iter=0;iter<Ndet;iter++) {
+    if (Nctxt[iter]>kkmax) kkmax=Nctxt[iter];
+  }
+  printf("kkmax %d\n",kkmax);
+  for (iter=Ndet-5;iter<Ndet;iter++) {
+    for(i=0;i<Nctxt[iter];i++) {
+      fprintf(stderr,"%d ",ctxt[iter][i]);
+    }
+    fprintf(stderr,"\n");
+  }
 
   /* variables defined with --loadM or --loadMI */
 
@@ -481,6 +502,8 @@ int main(int ARGC, char *ARGV[]) {
   fflush(stderr);
   initialize_e(e, N, Nen);
   initialize_h(h, N, VO);
+  detinitH(h,ctxt,N,Nctxt);
+
   initialize_post_thetaH(post_thetaH, N, Nen, VO, e, h);
   initialize_post_thetaE(post_thetaE, N, Nen, e);
   initialize_post_thetaW(post_thetaW, N, Nen, VO, e, w);
@@ -490,6 +513,13 @@ int main(int ARGC, char *ARGV[]) {
     fflush(stderr);
     resample_e(N, alphaH, alphaW, e, h, post_thetaE, post_thetaH, post_thetaW, w, Nen, VO);
     resample_h(N, alphaH, e, h, post_thetaH, VO);
+
+    printf("\ne = ");
+    for (i=0;i<N;i++) printf("%d ",e[i]);
+    printf("\n");
+    printf("h = ");
+    for (i=0;i<N;i++) printf("%d ",h[i]);
+    printf("\n");
 
     loglik = compute_log_posterior(N, Nen, VO, alphaE, alphaH, alphaW, e, h, post_thetaE, post_thetaH, post_thetaW, w);
     fprintf(stderr, "\t%g", loglik);
