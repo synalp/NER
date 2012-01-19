@@ -1,23 +1,30 @@
-alphaE ~ Gam(1,1)
-alphaH ~ Gam(0.1,1)
+alphaC ~ Gam(1,1)
+alphaE ~ Gam(0.1,1)
+alphaV ~ Gam(0.1,1)
 alphaW ~ Gam(0.1,1)
 
-thetaE ~ DirSym(alphaH, Nen)
-thetaH_{k} ~ DirSym(alphaH, VO) , k \in [1,Nen]
-thetaW_{k} ~ DirSym(alphaW, VO) , k \in [1,Nen]
+thetaC ~ DirSym(alphaC, Nc)
+thetaE_{k} ~ DirSym(alphaE, Nen) , k \in [1,Nc]
+thetaV_{k} ~ DirSym(alphaV, VV) , k \in [1,Nc]
+thetaW_{k} ~ DirSym(alphaW, VW) , k \in [1,Nen]
 
-e_{n} ~ Mult(thetaE) , n \in [1,N]
-h_{n} ~ Mult(thetaH_{e_{n}}) , n \in [1,N]
+c_{n} ~ Mult(thetaC) , n \in [1,N]
+e_{n} ~ Mult(thetaE_{c_{n}}) , n \in [1,N]
+v_{n} ~ Mult(thetaV_{c_{n}}) , n \in [1,N]
 w_{n} ~ Mult(thetaW_{e_{n}}) , n \in [1,N]
 
+--# --define Nc 5
 --# --define Nen 3
---# --define alphaE 1
---# --define alphaH 0.1
+--# --define alphaC 1
+--# --define alphaE 0.1
+--# --define alphaV 0.1
 --# --define alphaW 0.1
 
---# --loadD enO w VO N ;
+--# --loadD enO w VW N ;
+--# --loadD enV v VV N ;
 
---# --collapse thetaH
+--# --collapse thetaC
 --# --collapse thetaE
+--# --collapse thetaV
 --# --collapse thetaW
 

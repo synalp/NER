@@ -26,7 +26,7 @@ echo "show les res du clustering"
 java -cp "$JCP" PrepHDB -show en.log
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "save Gigaword as .xml"
 for (( i=1; i<341; i++ ))
 do
@@ -34,5 +34,13 @@ java -cp "$JCP" GigawordIO $i
 java -cp "$JCP" jsafran.JSafran -retag c$i.xml
 mv -f output.xml c$i.xml
 done
+fi
+
+if [ "0" == "0" ]; then
+echo "unsup clustering"
+# java -cp "$JCP" ester2.Unsup -creeObs c0b.conll > obs.log
+gcc -g stats.c samplib.c en2.c -o en2.exe -lm
+./en2.exe | tee en.log
+java -cp "$JCP" ester2.Unsup -analyse en.log
 fi
 

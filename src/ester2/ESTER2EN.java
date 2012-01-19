@@ -2,7 +2,6 @@ package ester2;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -25,8 +24,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import jsafran.DetGraph;
 import jsafran.GraphIO;
-import jsafran.JSafran;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.EntityResolver;
