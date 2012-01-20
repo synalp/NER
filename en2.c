@@ -599,9 +599,9 @@ int main(int ARGC, char *ARGV[]) {
   Nc = 6;
   Nen = 5;
   alphaC = 0.9;
-  alphaE = 0.00001;
-  alphaV = 0.00001;
-  alphaW = 0.00001;
+  alphaE = 0.0000001;
+  alphaV = 0.0001;
+  alphaW = 0.0001;
 
   fprintf(stderr, "Loading data...\n");
   fflush(stderr);
@@ -644,7 +644,7 @@ int main(int ARGC, char *ARGV[]) {
   initialize_post_thetaV(post_thetaV, N, Nc, VV, c, v);
   initialize_post_thetaW(post_thetaW, N, Nen, VW, e, w);
 
-  for (iter=1; iter<=1000; iter++) {
+  for (iter=1; iter<=100; iter++) {
     fprintf(stderr, "iter %d", iter);
     fflush(stderr);
     resample_c(N, alphaC, alphaE, alphaV, c, e, post_thetaC, post_thetaE, post_thetaV, v, Nc, VV, Nen);
@@ -652,7 +652,7 @@ int main(int ARGC, char *ARGV[]) {
 
 if (iter>=20) {
   dump_c(N,c);
-  dump_e(N,c);
+  dump_e(N,e);
 }
 
     loglik = compute_log_posterior(N, Nc, Nen, VV, VW, alphaC, alphaE, alphaV, alphaW, c, e, post_thetaC, post_thetaE, post_thetaV, post_thetaW, v, w);

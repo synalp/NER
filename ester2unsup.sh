@@ -38,9 +38,9 @@ fi
 
 if [ "0" == "0" ]; then
 echo "unsup clustering"
-# java -cp "$JCP" ester2.Unsup -creeObs c0b.conll > obs.log
+java -cp "$JCP" ester2.Unsup -creeObs c0b.conll > obs.log
 gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 ./en2.exe | tee en.log
-java -cp "$JCP" ester2.Unsup -analyse en.log
+java -cp "$JCP" ester2.Unsup -analyse en.log > an.log
 fi
 
