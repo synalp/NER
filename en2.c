@@ -15,32 +15,37 @@ code can be built using the following command:
 The hierarchical model that this code reflects is:
 
 alphaC ~ Gam(1,1)
-alphaE ~ Gam(1,1)
+alphaD ~ Gam(1,1)
+alphaE ~ Gam(0.1,1)
 alphaV ~ Gam(0.1,1)
 alphaW ~ Gam(0.1,1)
 
 thetaC ~ DirSym(alphaC, Nc)
-thetaE_{k} ~ DirSym(alphaE, Nen) , k \in [1,Nc]
+thetaD ~ DirSym(alphaD, Nd)
+thetaE_{k,l} ~ DirSym(alphaE, Nen) , k \in [1,Nc] , l \in [1,Nd]
 thetaV_{k} ~ DirSym(alphaV, VV) , k \in [1,Nc]
 thetaW_{k} ~ DirSym(alphaW, VW) , k \in [1,Nen]
 
 c_{n} ~ Mult(thetaC) , n \in [1,N]
-e_{n} ~ Mult(thetaE_{c_{n}}) , n \in [1,N]
+d_{n} ~ Mult(thetaD) , n \in [1,N]
+e_{n} ~ Mult(thetaE_{c_{n},d_{n}}) , n \in [1,N]
 v_{n} ~ Mult(thetaV_{c_{n}}) , n \in [1,N]
 w_{n} ~ Mult(thetaW_{e_{n}}) , n \in [1,N]
 
---# --define Nc 5
---# --define Nen 3
---# --define alphaC 1
---# --define alphaE 0.1
---# --define alphaV 0.1
---# --define alphaW 0.1
+--# --define Nc 10
+--# --define Nen 6
+--# --define alphaC 2
+--# --define alphaD 2
+--# --define alphaE 0.001
+--# --define alphaV 0.001
+--# --define alphaW 0.001
 
 --# --loadD enO w VW N ;
 --# --loadD enV v VV N ;
+--# --loadD enD d Nd N ;
 
 --# --collapse thetaC
---# --collapse thetaE
+--# --collapse thetaD
 --# --collapse thetaV
 --# --collapse thetaW
 
@@ -58,91 +63,85 @@ Generated using the command:
 /**************************** SAMPLING ****************************/
 
 void resample_post_thetaC(int N, int Nc, int* c, double* post_thetaC) {
-  double* tmpSP7;
-  int n_4;
-  int dvv_loop_var_1;
-  tmpSP7 = (double*) malloc(sizeof(double) * (1+((Nc) + (1))-(1)));
-  /* Implements direct sampling from the following distribution: */
-  /*   Delta(post_thetaC | \sum_{n@4 \in [N]} IDR(c_{n@4}, 1, Nc), Nc) */
-  for (dvv_loop_var_1=1; dvv_loop_var_1<=Nc; dvv_loop_var_1++) {
-    tmpSP7[dvv_loop_var_1-1] = 0.0;
-  }
-  tmpSP7[(Nc) + (1)-1] = (0.0) * (((1) + (Nc)) - (1));
-  for (n_4=1; n_4<=N; n_4++) {
-    tmpSP7[(Nc) + (1)-1] += 1.0;
-    tmpSP7[c[n_4-1]-1] += 1.0;
-  }
-  sample_Delta(post_thetaC, tmpSP7, Nc);
-  free(tmpSP7);
-}
-
-void resample_post_thetaE(int N, int Nc, int Nen, int* c, int* e, double** post_thetaE) {
-  int k_17;
-  double* tmpSP8;
+  double* tmpSP9;
   int n_5;
   int dvv_loop_var_1;
-  tmpSP8 = (double*) malloc(sizeof(double) * (1+((Nen) + (1))-(1)));
-  for (k_17=1; k_17<=Nc; k_17++) {
-    /* Implements direct sampling from the following distribution: */
-    /*   Delta(post_thetaE_{k@17} | \sum_{n@5 \in [N]} .*(=(k@17, c_{n@5}), IDR(e_{n@5}, 1, Nen)), Nen) */
-    for (dvv_loop_var_1=1; dvv_loop_var_1<=Nen; dvv_loop_var_1++) {
-      tmpSP8[dvv_loop_var_1-1] = 0.0;
-    }
-    tmpSP8[(Nen) + (1)-1] = (0.0) * (((1) + (Nen)) - (1));
-    for (n_5=1; n_5<=N; n_5++) {
-      tmpSP8[(Nen) + (1)-1] += (1.0) * ((((k_17) == (c[n_5-1])) ? 1 : 0));
-      tmpSP8[e[n_5-1]-1] += (1.0) * ((((k_17) == (c[n_5-1])) ? 1 : 0));
-    }
-    sample_Delta(post_thetaE[k_17-1], tmpSP8, Nen);
+  tmpSP9 = (double*) malloc(sizeof(double) * (1+((Nc) + (1))-(1)));
+  /* Implements direct sampling from the following distribution: */
+  /*   Delta(post_thetaC | \sum_{n@5 \in [N]} IDR(c_{n@5}, 1, Nc), Nc) */
+  for (dvv_loop_var_1=1; dvv_loop_var_1<=Nc; dvv_loop_var_1++) {
+    tmpSP9[dvv_loop_var_1-1] = 0.0;
   }
-  free(tmpSP8);
+  tmpSP9[(Nc) + (1)-1] = (0.0) * (((1) + (Nc)) - (1));
+  for (n_5=1; n_5<=N; n_5++) {
+    tmpSP9[(Nc) + (1)-1] += 1.0;
+    tmpSP9[c[n_5-1]-1] += 1.0;
+  }
+  sample_Delta(post_thetaC, tmpSP9, Nc);
+  free(tmpSP9);
+}
+
+void resample_post_thetaD(int N, int Nd, int* d, double* post_thetaD) {
+  double* tmpSP10;
+  int n_6;
+  int dvv_loop_var_1;
+  tmpSP10 = (double*) malloc(sizeof(double) * (1+((Nd) + (1))-(1)));
+  /* Implements direct sampling from the following distribution: */
+  /*   Delta(post_thetaD | \sum_{n@6 \in [N]} IDR(d_{n@6}, 1, Nd), Nd) */
+  for (dvv_loop_var_1=1; dvv_loop_var_1<=Nd; dvv_loop_var_1++) {
+    tmpSP10[dvv_loop_var_1-1] = 0.0;
+  }
+  tmpSP10[(Nd) + (1)-1] = (0.0) * (((1) + (Nd)) - (1));
+  for (n_6=1; n_6<=N; n_6++) {
+    tmpSP10[(Nd) + (1)-1] += 1.0;
+    tmpSP10[d[n_6-1]-1] += 1.0;
+  }
+  sample_Delta(post_thetaD, tmpSP10, Nd);
+  free(tmpSP10);
 }
 
 void resample_post_thetaV(int N, int Nc, int VV, int* c, double** post_thetaV, int* v) {
-  int k_18;
-  double* tmpSP9;
-  int n_6,z;
+  int k_23;
+  double* tmpSP12;
+  int n_8;
   int dvv_loop_var_1;
-  tmpSP9 = (double*) malloc(sizeof(double) * (1+((VV) + (1))-(1)));
-printf("debug VV %d %d\n",VV,tmpSP9,tmpSP9+sizeof(double)*(VV+1));
-  for (k_18=1; k_18<=Nc; k_18++) {
+  tmpSP12 = (double*) malloc(sizeof(double) * (1+((VV) + (1))-(1)));
+  for (k_23=1; k_23<=Nc; k_23++) {
     /* Implements direct sampling from the following distribution: */
-    /*   Delta(post_thetaV_{k@18} | \sum_{n@6 \in [N]} .*(=(k@18, c_{n@6}), IDR(v_{n@6}, 1, VV)), VV) */
+    /*   Delta(post_thetaV_{k@23} | \sum_{n@8 \in [N]} .*(=(k@23, c_{n@8}), IDR(v_{n@8}, 1, VV)), VV) */
     for (dvv_loop_var_1=1; dvv_loop_var_1<=VV; dvv_loop_var_1++) {
-      tmpSP9[dvv_loop_var_1-1] = 0.0;
+      tmpSP12[dvv_loop_var_1-1] = 0.0;
     }
-    tmpSP9[(VV) + (1)-1] = (0.0) * (((1) + (VV)) - (1));
-    for (n_6=1; n_6<=N; n_6++) {
-      tmpSP9[(VV) + (1)-1] += (1.0) * ((((k_18) == (c[n_6-1])) ? 1 : 0));
-     z=v[n_6-1]-1;
-     tmpSP9[z] += (1.0) * ((((k_18) == (c[n_6-1])) ? 1 : 0));
+    tmpSP12[(VV) + (1)-1] = (0.0) * (((1) + (VV)) - (1));
+    for (n_8=1; n_8<=N; n_8++) {
+      tmpSP12[(VV) + (1)-1] += (1.0) * ((((k_23) == (c[n_8-1])) ? 1 : 0));
+      tmpSP12[v[n_8-1]-1] += (1.0) * ((((k_23) == (c[n_8-1])) ? 1 : 0));
     }
-    sample_Delta(post_thetaV[k_18-1], tmpSP9, VV);
+    sample_Delta(post_thetaV[k_23-1], tmpSP12, VV);
   }
-  free(tmpSP9);
-printf("PASS\n");
+  free(tmpSP12);
 }
 
 void resample_post_thetaW(int N, int Nen, int VW, int* e, double** post_thetaW, int* w) {
-  int k_19;
-  double* tmpSP10;
-  int n_7;
+  int k_24;
+  double* tmpSP13;
+  int n_9;
   int dvv_loop_var_1;
-  tmpSP10 = (double*) malloc(sizeof(double) * (1+((VW) + (1))-(1)));
-  for (k_19=1; k_19<=Nen; k_19++) {
+  tmpSP13 = (double*) malloc(sizeof(double) * (1+((VW) + (1))-(1)));
+  for (k_24=1; k_24<=Nen; k_24++) {
     /* Implements direct sampling from the following distribution: */
-    /*   Delta(post_thetaW_{k@19} | \sum_{n@7 \in [N]} .*(=(k@19, e_{n@7}), IDR(w_{n@7}, 1, VW)), VW) */
+    /*   Delta(post_thetaW_{k@24} | \sum_{n@9 \in [N]} .*(=(k@24, e_{n@9}), IDR(w_{n@9}, 1, VW)), VW) */
     for (dvv_loop_var_1=1; dvv_loop_var_1<=VW; dvv_loop_var_1++) {
-      tmpSP10[dvv_loop_var_1-1] = 0.0;
+      tmpSP13[dvv_loop_var_1-1] = 0.0;
     }
-    tmpSP10[(VW) + (1)-1] = (0.0) * (((1) + (VW)) - (1));
-    for (n_7=1; n_7<=N; n_7++) {
-      tmpSP10[(VW) + (1)-1] += (1.0) * ((((k_19) == (e[n_7-1])) ? 1 : 0));
-      tmpSP10[w[n_7-1]-1] += (1.0) * ((((k_19) == (e[n_7-1])) ? 1 : 0));
+    tmpSP13[(VW) + (1)-1] = (0.0) * (((1) + (VW)) - (1));
+    for (n_9=1; n_9<=N; n_9++) {
+      tmpSP13[(VW) + (1)-1] += (1.0) * ((((k_24) == (e[n_9-1])) ? 1 : 0));
+      tmpSP13[w[n_9-1]-1] += (1.0) * ((((k_24) == (e[n_9-1])) ? 1 : 0));
     }
-    sample_Delta(post_thetaW[k_19-1], tmpSP10, VW);
+    sample_Delta(post_thetaW[k_24-1], tmpSP13, VW);
   }
-  free(tmpSP10);
+  free(tmpSP13);
 }
 
 double resample_alphaC(int Nc, double alphaC, double* post_thetaC) {
@@ -158,141 +157,210 @@ double resample_alphaC(int Nc, double alphaC, double* post_thetaC) {
   return (alphaC);
 }
 
-double resample_alphaE(int Nc, int Nen, double alphaE, double** post_thetaE) {
+double resample_alphaD(int Nd, double alphaD, double* post_thetaD) {
   double tmpSP1;
-  int k_1;
   int cgds;
   /* Implements direct sampling from the following distribution: */
-  /*   Gam(alphaE | 1, /(1.0, -(1.0, /(1.0, \sum_{k@1 \in [Nc]} \sum_{cgds \in [Nen]} log(.*(/(1.0, sub(.+(alphaE, post_thetaE_{k@1}), +(Nen, 1))), .+(alphaE, post_thetaE_{k@1,cgds}))))))) */
+  /*   Gam(alphaD | 1, /(1.0, -(1.0, /(1.0, \sum_{cgds \in [Nd]} log(.*(/(1.0, sub(.+(alphaD, post_thetaD), +(Nd, 1))), .+(alphaD, post_thetaD_{cgds}))))))) */
   tmpSP1 = 0.0;
-  for (k_1=1; k_1<=Nc; k_1++) {
-    for (cgds=1; cgds<=Nen; cgds++) {
-      tmpSP1 += log(((1.0) / ((alphaE) + (post_thetaE[k_1-1][(Nen) + (1)-1]))) * ((alphaE) + (post_thetaE[k_1-1][cgds-1])));
+  for (cgds=1; cgds<=Nd; cgds++) {
+    tmpSP1 += log(((1.0) / ((alphaD) + (post_thetaD[(Nd) + (1)-1]))) * ((alphaD) + (post_thetaD[cgds-1])));
+  }
+  alphaD = sample_Gam(1, (1.0) / ((1.0) - ((1.0) / (tmpSP1))));
+  return (alphaD);
+}
+
+double resample_alphaE(int Nc, int Nd, int Nen, double alphaE, double*** thetaE) {
+  double tmpSP2;
+  int k_2;
+  int l_92;
+  int cgds;
+  /* Implements direct sampling from the following distribution: */
+  /*   Gam(alphaE | 0.1, /(1.0, -(1.0, /(1.0, \sum_{k@2 \in [Nc]} \sum_{l@92 \in [Nd]} \sum_{cgds \in [Nen]} log(.*(/(1.0, sub(thetaE_{k@2,l@92}, +(Nen, 1))), thetaE_{k@2,l@92,cgds})))))) */
+  tmpSP2 = 0.0;
+  for (k_2=1; k_2<=Nc; k_2++) {
+    for (l_92=1; l_92<=Nd; l_92++) {
+      for (cgds=1; cgds<=Nen; cgds++) {
+        tmpSP2 += log(((1.0) / (thetaE[k_2-1][l_92-1][(Nen) + (1)-1])) * (thetaE[k_2-1][l_92-1][cgds-1]));
+      }
     }
   }
-  alphaE = sample_Gam(1, (1.0) / ((1.0) - ((1.0) / (tmpSP1))));
+  alphaE = sample_Gam(0.1, (1.0) / ((1.0) - ((1.0) / (tmpSP2))));
   return (alphaE);
 }
 
 double resample_alphaV(int Nc, int VV, double alphaV, double** post_thetaV) {
-  double tmpSP3;
-  int k_2;
-  int cgds;
-  /* Implements direct sampling from the following distribution: */
-  /*   Gam(alphaV | 0.1, /(1.0, -(1.0, /(1.0, \sum_{k@2 \in [Nc]} \sum_{cgds \in [VV]} log(.*(/(1.0, sub(.+(alphaV, post_thetaV_{k@2}), +(VV, 1))), .+(alphaV, post_thetaV_{k@2,cgds}))))))) */
-  tmpSP3 = 0.0;
-  for (k_2=1; k_2<=Nc; k_2++) {
-    for (cgds=1; cgds<=VV; cgds++) {
-      tmpSP3 += log(((1.0) / ((alphaV) + (post_thetaV[k_2-1][(VV) + (1)-1]))) * ((alphaV) + (post_thetaV[k_2-1][cgds-1])));
-    }
-  }
-  alphaV = sample_Gam(0.1, (1.0) / ((1.0) - ((1.0) / (tmpSP3))));
-  return (alphaV);
-}
-
-double resample_alphaW(int Nen, int VW, double alphaW, double** post_thetaW) {
   double tmpSP5;
   int k_3;
   int cgds;
   /* Implements direct sampling from the following distribution: */
-  /*   Gam(alphaW | 0.1, /(1.0, -(1.0, /(1.0, \sum_{k@3 \in [Nen]} \sum_{cgds \in [VW]} log(.*(/(1.0, sub(.+(alphaW, post_thetaW_{k@3}), +(VW, 1))), .+(alphaW, post_thetaW_{k@3,cgds}))))))) */
+  /*   Gam(alphaV | 0.1, /(1.0, -(1.0, /(1.0, \sum_{k@3 \in [Nc]} \sum_{cgds \in [VV]} log(.*(/(1.0, sub(.+(alphaV, post_thetaV_{k@3}), +(VV, 1))), .+(alphaV, post_thetaV_{k@3,cgds}))))))) */
   tmpSP5 = 0.0;
-  for (k_3=1; k_3<=Nen; k_3++) {
-    for (cgds=1; cgds<=VW; cgds++) {
-      tmpSP5 += log(((1.0) / ((alphaW) + (post_thetaW[k_3-1][(VW) + (1)-1]))) * ((alphaW) + (post_thetaW[k_3-1][cgds-1])));
+  for (k_3=1; k_3<=Nc; k_3++) {
+    for (cgds=1; cgds<=VV; cgds++) {
+      tmpSP5 += log(((1.0) / ((alphaV) + (post_thetaV[k_3-1][(VV) + (1)-1]))) * ((alphaV) + (post_thetaV[k_3-1][cgds-1])));
     }
   }
-  alphaW = sample_Gam(0.1, (1.0) / ((1.0) - ((1.0) / (tmpSP5))));
+  alphaV = sample_Gam(0.1, (1.0) / ((1.0) - ((1.0) / (tmpSP5))));
+  return (alphaV);
+}
+
+double resample_alphaW(int Nen, int VW, double alphaW, double** post_thetaW) {
+  double tmpSP7;
+  int k_4;
+  int cgds;
+  /* Implements direct sampling from the following distribution: */
+  /*   Gam(alphaW | 0.1, /(1.0, -(1.0, /(1.0, \sum_{k@4 \in [Nen]} \sum_{cgds \in [VW]} log(.*(/(1.0, sub(.+(alphaW, post_thetaW_{k@4}), +(VW, 1))), .+(alphaW, post_thetaW_{k@4,cgds}))))))) */
+  tmpSP7 = 0.0;
+  for (k_4=1; k_4<=Nen; k_4++) {
+    for (cgds=1; cgds<=VW; cgds++) {
+      tmpSP7 += log(((1.0) / ((alphaW) + (post_thetaW[k_4-1][(VW) + (1)-1]))) * ((alphaW) + (post_thetaW[k_4-1][cgds-1])));
+    }
+  }
+  alphaW = sample_Gam(0.1, (1.0) / ((1.0) - ((1.0) / (tmpSP7))));
   return (alphaW);
 }
 
-void resample_c(int N, double alphaC, double alphaE, double alphaV, int* c, int* e, double* post_thetaC, double** post_thetaE, double** post_thetaV, int* v, int Nc, int VV, int Nen) {
-  int n_20;
+void resample_thetaE(int N, int Nc, int Nd, int Nen, double alphaE, int* c, int* d, int* e, double*** thetaE) {
+  int k_22;
+  int l_37;
+  double* tmpSP11;
+  int n_7;
+  double* vec_var_1;
+  double* vec_var_0;
+  int dvv_loop_var_1;
+  tmpSP11 = (double*) malloc(sizeof(double) * (1+((Nen) + (1))-(1)));
+  vec_var_1 = (double*) malloc(sizeof(double) * (1+((Nen) + (1))-(1)));
+  vec_var_0 = (double*) malloc(sizeof(double) * (1+((Nen) + (1))-(1)));
+  for (dvv_loop_var_1=1; dvv_loop_var_1<=Nen; dvv_loop_var_1++) {
+    vec_var_0[dvv_loop_var_1-1] = alphaE;
+  }
+  vec_var_0[(Nen) + (1)-1] = (alphaE) * (((1) + (Nen)) - (1));
+  for (k_22=1; k_22<=Nc; k_22++) {
+    for (l_37=1; l_37<=Nd; l_37++) {
+      /* Implements direct sampling from the following distribution: */
+      /*   Dir(thetaE_{k@22,l@37} | +(vec(alphaE, 1, Nen), \sum_{n@7 \in [N]} .*(=(l@37, d_{n@7}), .*(=(k@22, c_{n@7}), IDR(e_{n@7}, 1, Nen)))), Nen) */
+      for (dvv_loop_var_1=1; dvv_loop_var_1<=Nen; dvv_loop_var_1++) {
+        tmpSP11[dvv_loop_var_1-1] = 0.0;
+      }
+      tmpSP11[(Nen) + (1)-1] = (0.0) * (((1) + (Nen)) - (1));
+      for (n_7=1; n_7<=N; n_7++) {
+        tmpSP11[(Nen) + (1)-1] += ((1.0) * ((((k_22) == (c[n_7-1])) ? 1 : 0))) * ((((l_37) == (d[n_7-1])) ? 1 : 0));
+        tmpSP11[e[n_7-1]-1] += ((1.0) * ((((k_22) == (c[n_7-1])) ? 1 : 0))) * ((((l_37) == (d[n_7-1])) ? 1 : 0));
+      }
+      sample_Dir(thetaE[k_22-1][l_37-1], add_vec_r_1(vec_var_1, vec_var_0, tmpSP11, 1, Nen), Nen);
+    }
+  }
+  free(tmpSP11);
+  free(vec_var_1);
+  free(vec_var_0);
+}
+
+void resample_c(int N, double alphaC, double alphaV, int* c, int* d, int* e, double* post_thetaC, double** post_thetaV, double*** thetaE, int* v, int Nc, int VV, int Nen) {
+  int n_25;
   double* tmp_post_c_1;
   int tmp_idx_c_1;
   int dvv_loop_var_1;
   tmp_post_c_1 = (double*) malloc(sizeof(double) * (1+((Nc) + (1))-(1)));
-  for (n_20=1; n_20<=N; n_20++) {
-    post_thetaV[c[n_20-1]-1][(VV) + (1)-1] += (0.0) - ((1.0) * ((((c[n_20-1]) == (c[n_20-1])) ? 1 : 0)));
-    post_thetaV[c[n_20-1]-1][v[n_20-1]-1] += (0.0) - ((1.0) * ((((c[n_20-1]) == (c[n_20-1])) ? 1 : 0)));
-    post_thetaE[c[n_20-1]-1][(Nen) + (1)-1] += (0.0) - ((1.0) * ((((c[n_20-1]) == (c[n_20-1])) ? 1 : 0)));
-    post_thetaE[c[n_20-1]-1][e[n_20-1]-1] += (0.0) - ((1.0) * ((((c[n_20-1]) == (c[n_20-1])) ? 1 : 0)));
+  for (n_25=1; n_25<=N; n_25++) {
+    post_thetaV[c[n_25-1]-1][(VV) + (1)-1] += (0.0) - ((1.0) * ((((c[n_25-1]) == (c[n_25-1])) ? 1 : 0)));
+    post_thetaV[c[n_25-1]-1][v[n_25-1]-1] += (0.0) - ((1.0) * ((((c[n_25-1]) == (c[n_25-1])) ? 1 : 0)));
     post_thetaC[(Nc) + (1)-1] += (0.0) - (1.0);
-    post_thetaC[c[n_20-1]-1] += (0.0) - (1.0);
+    post_thetaC[c[n_25-1]-1] += (0.0) - (1.0);
     /* Implements multinomial sampling from the following distribution: */
-    /*   (Mult(e_{n@20} | .+(alphaE, sub(post_thetaE, c_{n@20}))))((Mult(v_{n@20} | .+(alphaV, sub(post_thetaV, c_{n@20}))))(Mult(c_{n@20} | .+(alphaC, post_thetaC)))) */
+    /*   (Mult(e_{n@25} | sub(thetaE, c_{n@25}, d_{n@25})))((Mult(v_{n@25} | .+(alphaV, sub(post_thetaV, c_{n@25}))))(Mult(c_{n@25} | .+(alphaC, post_thetaC)))) */
     for (dvv_loop_var_1=1; dvv_loop_var_1<=Nc; dvv_loop_var_1++) {
       tmp_post_c_1[dvv_loop_var_1-1] = 0.0;
     }
     tmp_post_c_1[(Nc) + (1)-1] = (0.0) * (((1) + (Nc)) - (1));
     for (tmp_idx_c_1=1; tmp_idx_c_1<=Nc; tmp_idx_c_1++) {
-      tmp_post_c_1[tmp_idx_c_1-1] = (ldf_Mult_smooth(0, alphaE, e[n_20-1], post_thetaE[tmp_idx_c_1-1], 1, Nen)) + ((ldf_Mult_smooth(0, alphaV, v[n_20-1], post_thetaV[tmp_idx_c_1-1], 1, VV)) + (ldf_Mult_smooth(0, alphaC, tmp_idx_c_1, post_thetaC, 1, Nc)));
+      tmp_post_c_1[tmp_idx_c_1-1] = (ldf_Mult(0, e[n_25-1], thetaE[tmp_idx_c_1-1][d[n_25-1]-1], 1, Nen)) + ((ldf_Mult_smooth(0, alphaV, v[n_25-1], post_thetaV[tmp_idx_c_1-1], 1, VV)) + (ldf_Mult_smooth(0, alphaC, tmp_idx_c_1, post_thetaC, 1, Nc)));
     }
     normalizeLog(tmp_post_c_1, 1, Nc);
-    c[n_20-1] = sample_Mult(tmp_post_c_1, 1, Nc);
+    c[n_25-1] = sample_Mult(tmp_post_c_1, 1, Nc);
     post_thetaC[(Nc) + (1)-1] += 1.0;
-    post_thetaC[c[n_20-1]-1] += 1.0;
-    post_thetaE[c[n_20-1]-1][(Nen) + (1)-1] += (1.0) * ((((c[n_20-1]) == (c[n_20-1])) ? 1 : 0));
-    post_thetaE[c[n_20-1]-1][e[n_20-1]-1] += (1.0) * ((((c[n_20-1]) == (c[n_20-1])) ? 1 : 0));
-    post_thetaV[c[n_20-1]-1][(VV) + (1)-1] += (1.0) * ((((c[n_20-1]) == (c[n_20-1])) ? 1 : 0));
-    post_thetaV[c[n_20-1]-1][v[n_20-1]-1] += (1.0) * ((((c[n_20-1]) == (c[n_20-1])) ? 1 : 0));
+    post_thetaC[c[n_25-1]-1] += 1.0;
+    post_thetaV[c[n_25-1]-1][(VV) + (1)-1] += (1.0) * ((((c[n_25-1]) == (c[n_25-1])) ? 1 : 0));
+    post_thetaV[c[n_25-1]-1][v[n_25-1]-1] += (1.0) * ((((c[n_25-1]) == (c[n_25-1])) ? 1 : 0));
   }
   free(tmp_post_c_1);
 }
 
-void resample_e(int N, double alphaE, double alphaW, int* c, int* e, double** post_thetaE, double** post_thetaW, int* w, int Nen, int VW) {
-  int n_21;
+void resample_d(int N, double alphaD, int* c, int* d, int* e, double* post_thetaD, double*** thetaE, int Nd, int Nen) {
+  int n_26;
+  double* tmp_post_d_1;
+  int tmp_idx_d_1;
+  int dvv_loop_var_1;
+  tmp_post_d_1 = (double*) malloc(sizeof(double) * (1+((Nd) + (1))-(1)));
+  for (n_26=1; n_26<=N; n_26++) {
+    post_thetaD[(Nd) + (1)-1] += (0.0) - (1.0);
+    post_thetaD[d[n_26-1]-1] += (0.0) - (1.0);
+    /* Implements multinomial sampling from the following distribution: */
+    /*   (Mult(e_{n@26} | sub(thetaE, c_{n@26}, d_{n@26})))(Mult(d_{n@26} | .+(alphaD, post_thetaD))) */
+    for (dvv_loop_var_1=1; dvv_loop_var_1<=Nd; dvv_loop_var_1++) {
+      tmp_post_d_1[dvv_loop_var_1-1] = 0.0;
+    }
+    tmp_post_d_1[(Nd) + (1)-1] = (0.0) * (((1) + (Nd)) - (1));
+    for (tmp_idx_d_1=1; tmp_idx_d_1<=Nd; tmp_idx_d_1++) {
+      tmp_post_d_1[tmp_idx_d_1-1] = (ldf_Mult(0, e[n_26-1], thetaE[c[n_26-1]-1][tmp_idx_d_1-1], 1, Nen)) + (ldf_Mult_smooth(0, alphaD, tmp_idx_d_1, post_thetaD, 1, Nd));
+    }
+    normalizeLog(tmp_post_d_1, 1, Nd);
+    d[n_26-1] = sample_Mult(tmp_post_d_1, 1, Nd);
+    post_thetaD[(Nd) + (1)-1] += 1.0;
+    post_thetaD[d[n_26-1]-1] += 1.0;
+  }
+  free(tmp_post_d_1);
+}
+
+void resample_e(int N, double alphaW, int* c, int* d, int* e, double** post_thetaW, double*** thetaE, int* w, int Nen, int VW) {
+  int n_27;
   double* tmp_post_e_1;
   int tmp_idx_e_1;
   int dvv_loop_var_1;
   tmp_post_e_1 = (double*) malloc(sizeof(double) * (1+((Nen) + (1))-(1)));
-  for (n_21=1; n_21<=N; n_21++) {
-    post_thetaW[e[n_21-1]-1][(VW) + (1)-1] += (0.0) - ((1.0) * ((((e[n_21-1]) == (e[n_21-1])) ? 1 : 0)));
-    post_thetaW[e[n_21-1]-1][w[n_21-1]-1] += (0.0) - ((1.0) * ((((e[n_21-1]) == (e[n_21-1])) ? 1 : 0)));
-    post_thetaE[c[n_21-1]-1][(Nen) + (1)-1] += (0.0) - ((1.0) * ((((c[n_21-1]) == (c[n_21-1])) ? 1 : 0)));
-    post_thetaE[c[n_21-1]-1][e[n_21-1]-1] += (0.0) - ((1.0) * ((((c[n_21-1]) == (c[n_21-1])) ? 1 : 0)));
+  for (n_27=1; n_27<=N; n_27++) {
+    post_thetaW[e[n_27-1]-1][(VW) + (1)-1] += (0.0) - ((1.0) * ((((e[n_27-1]) == (e[n_27-1])) ? 1 : 0)));
+    post_thetaW[e[n_27-1]-1][w[n_27-1]-1] += (0.0) - ((1.0) * ((((e[n_27-1]) == (e[n_27-1])) ? 1 : 0)));
     /* Implements multinomial sampling from the following distribution: */
-    /*   (Mult(w_{n@21} | .+(alphaW, sub(post_thetaW, e_{n@21}))))(Mult(e_{n@21} | .+(alphaE, sub(post_thetaE, c_{n@21})))) */
+    /*   (Mult(w_{n@27} | .+(alphaW, sub(post_thetaW, e_{n@27}))))(Mult(e_{n@27} | sub(thetaE, c_{n@27}, d_{n@27}))) */
     for (dvv_loop_var_1=1; dvv_loop_var_1<=Nen; dvv_loop_var_1++) {
       tmp_post_e_1[dvv_loop_var_1-1] = 0.0;
     }
     tmp_post_e_1[(Nen) + (1)-1] = (0.0) * (((1) + (Nen)) - (1));
     for (tmp_idx_e_1=1; tmp_idx_e_1<=Nen; tmp_idx_e_1++) {
-      tmp_post_e_1[tmp_idx_e_1-1] = (ldf_Mult_smooth(0, alphaW, w[n_21-1], post_thetaW[tmp_idx_e_1-1], 1, VW)) + (ldf_Mult_smooth(0, alphaE, tmp_idx_e_1, post_thetaE[c[n_21-1]-1], 1, Nen));
+      tmp_post_e_1[tmp_idx_e_1-1] = (ldf_Mult_smooth(0, alphaW, w[n_27-1], post_thetaW[tmp_idx_e_1-1], 1, VW)) + (ldf_Mult(0, tmp_idx_e_1, thetaE[c[n_27-1]-1][d[n_27-1]-1], 1, Nen));
     }
     normalizeLog(tmp_post_e_1, 1, Nen);
-    e[n_21-1] = sample_Mult(tmp_post_e_1, 1, Nen);
-    post_thetaE[c[n_21-1]-1][(Nen) + (1)-1] += (1.0) * ((((c[n_21-1]) == (c[n_21-1])) ? 1 : 0));
-    post_thetaE[c[n_21-1]-1][e[n_21-1]-1] += (1.0) * ((((c[n_21-1]) == (c[n_21-1])) ? 1 : 0));
-    post_thetaW[e[n_21-1]-1][(VW) + (1)-1] += (1.0) * ((((e[n_21-1]) == (e[n_21-1])) ? 1 : 0));
-    post_thetaW[e[n_21-1]-1][w[n_21-1]-1] += (1.0) * ((((e[n_21-1]) == (e[n_21-1])) ? 1 : 0));
+    e[n_27-1] = sample_Mult(tmp_post_e_1, 1, Nen);
+    post_thetaW[e[n_27-1]-1][(VW) + (1)-1] += (1.0) * ((((e[n_27-1]) == (e[n_27-1])) ? 1 : 0));
+    post_thetaW[e[n_27-1]-1][w[n_27-1]-1] += (1.0) * ((((e[n_27-1]) == (e[n_27-1])) ? 1 : 0));
   }
   free(tmp_post_e_1);
 }
 
 void resample_v(int N, double alphaV, int* c, double** post_thetaV, int* v, int VV) {
-  int n_22;
-  for (n_22=1; n_22<=N; n_22++) {
-    post_thetaV[c[n_22-1]-1][(VV) + (1)-1] += (0.0) - ((1.0) * ((((c[n_22-1]) == (c[n_22-1])) ? 1 : 0)));
-    post_thetaV[c[n_22-1]-1][v[n_22-1]-1] += (0.0) - ((1.0) * ((((c[n_22-1]) == (c[n_22-1])) ? 1 : 0)));
+  int n_28;
+  for (n_28=1; n_28<=N; n_28++) {
+    post_thetaV[c[n_28-1]-1][(VV) + (1)-1] += (0.0) - ((1.0) * ((((c[n_28-1]) == (c[n_28-1])) ? 1 : 0)));
+    post_thetaV[c[n_28-1]-1][v[n_28-1]-1] += (0.0) - ((1.0) * ((((c[n_28-1]) == (c[n_28-1])) ? 1 : 0)));
     /* Implements direct sampling from the following distribution: */
-    /*   Mult(v_{n@22} | .+(alphaV, sub(post_thetaV, c_{n@22}))) */
-    v[n_22-1] = sample_Mult_smooth(alphaV, post_thetaV[c[n_22-1]-1], 1, VV);
-    post_thetaV[c[n_22-1]-1][(VV) + (1)-1] += (1.0) * ((((c[n_22-1]) == (c[n_22-1])) ? 1 : 0));
-    post_thetaV[c[n_22-1]-1][v[n_22-1]-1] += (1.0) * ((((c[n_22-1]) == (c[n_22-1])) ? 1 : 0));
+    /*   Mult(v_{n@28} | .+(alphaV, sub(post_thetaV, c_{n@28}))) */
+    v[n_28-1] = sample_Mult_smooth(alphaV, post_thetaV[c[n_28-1]-1], 1, VV);
+    post_thetaV[c[n_28-1]-1][(VV) + (1)-1] += (1.0) * ((((c[n_28-1]) == (c[n_28-1])) ? 1 : 0));
+    post_thetaV[c[n_28-1]-1][v[n_28-1]-1] += (1.0) * ((((c[n_28-1]) == (c[n_28-1])) ? 1 : 0));
   }
 }
 
 void resample_w(int N, double alphaW, int* e, double** post_thetaW, int* w, int VW) {
-  int n_23;
-  for (n_23=1; n_23<=N; n_23++) {
-    post_thetaW[e[n_23-1]-1][(VW) + (1)-1] += (0.0) - ((1.0) * ((((e[n_23-1]) == (e[n_23-1])) ? 1 : 0)));
-    post_thetaW[e[n_23-1]-1][w[n_23-1]-1] += (0.0) - ((1.0) * ((((e[n_23-1]) == (e[n_23-1])) ? 1 : 0)));
+  int n_29;
+  for (n_29=1; n_29<=N; n_29++) {
+    post_thetaW[e[n_29-1]-1][(VW) + (1)-1] += (0.0) - ((1.0) * ((((e[n_29-1]) == (e[n_29-1])) ? 1 : 0)));
+    post_thetaW[e[n_29-1]-1][w[n_29-1]-1] += (0.0) - ((1.0) * ((((e[n_29-1]) == (e[n_29-1])) ? 1 : 0)));
     /* Implements direct sampling from the following distribution: */
-    /*   Mult(w_{n@23} | .+(alphaW, sub(post_thetaW, e_{n@23}))) */
-    w[n_23-1] = sample_Mult_smooth(alphaW, post_thetaW[e[n_23-1]-1], 1, VW);
-    post_thetaW[e[n_23-1]-1][(VW) + (1)-1] += (1.0) * ((((e[n_23-1]) == (e[n_23-1])) ? 1 : 0));
-    post_thetaW[e[n_23-1]-1][w[n_23-1]-1] += (1.0) * ((((e[n_23-1]) == (e[n_23-1])) ? 1 : 0));
+    /*   Mult(w_{n@29} | .+(alphaW, sub(post_thetaW, e_{n@29}))) */
+    w[n_29-1] = sample_Mult_smooth(alphaW, post_thetaW[e[n_29-1]-1], 1, VW);
+    post_thetaW[e[n_29-1]-1][(VW) + (1)-1] += (1.0) * ((((e[n_29-1]) == (e[n_29-1])) ? 1 : 0));
+    post_thetaW[e[n_29-1]-1][w[n_29-1]-1] += (1.0) * ((((e[n_29-1]) == (e[n_29-1])) ? 1 : 0));
   }
 }
 
@@ -303,6 +371,12 @@ double initialize_alphaC() {
   double alphaC;
   alphaC = sample_Gam(1.0, 1.0);
   return (alphaC);
+}
+
+double initialize_alphaD() {
+  double alphaD;
+  alphaD = sample_Gam(1.0, 1.0);
+  return (alphaD);
 }
 
 double initialize_alphaE() {
@@ -323,51 +397,84 @@ double initialize_alphaW() {
   return (alphaW);
 }
 
+void initialize_thetaE(double*** thetaE, int Nc, int Nd, int Nen) {
+  int k_22;
+  int l_37;
+  int dvv_loop_var_1;
+  int dvv_loop_var_2;
+  int dvv_loop_var_3;
+  for (dvv_loop_var_1=1; dvv_loop_var_1<=Nc; dvv_loop_var_1++) {
+    for (dvv_loop_var_2=1; dvv_loop_var_2<=Nd; dvv_loop_var_2++) {
+      for (dvv_loop_var_3=1; dvv_loop_var_3<=Nen; dvv_loop_var_3++) {
+        thetaE[dvv_loop_var_1-1][dvv_loop_var_2-1][dvv_loop_var_3-1] = 0.0;
+      }
+      thetaE[dvv_loop_var_1-1][dvv_loop_var_2-1][(Nen) + (1)-1] = (0.0) * (((1) + (Nen)) - (1));
+    }
+  }
+  for (k_22=1; k_22<=Nc; k_22++) {
+    for (l_37=1; l_37<=Nd; l_37++) {
+      sample_DirSym(thetaE[k_22-1][l_37-1], 1.0, Nen);
+    }
+  }
+}
+
 void initialize_c(int* c, int N, int Nc) {
-  int n_20;
+  int n_25;
   int dvv_loop_var_1;
   for (dvv_loop_var_1=1; dvv_loop_var_1<=N; dvv_loop_var_1++) {
     c[dvv_loop_var_1-1] = 0;
   }
   c[(N) + (1)-1] = (0) * (((1) + (N)) - (1));
-  for (n_20=1; n_20<=N; n_20++) {
-    c[n_20-1] = sample_MultSym(1, Nc);
+  for (n_25=1; n_25<=N; n_25++) {
+    c[n_25-1] = sample_MultSym(1, Nc);
+  }
+}
+
+void initialize_d(int* d, int N, int Nd) {
+  int n_26;
+  int dvv_loop_var_1;
+  for (dvv_loop_var_1=1; dvv_loop_var_1<=N; dvv_loop_var_1++) {
+    d[dvv_loop_var_1-1] = 0;
+  }
+  d[(N) + (1)-1] = (0) * (((1) + (N)) - (1));
+  for (n_26=1; n_26<=N; n_26++) {
+    d[n_26-1] = sample_MultSym(1, Nd);
   }
 }
 
 void initialize_e(int* e, int N, int Nen) {
-  int n_21;
+  int n_27;
   int dvv_loop_var_1;
   for (dvv_loop_var_1=1; dvv_loop_var_1<=N; dvv_loop_var_1++) {
     e[dvv_loop_var_1-1] = 0;
   }
   e[(N) + (1)-1] = (0) * (((1) + (N)) - (1));
-  for (n_21=1; n_21<=N; n_21++) {
-    e[n_21-1] = sample_MultSym(1, Nen);
+  for (n_27=1; n_27<=N; n_27++) {
+    e[n_27-1] = sample_MultSym(1, Nen);
   }
 }
 
 void initialize_v(int* v, int N, int VV) {
-  int n_22;
+  int n_28;
   int dvv_loop_var_1;
   for (dvv_loop_var_1=1; dvv_loop_var_1<=N; dvv_loop_var_1++) {
     v[dvv_loop_var_1-1] = 0;
   }
   v[(N) + (1)-1] = (0) * (((1) + (N)) - (1));
-  for (n_22=1; n_22<=N; n_22++) {
-    v[n_22-1] = sample_MultSym(1, VV);
+  for (n_28=1; n_28<=N; n_28++) {
+    v[n_28-1] = sample_MultSym(1, VV);
   }
 }
 
 void initialize_w(int* w, int N, int VW) {
-  int n_23;
+  int n_29;
   int dvv_loop_var_1;
   for (dvv_loop_var_1=1; dvv_loop_var_1<=N; dvv_loop_var_1++) {
     w[dvv_loop_var_1-1] = 0;
   }
   w[(N) + (1)-1] = (0) * (((1) + (N)) - (1));
-  for (n_23=1; n_23<=N; n_23++) {
-    w[n_23-1] = sample_MultSym(1, VW);
+  for (n_29=1; n_29<=N; n_29++) {
+    w[n_29-1] = sample_MultSym(1, VW);
   }
 }
 
@@ -380,16 +487,13 @@ void initialize_post_thetaC(double* post_thetaC, int N, int Nc, int* c) {
   resample_post_thetaC(N, Nc, c, post_thetaC);
 }
 
-void initialize_post_thetaE(double** post_thetaE, int N, int Nc, int Nen, int* c, int* e) {
+void initialize_post_thetaD(double* post_thetaD, int N, int Nd, int* d) {
   int dvv_loop_var_1;
-  int dvv_loop_var_2;
-  for (dvv_loop_var_1=1; dvv_loop_var_1<=Nc; dvv_loop_var_1++) {
-    for (dvv_loop_var_2=1; dvv_loop_var_2<=Nen; dvv_loop_var_2++) {
-      post_thetaE[dvv_loop_var_1-1][dvv_loop_var_2-1] = 0.0;
-    }
-    post_thetaE[dvv_loop_var_1-1][(Nen) + (1)-1] = (0.0) * (((1) + (Nen)) - (1));
+  for (dvv_loop_var_1=1; dvv_loop_var_1<=Nd; dvv_loop_var_1++) {
+    post_thetaD[dvv_loop_var_1-1] = 0.0;
   }
-  resample_post_thetaE(N, Nc, Nen, c, e, post_thetaE);
+  post_thetaD[(Nd) + (1)-1] = (0.0) * (((1) + (Nd)) - (1));
+  resample_post_thetaD(N, Nd, d, post_thetaD);
 }
 
 void initialize_post_thetaV(double** post_thetaV, int N, int Nc, int VV, int* c, int* v) {
@@ -425,6 +529,12 @@ void dump_alphaC(double alphaC) {
   printf("\n");
 }
 
+void dump_alphaD(double alphaD) {
+  printf("alphaD = ");
+  printf("%g", alphaD);
+  printf("\n");
+}
+
 void dump_alphaE(double alphaE) {
   printf("alphaE = ");
   printf("%g", alphaE);
@@ -453,16 +563,30 @@ void dump_thetaC(int Nc, double* thetaC) {
   printf("\n");
 }
 
-void dump_thetaE(int Nc, int Nen, double** thetaE) {
+void dump_thetaD(int Nd, double* thetaD) {
+  int dvv_loop_var_1;
+  printf("thetaD = ");
+  for (dvv_loop_var_1=1; dvv_loop_var_1<=Nd; dvv_loop_var_1++) {
+    printf("%g", thetaD[dvv_loop_var_1-1]);
+    printf(" ");
+  }
+  printf("\n");
+}
+
+void dump_thetaE(int Nc, int Nd, int Nen, double*** thetaE) {
   int dvv_loop_var_1;
   int dvv_loop_var_2;
+  int dvv_loop_var_3;
   printf("thetaE = ");
   for (dvv_loop_var_1=1; dvv_loop_var_1<=Nc; dvv_loop_var_1++) {
-    for (dvv_loop_var_2=1; dvv_loop_var_2<=Nen; dvv_loop_var_2++) {
-      printf("%g", thetaE[dvv_loop_var_1-1][dvv_loop_var_2-1]);
-      printf(" ");
+    for (dvv_loop_var_2=1; dvv_loop_var_2<=Nd; dvv_loop_var_2++) {
+      for (dvv_loop_var_3=1; dvv_loop_var_3<=Nen; dvv_loop_var_3++) {
+        printf("%g", thetaE[dvv_loop_var_1-1][dvv_loop_var_2-1][dvv_loop_var_3-1]);
+        printf(" ");
+      }
+      printf(" ; ");
     }
-    printf(" ; ");
+    printf(" ;; ");
   }
   printf("\n");
 }
@@ -505,6 +629,16 @@ void dump_c(int N, int* c) {
   printf("\n");
 }
 
+void dump_d(int N, int* d) {
+  int dvv_loop_var_1;
+  printf("d = ");
+  for (dvv_loop_var_1=1; dvv_loop_var_1<=N; dvv_loop_var_1++) {
+    printf("%d", d[dvv_loop_var_1-1]);
+    printf(" ");
+  }
+  printf("\n");
+}
+
 void dump_e(int N, int* e) {
   int dvv_loop_var_1;
   printf("e = ");
@@ -538,32 +672,50 @@ void dump_w(int N, int* w) {
 
 /*************************** LIKELIHOOD ***************************/
 
-double compute_log_posterior(int N, int Nc, int Nen, int VV, int VW, double alphaC, double alphaE, double alphaV, double alphaW, int* c, int* e, double* thetaC, double** thetaE, double** thetaV, double** thetaW, int* v, int* w) {
-  double ldfP8_0;
-  int n_20;
-  double ldfP9_0;
-  int n_21;
+double compute_log_posterior(int N, int Nc, int Nd, int Nen, int VV, int VW, double alphaC, double alphaD, double alphaE, double alphaV, double alphaW, int* c, int* d, int* e, double* thetaC, double* thetaD, double*** thetaE, double** thetaV, double** thetaW, int* v, int* w) {
+  double ldfP7_0;
+  double ldfP7_1;
+  int l_37;
+  int k_22;
   double ldfP10_0;
-  int n_22;
+  int n_25;
   double ldfP11_0;
-  int n_23;
-  ldfP8_0 = 0.0;
-  for (n_20=1; n_20<=N; n_20++) {
-    ldfP8_0 += ldf_Mult(1, c[n_20-1], thetaC, 1, Nc);
-  }
-  ldfP9_0 = 0.0;
-  for (n_21=1; n_21<=N; n_21++) {
-    ldfP9_0 += ldf_Mult(1, e[n_21-1], thetaE[c[n_21-1]-1], 1, Nen);
+  int n_26;
+  double ldfP12_0;
+  int n_27;
+  double ldfP13_0;
+  int n_28;
+  double ldfP14_0;
+  int n_29;
+  ldfP7_0 = 0.0;
+  for (k_22=1; k_22<=Nc; k_22++) {
+    ldfP7_1 = 0.0;
+    for (l_37=1; l_37<=Nd; l_37++) {
+      ldfP7_1 += ldf_DirSym(1, thetaE[k_22-1][l_37-1], alphaE, Nen);
+    }
+    ldfP7_0 += ldfP7_1;
   }
   ldfP10_0 = 0.0;
-  for (n_22=1; n_22<=N; n_22++) {
-    ldfP10_0 += ldf_Mult(1, v[n_22-1], thetaV[c[n_22-1]-1], 1, VV);
+  for (n_25=1; n_25<=N; n_25++) {
+    ldfP10_0 += ldf_Mult(1, c[n_25-1], thetaC, 1, Nc);
   }
   ldfP11_0 = 0.0;
-  for (n_23=1; n_23<=N; n_23++) {
-    ldfP11_0 += ldf_Mult(1, w[n_23-1], thetaW[e[n_23-1]-1], 1, VW);
+  for (n_26=1; n_26<=N; n_26++) {
+    ldfP11_0 += ldf_Mult(1, d[n_26-1], thetaD, 1, Nd);
   }
-  return ((ldf_Gam(1, alphaC, 1, 1)) + ((ldf_Gam(1, alphaE, 1, 1)) + ((ldf_Gam(1, alphaV, 0.1, 1)) + ((ldf_Gam(1, alphaW, 0.1, 1)) + ((0.0) + ((0.0) + ((0.0) + ((0.0) + ((ldfP8_0) + ((ldfP9_0) + ((ldfP10_0) + (ldfP11_0))))))))))));
+  ldfP12_0 = 0.0;
+  for (n_27=1; n_27<=N; n_27++) {
+    ldfP12_0 += ldf_Mult(1, e[n_27-1], thetaE[c[n_27-1]-1][d[n_27-1]-1], 1, Nen);
+  }
+  ldfP13_0 = 0.0;
+  for (n_28=1; n_28<=N; n_28++) {
+    ldfP13_0 += ldf_Mult(1, v[n_28-1], thetaV[c[n_28-1]-1], 1, VV);
+  }
+  ldfP14_0 = 0.0;
+  for (n_29=1; n_29<=N; n_29++) {
+    ldfP14_0 += ldf_Mult(1, w[n_29-1], thetaW[e[n_29-1]-1], 1, VW);
+  }
+  return ((ldf_Gam(1, alphaC, 1, 1)) + ((ldf_Gam(1, alphaD, 1, 1)) + ((ldf_Gam(1, alphaE, 0.1, 1)) + ((ldf_Gam(1, alphaV, 0.1, 1)) + ((ldf_Gam(1, alphaW, 0.1, 1)) + ((0.0) + ((0.0) + ((ldfP7_0) + ((0.0) + ((0.0) + ((ldfP10_0) + ((ldfP11_0) + ((ldfP12_0) + ((ldfP13_0) + (ldfP14_0)))))))))))))));
 }
 
 /****************************** MAIN ******************************/
@@ -573,22 +725,27 @@ int main(int ARGC, char *ARGV[]) {
   int iter;
   int N;
   int Nc;
+  int Nd;
   int Nen;
   int VV;
   int VW;
   double alphaC;
+  double alphaD;
   double alphaE;
   double alphaV;
   double alphaW;
   int* c;
+  int* d;
   int* e;
   double* post_thetaC;
-  double** post_thetaE;
+  double* post_thetaD;
   double** post_thetaV;
   double** post_thetaW;
+  double*** thetaE;
   int* v;
   int* w;
   int malloc_dim_1;
+  int malloc_dim_2;
 
   fprintf(stderr, "-- This program was automatically generated using HBC (v 0.7 beta) from en2.hier\n--     see http://hal3.name/HBC for more information\n");
   fflush(stderr);
@@ -596,18 +753,20 @@ int main(int ARGC, char *ARGV[]) {
 
 
   /* variables defined with --define */
-  Nc = 6;
-  Nen = 5;
-  alphaC = 0.9;
-  alphaE = 0.0000001;
-  alphaV = 0.0001;
-  alphaW = 0.0001;
+  Nc = 10;
+  Nen = 6;
+  alphaC = 2;
+  alphaD = 2;
+  alphaE = 1.0e-3;
+  alphaV = 1.0e-3;
+  alphaW = 1.0e-3;
 
   fprintf(stderr, "Loading data...\n");
   fflush(stderr);
   /* variables defined with --loadD */
   w = load_discrete1("enO", &N, &VW);
   v = load_discrete1("enV", &N, &VV);
+  d = load_discrete1("enD", &N, &Nd);
 
   /* variables defined with --loadM or --loadMI */
 
@@ -619,10 +778,7 @@ int main(int ARGC, char *ARGV[]) {
 
   post_thetaC = (double*) malloc(sizeof(double) * (1+((Nc) + (1))-(1)));
 
-  post_thetaE = (double**) malloc(sizeof(double*) * (1+(Nc)-(1)));
-  for (malloc_dim_1=1; malloc_dim_1<=Nc; malloc_dim_1++) {
-    post_thetaE[malloc_dim_1-1] = (double*) malloc(sizeof(double) * (1+((Nen) + (1))-(1)));
-  }
+  post_thetaD = (double*) malloc(sizeof(double) * (1+((Nd) + (1))-(1)));
 
   post_thetaV = (double**) malloc(sizeof(double*) * (1+(Nc)-(1)));
   for (malloc_dim_1=1; malloc_dim_1<=Nc; malloc_dim_1++) {
@@ -634,28 +790,38 @@ int main(int ARGC, char *ARGV[]) {
     post_thetaW[malloc_dim_1-1] = (double*) malloc(sizeof(double) * (1+((VW) + (1))-(1)));
   }
 
+  thetaE = (double***) malloc(sizeof(double**) * (1+(Nc)-(1)));
+  for (malloc_dim_1=1; malloc_dim_1<=Nc; malloc_dim_1++) {
+    thetaE[malloc_dim_1-1] = (double**) malloc(sizeof(double*) * (1+(Nd)-(1)));
+    for (malloc_dim_2=1; malloc_dim_2<=Nd; malloc_dim_2++) {
+      thetaE[malloc_dim_1-1][malloc_dim_2-1] = (double*) malloc(sizeof(double) * (1+((Nen) + (1))-(1)));
+    }
+  }
+
 
   fprintf(stderr, "Initializing variables...\n");
   fflush(stderr);
+  initialize_thetaE(thetaE, Nc, Nd, Nen);
   initialize_c(c, N, Nc);
   initialize_e(e, N, Nen);
   initialize_post_thetaC(post_thetaC, N, Nc, c);
-  initialize_post_thetaE(post_thetaE, N, Nc, Nen, c, e);
+  initialize_post_thetaD(post_thetaD, N, Nd, d);
   initialize_post_thetaV(post_thetaV, N, Nc, VV, c, v);
   initialize_post_thetaW(post_thetaW, N, Nen, VW, e, w);
 
   for (iter=1; iter<=100; iter++) {
     fprintf(stderr, "iter %d", iter);
     fflush(stderr);
-    resample_c(N, alphaC, alphaE, alphaV, c, e, post_thetaC, post_thetaE, post_thetaV, v, Nc, VV, Nen);
-    resample_e(N, alphaE, alphaW, c, e, post_thetaE, post_thetaW, w, Nen, VW);
+    resample_thetaE(N, Nc, Nd, Nen, alphaE, c, d, e, thetaE);
+    resample_c(N, alphaC, alphaV, c, d, e, post_thetaC, post_thetaV, thetaE, v, Nc, VV, Nen);
+    resample_e(N, alphaW, c, d, e, post_thetaW, thetaE, w, Nen, VW);
 
 if (iter>=20) {
   dump_c(N,c);
   dump_e(N,e);
 }
 
-    loglik = compute_log_posterior(N, Nc, Nen, VV, VW, alphaC, alphaE, alphaV, alphaW, c, e, post_thetaC, post_thetaE, post_thetaV, post_thetaW, v, w);
+    loglik = compute_log_posterior(N, Nc, Nd, Nen, VV, VW, alphaC, alphaD, alphaE, alphaV, alphaW, c, d, e, post_thetaC, post_thetaD, thetaE, post_thetaV, post_thetaW, v, w);
     fprintf(stderr, "\t%g", loglik);
     if ((iter==1)||(loglik>bestloglik)) {
       bestloglik = loglik;
@@ -669,6 +835,14 @@ if (iter>=20) {
 
   free(v);
 
+  for (malloc_dim_1=1; malloc_dim_1<=Nc; malloc_dim_1++) {
+    for (malloc_dim_2=1; malloc_dim_2<=Nd; malloc_dim_2++) {
+      free(thetaE[malloc_dim_1-1][malloc_dim_2-1]);
+    }
+    free(thetaE[malloc_dim_1-1]);
+  }
+  free(thetaE);
+
   for (malloc_dim_1=1; malloc_dim_1<=Nen; malloc_dim_1++) {
     free(post_thetaW[malloc_dim_1-1]);
   }
@@ -679,14 +853,13 @@ if (iter>=20) {
   }
   free(post_thetaV);
 
-  for (malloc_dim_1=1; malloc_dim_1<=Nc; malloc_dim_1++) {
-    free(post_thetaE[malloc_dim_1-1]);
-  }
-  free(post_thetaE);
+  free(post_thetaD);
 
   free(post_thetaC);
 
   free(e);
+
+  free(d);
 
   free(c);
 
