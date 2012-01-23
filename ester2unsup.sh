@@ -12,19 +12,6 @@
 # 2- modifier le sampling de H: forcer H a ne prendre des valeurs QUE sur le voisinnage de w
 
 JCP="bin:../utils/bin:../../git/jsafran/jsafran.jar"
-LARGECORP=../../git/jsafran/c0b.conll
-TRAIN=../../git6/peps/corpus/etape/radios.xml
-TEST=../../git6/peps/corpus/etape/devtvs.xml
-
-if [ "1" == "0" ]; then
-echo "save enO, enO.contextes et voc0"
-java -cp "$JCP" PrepHDB -save4HBC $LARGECORP $TRAIN $TEST
-echo "cluster auto"
-gcc -g stats.c samplib.c en2.c detenc.c -o en2.exe -lm
-./en2.exe | tee en.log
-echo "show les res du clustering"
-java -cp "$JCP" PrepHDB -show en.log
-fi
 
 if [ "1" == "0" ]; then
 echo "save Gigaword as .xml"
@@ -38,9 +25,36 @@ fi
 
 if [ "0" == "0" ]; then
 echo "unsup clustering"
-java -cp "$JCP" ester2.Unsup -creeObs $LARGECORP $TRAIN $TEST > creeobs.log
+echo "c0b.conll" > unlab.xmll
+ls train/*.xml > train.xmll
+ls test/*.xml | grep -v -e merged > test.xmll
+java -cp "$JCP" ester2.Unsup -creeObs test.xmll unlab.xmll train.xmll test.xmll > creeobs.log
+exit
 gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 ./en2.exe | tee en.log
 java -cp "$JCP" ester2.Unsup -analyse en.log > an.log
+fi
+
+if [ "1" == "0" ]; then
+echo "create TAB files for CRF training"
+for i in pers fonc org loc prod time amount unk
+do
+  echo $i
+  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER train.xmll $i
+  cp -f groups.$i.tab groups.$i.tab.train
+done
+fi
+
+if [ "0" == "0" ]; then
+echo "Insert in the CRF TAB files the (syntactic) class obtained from unsup clustering"
+grep indexobsfile creeobs.log | head -2 > /tmp/yy
+debtrain=`head -1 /tmp/yy | cut -d' ' -f2`
+debtest=`tail -1 /tmp/yy | cut -d' ' -f2`
+for i in pers fonc org loc prod time amount unk
+do
+  echo $i
+  java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab.train en.log $debtrain $debtest train.xmll
+exit
+done
 fi
 
