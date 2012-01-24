@@ -25,7 +25,7 @@ mv -f output.xml c$i.xml
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "unsup clustering"
 echo "c0b.conll" > unlab.xmll
 ls train/*.xml > train.xmll
@@ -36,7 +36,7 @@ gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 java -cp "$JCP" ester2.Unsup -analyse en.log > an.log
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create TAB files for CRF training"
 for i in $allens
 do
@@ -46,7 +46,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "Insert in the CRF TAB files the (syntactic) class obtained from unsup clustering"
 grep indexobsHBC creeobs.log | head -2 > /tmp/yy
 debtrainhbc=`head -1 /tmp/yy | cut -d' ' -f2`
@@ -55,6 +55,7 @@ for i in $allens
 do
   echo $i
   java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab.train en.log $debtrainhbc $debtesthbc train.xmll
+  mv -f groups.$i.tab.train.out groups.$i.tab.train
 done
 fi
 
@@ -76,8 +77,20 @@ echo "create the TAB files from the groups in the graphs.xml files"
 for i in $allens
 do
   echo $i
-  # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
   java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER test.xmll $i
+done
+fi
+
+if [ "0" == "0" ]; then
+echo "Insert in the CRF TAB files the (syntactic) class obtained from unsup clustering"
+grep indexobsHBC creeobs.log | tail -2 > /tmp/yy
+debhbc=`head -1 /tmp/yy | cut -d' ' -f2`
+endhbc=`tail -1 /tmp/yy | cut -d' ' -f2`
+for i in $allens
+do
+  echo $i
+  java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab en.log $debhbc $endhbc test.xmll
+  mv -f groups.$i.tab.out groups.$i.tab
 done
 fi
 
