@@ -36,7 +36,7 @@ gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 java -cp "$JCP" ester2.Unsup -analyse en.log > an.log
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "create TAB files for CRF training"
 for i in $allens
 do
@@ -46,7 +46,7 @@ do
 done
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "Insert in the CRF TAB files the (syntactic) class obtained from unsup clustering"
 grep indexobsHBC creeobs.log | head -2 > /tmp/yy
 debtrainhbc=`head -1 /tmp/yy | cut -d' ' -f2`
