@@ -28,16 +28,19 @@ fi
 if [ "1" == "0" ]; then
 echo "unsup clustering"
 echo "c0b.conll" > unlab.xmll
-ls train/*.xml > train.xmll
-ls test/*.xml | grep -v -e merged > test.xmll
+rm -f train.xmll test.xmll
+touch train.xmll test.xmll
+#ls train/*.xml > train.xmll
+#ls test/*.xml | grep -v -e merged > test.xmll
 java -cp "$JCP" ester2.Unsup -creeObs unlab.xmll train.xmll test.xmll > creeobs.log
 gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 ./en2.exe | tee en.log
 java -cp "$JCP" ester2.Unsup -analyse en.log > an.log
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create TAB files for CRF training"
+ls train/*.xml > train.xmll
 for i in $allens
 do
   echo $i
@@ -54,7 +57,7 @@ debtesthbc=`tail -1 /tmp/yy | cut -d' ' -f2`
 for i in $allens
 do
   echo $i
-  java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab.train en.log $debtrainhbc $debtesthbc train.xmll
+  java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab.train verbs2class.txt $debtrainhbc $debtesthbc train.xmll
   mv -f groups.$i.tab.train.out groups.$i.tab.train
 done
 fi
@@ -74,6 +77,7 @@ fi
 
 if [ "0" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
+ls test/*.xml | grep -v -e merged > test.xmll
 for i in $allens
 do
   echo $i

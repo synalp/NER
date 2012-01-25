@@ -332,6 +332,8 @@ public class STMNEParser {
 	 * La position de chaque mot dans le fichier STMNE est sauvegardée dans les Mots du graphe,
 	 * afin de pouvoir ensuite récupérer regénérer un nouveau STMNE
 	 * 
+	 * Cette version conserve le lien avec le fichier TRS d'origine, mais ne tokenize pas bien du tout !
+	 * 
 	 * @param stmnefile
 	 * @return
 	 */

@@ -6,7 +6,7 @@ allens="pers fonc org loc prod time amount unk"
 dest2="/home/xtof/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "conversion du train en .xml"
 mkdir train
 for i in /home/xtof/corpus/ESTER2ftp/EN/train/trs_train_EN_v1.1/*.trs
@@ -14,7 +14,9 @@ do
   j=`echo $i | sed 's,/, ,g;s,trs$,,g' | awk '{print $NF}'`"xml"
   echo $i" "$j
   echo $i > tmp.trsl
-  java -cp "$JCP" ester2.STMNEParser tmp.trsl
+  java -cp "$JCP" ester2.ESTER2EN -trs2xml tmp.trsl
+  mv output.xml oo2.xml
+  java -cp "$JCP" jsafran.ponctuation.UttSegmenter oo2.xml
   mv output.xml train/$j
 done
 fi
@@ -49,7 +51,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "train CRF"
 for en in pers fonc org loc prod time amount unk
 do
@@ -70,7 +72,7 @@ do
   j=`echo $i | sed 's,/, ,g;s,\.trs$,,g' | awk '{print $NF}'`
   echo $i" "$j".xml"
   echo $i > tmp.trsl
-  java -cp "$JCP" ester2.STMNEParser tmp.trsl
+  java -cp "$JCP" ester2.ESTER2EN -trs2xml tmp.trsl
   grep -v -e '^<group> ' output.xml > test/$j".xml"
   echo $i" test/"$j".xml" >> test/trs2xml.list
 done

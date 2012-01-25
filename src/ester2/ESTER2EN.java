@@ -24,6 +24,8 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import jsafran.DetGraph;
 import jsafran.GraphIO;
+import jsafran.Mot;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.EntityResolver;
@@ -39,6 +41,9 @@ import cc.mallet.pipe.iterator.LineGroupIterator;
 import cc.mallet.types.ArraySequence;
 import cc.mallet.types.Instance;
 import com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl;
+
+import corpus.text.TextSegments;
+import corpus.text.TextSegments.segtypes;
 
 /**
  * 
@@ -78,6 +83,12 @@ public class ESTER2EN {
 			if (trspath.contains(TRSfile.get(i))) return getSegments4trs(i);
 		}
 		return null;
+	}
+	
+	public void print() {
+		for (int i=0;i<TRSfile.size();i++) {
+			System.out.println("fich "+i+": "+segsPerTRS.get(i).toString());
+		}
 	}
 	
 	String getWikicat(TypedSegments segs, int tok, String[] tokens, int word) {
@@ -447,7 +458,7 @@ public class ESTER2EN {
 	 * Le résultat se trouve dans les segments 
 	 * @param trslist
 	 */
-	public void loadTest(String trslist) {
+	public void loadTRS(String trslist) {
 		DocumentBuilderFactoryImpl factory = new DocumentBuilderFactoryImpl();
 		factory.setValidating(false);
 		factory.setNamespaceAware(false);
@@ -787,6 +798,132 @@ public class ESTER2EN {
 		}
 	}
 	
+	int[] getGraphMot(List<DetGraph> gs, int charidx) {
+		// cherche le graphe
+		for (int i=0;i<gs.size();i++) {
+			DetGraph g = gs.get(i);
+			long gdeb = g.getMot(0).getDebPosInTxt();
+			long gfin = g.getMot(g.getNbMots()-1).getEndPosInTxt();
+			if (charidx<gdeb) {
+				System.out.println("ERROR char non trouve ! "+charidx);
+				System.exit(1);
+				return null;
+			}
+			if (charidx<=gfin) {
+				// cherche mot
+				for (int j=0;j<g.getNbMots();j++) {
+					if (g.getMot(j).getEndPosInTxt()>=charidx) {
+						final int[] r = {i,j};
+						return r;
+					}
+				}
+				System.out.println("ERROR char fin non trouve !");
+				System.exit(1);
+				return null;
+			}
+		}
+		System.out.println("ERROR char graph non trouve !");
+		System.exit(1);
+		return null;
+	}
+
+	public List<DetGraph> toGraphs() {
+		ArrayList<DetGraph> res = new ArrayList<DetGraph>();
+		for (int i=0;i<getNbTRSfichs();i++) {
+			ArrayList<DetGraph> graphsOneTrs = new ArrayList<DetGraph>();
+
+			TextSegments segs4syntax = new TextSegments();
+			ArrayList<Integer> tokendebs = new ArrayList<Integer>();
+			ArrayList<Integer> tokenends = new ArrayList<Integer>();
+			TypedSegments segs = getSegments4trs(i);
+			System.out.println("trs "+i+" "+segs.getNbTokens());
+
+			// on concatene tous les tokens d'un fichier TRS
+			// on garde la position de chaque token par rapport a la String immutable stockee dans segs4syntax
+			StringBuilder sb = new StringBuilder();
+			for (int j=0;j<segs.getNbTokens();j++) {
+				String tok = segs.getToken(j);
+				tokendebs.add(sb.length());
+				sb.append(tok);
+				tokenends.add(sb.length());
+				sb.append(' ');
+			}
+			final String immutablesource = sb.toString();
+			segs4syntax.addOneString(immutablesource);
+
+			// on tokenize+segmente, en conservant les segments associes a chaque mot pour chaque phrase
+			ArrayList<Integer> uttends = new ArrayList<Integer>();
+			final String eos = ".!?";
+			TextSegments allmots=segs4syntax.tokenizeBasic(0);
+			allmots.tokenizePonct();
+			for (int k=0;k<allmots.getNbSegments();k++) {
+				if (allmots.getSegmentType(k)==segtypes.ponct) {
+					String s = allmots.getSegment(k).trim();
+					if (eos.indexOf(s.charAt(0))>=0) {
+						// new utt !
+						uttends.add(k);
+					}
+				}
+			}
+			// derniere phrase si sans ponctuation finale
+			if (uttends.size()==0||uttends.get(uttends.size()-1)<allmots.getNbSegments()) uttends.add(allmots.getNbSegments());
+
+			// on cree les graphes
+			int deb=0;
+			for (int j=0;j<uttends.size();j++) {
+				DetGraph g = new DetGraph();
+				g.comment=getTRSfich(i);
+				for (int k=deb, l=0;k<=uttends.get(j)&&k<allmots.getNbSegments();k++,l++) {
+					String s=allmots.getSegment(k).trim();
+					Mot m=new Mot(s, s, "unk");
+					m.setPosInTxt(allmots.getSegmentStartPos(k), allmots.getSegmentEndPos(k));
+					g.addMot(l, m);
+				}
+				graphsOneTrs.add(g);
+				deb=uttends.get(j)+1;
+				if (deb>=allmots.getNbSegments()) break;
+			}
+			res.addAll(graphsOneTrs);
+			System.out.println("graphs crees "+graphsOneTrs.size());
+
+			// on ajoute les groupes pour les ENs
+			for (int j=0;j<segs.getNbSegments();j++) {
+				int[] toks = segs.getTokens4segment(j);
+				if (toks.length>0) {
+					Arrays.sort(toks);
+					int tdeb = tokendebs.get(toks[0]);
+					int tfin = tokenends.get(toks[toks.length-1]);
+					int[] gmd = getGraphMot(graphsOneTrs,tdeb);
+					int[] gme = getGraphMot(graphsOneTrs,tfin);
+					if (gmd[0]!=gme[0]) {
+						// ceci arrive lorsqu'on a une EN qui contient des marques de ponctuation finale
+						// il s'agit donc d'une erreur de segmentation en phrases !
+
+						System.out.println("ERROR "+Arrays.toString(gmd)+" "+Arrays.toString(gme)+" "+tdeb+" "+tfin);
+						System.out.println(immutablesource.substring(tdeb,tfin));
+						System.out.println("en context: "+immutablesource.substring(tdeb<10?0:tdeb-10, tfin+10));
+						{
+							Mot m = graphsOneTrs.get(gmd[0]).getMot(gmd[1]);
+							System.out.println("nmots "+graphsOneTrs.get(gmd[0]).getNbMots());
+							System.out.println("bad "+m.getDebPosInTxt()+" "+m.getEndPosInTxt()+" : "+m.getForme()+" : "+immutablesource.substring((int)m.getDebPosInTxt(),(int)m.getEndPosInTxt()));
+						}
+						{
+							System.out.println("graph suivant:");
+							Mot m = graphsOneTrs.get(gme[0]).getMot(gme[1]);
+							System.out.println("nmots "+graphsOneTrs.get(gme[0]).getNbMots());
+							System.out.println("bad "+m.getDebPosInTxt()+" "+m.getEndPosInTxt()+" : "+m.getForme()+" : "+immutablesource.substring((int)m.getDebPosInTxt(),(int)m.getEndPosInTxt()));
+						}
+						// TODO il faudrait empecher la segmentation ici, mais pour le moment, je ne tiens pas compte de cette EN 
+						continue;
+					}
+					DetGraph g = graphsOneTrs.get(gmd[0]);
+					g.addgroup(gmd[1], gme[1], segs.getTypesForSegment(j)[0]);
+				}
+			}
+		}
+		return res;
+	}
+	
 	public static void main(String args[]) {
 		ESTER2EN m =new ESTER2EN();
 		if (args[0].equals("-train")) {
@@ -795,7 +932,7 @@ public class ESTER2EN {
 			m.allFeats();
 		} else if (args[0].equals("-trs2stmne")) {
 			String trslist = args[1];
-			m.loadTest(trslist);
+			m.loadTRS(trslist);
 			m.saveSTMNE("yy.stm-ne");
 		} else if (args[0].equals("-mergeens")) {
 			String xmllist = args[1];
@@ -807,11 +944,19 @@ public class ESTER2EN {
 			saveGroups(xmllist, en);
 		} else if (args[0].equals("-test")) {
 			System.out.println("test0: save feats for all test");
-			m.loadTest("dev.trsl");
+			m.loadTRS("dev.trsl");
 			m.loadListes();
 			System.out.println("test1: infer types and save stm-ne");
 			m.inferNE();
 			m.saveSTMNE("yy.stm-ne");
+		} else if (args[0].equals("-trs2xml")) {
+			m.loadTRS(args[1]);
+			List<DetGraph> gs = m.toGraphs();
+			GraphIO gio = new GraphIO(null);
+			gio.save(gs, "output.xml");
+		} else if (args[0].equals("-load")) {
+			m.loadTRS(args[1]);
+			m.print();
 		}
 	}
 }
