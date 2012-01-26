@@ -57,7 +57,7 @@ debtesthbc=`tail -1 /tmp/yy | cut -d' ' -f2`
 for i in $allens
 do
   echo $i
-  java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab.train verbs2class.txt $debtrainhbc $debtesthbc train.xmll
+  java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab.train verbs2class.txt $debtrainhbc $debtesthbc train.xmll lemme
   mv -f groups.$i.tab.train.out groups.$i.tab.train
 done
 fi
@@ -82,6 +82,7 @@ for i in $allens
 do
   echo $i
   java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER test.xmll $i
+  cp -f groups.$i.tab groups.$i.tab.test
 done
 fi
 
@@ -93,8 +94,8 @@ endhbc=`tail -1 /tmp/yy | cut -d' ' -f2`
 for i in $allens
 do
   echo $i
-  java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab en.log $debhbc $endhbc test.xmll
-  mv -f groups.$i.tab.out groups.$i.tab
+  java -cp "$JCP" ester2.Unsup -inserttab groups.$i.tab.test verbs2class.txt $debhbc $endhbc test.xmll lemme
+  mv -f groups.$i.tab.test.out groups.$i.tab
 done
 fi
 

@@ -6,24 +6,25 @@ allens="pers fonc org loc prod time amount unk"
 dest2="/home/xtof/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "conversion du train en .xml"
 mkdir train
 for i in /home/xtof/corpus/ESTER2ftp/EN/train/trs_train_EN_v1.1/*.trs
 do
   j=`echo $i | sed 's,/, ,g;s,trs$,,g' | awk '{print $NF}'`"xml"
-  echo $i" "$j
+  echo "convert train to xml "$i" "$j
   echo $i > tmp.trsl
   java -cp "$JCP" ester2.ESTER2EN -trs2xml tmp.trsl
   mv output.xml oo2.xml
   java -cp "$JCP" jsafran.ponctuation.UttSegmenter oo2.xml
-  mv output.xml train/$j
+  java -cp "$JCP" jsafran.JSafran -retag output.xml
+  mv output_treetagged.xml train/$j
 done
 fi
 
 if [ "1" == "0" ]; then
 echo "parsing du train et du test"
-cp -f ../../git/jsafran/mate.mods .
+cp -f ../../git/jsafran/mate.mods.FTBfull ./mate.mods
 mkdir train
 for i in train/*.xml
 do
@@ -73,10 +74,14 @@ do
   echo $i" "$j".xml"
   echo $i > tmp.trsl
   java -cp "$JCP" ester2.ESTER2EN -trs2xml tmp.trsl
-  grep -v -e '^<group> ' output.xml > test/$j".xml"
+  grep -v -e '^<group> ' output.xml > oo2.xml
+  java -cp "$JCP" jsafran.ponctuation.UttSegmenter oo2.xml
+  java -cp "$JCP" jsafran.JSafran -retag output.xml
+  mv output_treetagged.xml test/$j
   echo $i" test/"$j".xml" >> test/trs2xml.list
 done
 fi
+exit
 
 if [ "0" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
