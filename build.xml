@@ -1,0 +1,79 @@
+
+<project name="NER" default="compile" basedir=".">
+    <property name="src" location="src"/>
+    <property name="build" location="bin"/>
+    <property name="dist"  location="dist"/>
+    <property name="libs"  location="../../git/jsafran/lib"/>
+    <property name="version" value="1.2"/>
+
+	<path id="jsafran.classpath">
+		<pathelement location="${libs}/org.annolab.tt4j-1.0.12.jar"/>
+		<pathelement location="${libs}/maxent-2.5.2.jar"/>
+		<pathelement location="${libs}/opennlp-tools-1.4.3.jar"/>
+		<pathelement location="${libs}/trove.jar"/>
+		<pathelement location="${libs}/malt.jar"/>
+		<pathelement location="${libs}/detcrf.jar"/>
+		<pathelement location="${libs}/anna.jar"/>
+		<pathelement location="${libs}/../jsafran.jar"/>
+		<pathelement location="lib/mallet.jar"/>
+	</path>
+	
+    <target name="init">
+        <mkdir dir="${build}"/>
+        <mkdir dir="${dist}"/>
+    </target>
+
+    <target name="jnlp">
+    </target>
+
+    <target name="compile" depends="init" description="compile the source " >
+        <echo message="JVM - ${ant.java.version}" />
+        <javac debug="true" srcdir="${src}" destdir="${build}" encoding="UTF-8">
+    	    <classpath refid="jsafran.classpath" />
+        </javac>
+    </target>
+
+    <target name="jar" depends="dist" description="generate the distribution" />
+    <target name="dist" depends="prejar" description="generate the distribution" >
+	<copy file="jsynats.cfg" tofile="${build}/jsynats.cfg"/>
+	<copy file="ex.xml" tofile="${build}/ex.xml"/>
+    	<mkdir dir="${dist}"/>
+        <jar jarfile="jsafran.jar" basedir="${build}"
+             manifest="${dist}/MANIFEST.MF">
+        </jar>
+    </target>
+
+    <target name="mini" depends="compile" description="generate the minimal distribution" >
+	<manifest file="${dist}/MANIFEST.MF">
+		<attribute name="Class-Path" value=""/>
+		<attribute name="Main-Class" value="jsafran.JSafran"/>
+		<attribute name="Implementation-Title" value="JSafran"/>
+		<attribute name="Implementation-Version" value="${version}"/>
+		<attribute name="Implementation-Vendor" value="Christophe Cerisara"/>
+		<attribute name="Build-Date" value="${TODAY}"/>
+	</manifest>
+    	<mkdir dir="${dist}"/>
+        <jar jarfile="jsafran.jar" basedir="${build}"
+             manifest="${dist}/MANIFEST.MF">
+        </jar>
+    </target>
+
+	<target name="prejar" depends="compile">
+		<manifest file="${dist}/MANIFEST.MF">
+			<attribute name="Class-Path" value="lib/liblinear-1.8.jar lib/anna.jar lib/detcrf.jar lib/liblinear-1.33-with-deps.jar lib/libsvm.jar lib/log4j.jar lib/malt.jar lib/maxent-2.5.2.jar lib/opennlp-tools-1.4.3.jar lib/org.annolab.tt4j-1.0.12.jar lib/trove.jar lib/jtrans.jar lib/sphinx4.jar dist/jtrans.jar lib/basicplayer3.0.jar lib/commons-logging-api.jar lib/JHTK.jar lib/jl1.0.jar lib/jogg-0.0.7.jar lib/jorbis-0.0.15.jar lib/jspeex0.9.7.jar lib/JUNG.jar lib/junit-4.5.jar lib/mp3spi1.9.4.jar lib/tritonus_gsm-0.3.6.jar lib/tritonus_remaining.jar lib/tritonus_share.jar lib/vorbisspi1.0.2.jar lib/weka.jar"/>
+			<attribute name="Main-Class" value="jsafran.JSafran"/>
+			<attribute name="Implementation-Title" value="JSafran"/>
+			<attribute name="Implementation-Version" value="${version}"/>
+			<attribute name="Implementation-Vendor" value="Christophe Cerisara"/>
+			<attribute name="Build-Date" value="${TODAY}"/>
+		</manifest>
+	</target>
+
+    <target name="clean"
+        description="clean up" >
+    <!-- Delete the ${build} and ${dist} directory trees -->
+        <delete dir="${build}"/>
+        <delete dir="${dist}"/>
+    </target>
+
+</project>

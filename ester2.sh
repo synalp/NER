@@ -6,7 +6,7 @@ allens="pers fonc org loc prod time amount unk"
 dest2="/home/xtof/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "conversion du train en .xml"
 mkdir train
 for i in /home/xtof/corpus/ESTER2ftp/EN/train/trs_train_EN_v1.1/*.trs
@@ -62,7 +62,7 @@ done
 fi
 
 ###############################################################
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create the graphs.xml files from the gold test TRS"
 rm -rf test
 mkdir test
@@ -78,7 +78,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
 ls test/*.xml | grep -v -e merged > tmp.xmll
 for i in $allens
@@ -122,6 +122,7 @@ do
   java -Xmx1g -cp "$JCP" ester2.STMNEParser -project2stmne $grs $trs $out
 done
 fi
+exit
 
 # eval selon protocole ESTER2
 if [ "0" == "0" ]; then
