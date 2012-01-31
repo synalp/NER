@@ -182,7 +182,9 @@ public class STMNEParser {
 			int enidx=0;
 			ArrayList<EnInTRS> withinEN = new ArrayList<EnInTRS>();
 			
-			PrintWriter fstmne = new PrintWriter(new FileWriter(outfile));
+			PrintWriter fstmne = FileUtils.writeFileISO(outfile);
+			System.out.println("detsave in ISO ! "+outfile);
+//			PrintWriter fstmne = new PrintWriter(new FileWriter(outfile));
 			// TODO: check that we do not forget words in the end
 			int motidx=0;
 			for (int i=0;i<uttdebs.size()-1;i++) {

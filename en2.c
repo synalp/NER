@@ -753,8 +753,8 @@ int main(int ARGC, char *ARGV[]) {
 
 
   /* variables defined with --define */
-  Nc = 10;
-  Nen = 6;
+  Nc = 30;
+  Nen = 20;
   alphaC = 2;
   alphaD = 2;
   alphaE = 1.0e-5;

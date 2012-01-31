@@ -77,7 +77,7 @@ do
   grep -v -e '^<group> ' output.xml > oo2.xml
   java -cp "$JCP" jsafran.ponctuation.UttSegmenter oo2.xml
   java -cp "$JCP" jsafran.JSafran -retag output.xml
-  mv output_treetagged.xml test/$j
+  mv output_treetagged.xml test/$j".xml"
   echo $i" test/"$j".xml" >> test/trs2xml.list
 done
 fi

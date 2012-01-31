@@ -12,8 +12,9 @@
 # 2- modifier le sampling de H: forcer H a ne prendre des valeurs QUE sur le voisinnage de w
 
 JCP="bin:../utils/bin:../../git/jsafran/jsafran.jar"
-allens="pers fonc org loc prod time amount unk"
+allens="pers fonc org loc prod time amount"
 dest2="/home/xtof/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
+export PATH=$PATH:$dest2/tools
 
 if [ "1" == "0" ]; then
 echo "save Gigaword as .xml"
@@ -25,9 +26,10 @@ mv -f output.xml c$i.xml
 done
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "unsup clustering"
-echo "c0b.conll" > unlab.xmll
+#echo "c0b.conll" > unlab.xmll
+cat gw.xmll > unlab.xmll
 rm -f train.xmll test.xmll
 touch train.xmll test.xmll
 #ls train/*.xml > train.xmll
@@ -37,6 +39,17 @@ gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 ./en2.exe | tee en.log
 java -cp "$JCP" ester2.Unsup -analyse en.log > an.log
 fi
+exit
+
+# le reste se fait dorenavant sur le cluster
+# il faut donc copier les fichiers necessaires sur le cluster:
+scp words2class.txt clustertalc:git6/NER/words2class.txt.0
+scp verbs2class.txt clustertalc:git6/NER/verbs2class.txt.0
+scp creeobs.log clustertalc:git6/NER/
+scp voc.serialized.? clustertalc:git6/NER/
+
+exit
+
 
 if [ "1" == "0" ]; then
 echo "create TAB files for CRF training"
@@ -49,7 +62,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "Insert in the CRF TAB files the (syntactic) class obtained from unsup clustering"
 grep indexobsHBC creeobs.log | head -2 > /tmp/yy
 debtrainhbc=`head -1 /tmp/yy | cut -d' ' -f2`
@@ -62,7 +75,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "train CRF"
 for en in $allens
 do
@@ -75,18 +88,18 @@ fi
 ###############################################
 # (see ester2.sh) pour generer les fichiers requis
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
 ls test/*.xml | grep -v -e merged > test.xmll
 for i in $allens
 do
   echo $i
-  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER test.xmll $i
+  java -Xmx15g -cp "$JCP" ester2.ESTER2EN -saveNER test.xmll $i
   cp -f groups.$i.tab groups.$i.tab.test
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "Insert in the CRF TAB files the (syntactic) class obtained from unsup clustering"
 grep indexobsHBC creeobs.log | tail -2 > /tmp/yy
 debhbc=`head -1 /tmp/yy | cut -d' ' -f2`
@@ -99,7 +112,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 for en in $allens
 do
   echo "test the CRF for $en"
@@ -108,7 +121,7 @@ done
 fi
 
 # merge les res dans un seul stmne
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "put all CRF outputs into a single xml file"
 java -Xmx1g -cp "$JCP" ester2.ESTER2EN -mergeens test.xmll $allens
 echo "convert the graph.xml into a .stm-ne file"
