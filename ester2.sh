@@ -2,8 +2,8 @@
 
 JCP="bin:../../git/jsafran/jsafran.jar:../../softs/mallet-2.0.5/dist/mallet.jar:../../softs/mallet-2.0.5/dist/mallet-deps.jar:../../softs/mallet-2.0.5/lib/trove-2.0.2.jar"
 
-allens="pers fonc org loc prod time amount unk"
-dest2="/home/xtof/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
+allens="pers fonc org loc prod time amount"
+dest2="/home/didiot/NER_Xtof/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
 if [ "1" == "0" ]; then
@@ -63,7 +63,7 @@ done
 fi
 
 ###############################################################
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create the graphs.xml files from the gold test TRS"
 rm -rf test
 mkdir test
@@ -83,7 +83,7 @@ done
 fi
 exit
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
 ls test/*.xml | grep -v -e merged > tmp.xmll
 for i in $allens
@@ -94,7 +94,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 for en in $allens
 do
   echo "test the CRF for $en"
@@ -112,10 +112,10 @@ done
 fi
 
 # merge les res dans un seul stmne
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "put all CRF outputs into a single xml file"
 ls test/*.xml | grep -v -e merged > tmp.xmll
-java -Xmx1g -cp "$JCP" ester2.ESTER2EN -mergeens tmp.xmll $allens
+java -cp "$JCP" ester2.ESTER2EN -mergeens tmp.xmll $allens
 echo "convert the graph.xml into a .stm-ne file"
 nl=`wc -l test/trs2xml.list | cut -d' ' -f1`
 for (( c=1; c<=$nl; c++ ))
