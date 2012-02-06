@@ -18,6 +18,34 @@
 		<pathelement location="lib/mallet.jar"/>
 	</path>
 	
+	<path id="myclasspath">
+			<pathelement location="../../git/jsafran/jsafran.jar"/>
+		<pathelement location="lib/*.jar"/>
+	</path>
+
+	<target name="mycompile">
+		<javac debug="true" srcdir="src" destdir="bin" encoding="UTF-8">
+			<classpath refid="myclasspath"/>
+	    </javac>
+	</target>
+	
+	<target name="myjar" depends="mycompile">
+		<manifest file="MANIFEST.MF">
+			<attribute name="Class-Path" value="../../git/jsafran/jsafran.jar lib/detcrf.jar"/>
+			<attribute name="Main-Class" value="ester2.JCommands"/>
+		</manifest>
+		<jar destfile="en.jar" basedir="bin" manifest="MANIFEST.MF">
+		</jar>
+	</target>
+
+	<target name="myrun" depends="myjar">
+		<java jar="en.jar" fork="true" maxmemory="15000m" />
+	</target>
+	<target name="myrunx" depends="myjar">
+		<java jar="en.jar" args="insertClassesTrain" fork="true" maxmemory="15000m" />
+	</target>
+
+
     <target name="init">
         <mkdir dir="${build}"/>
         <mkdir dir="${dist}"/>
