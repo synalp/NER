@@ -739,7 +739,6 @@ public class ESTER2EN {
 	}
 
 	private static void mergeENs(String xmllist, String[] ens) {
-		System.out.println("ens: "+Arrays.toString(ens));
 		final int recol=2;
 		try {
 			GraphIO gio = new GraphIO(null);
@@ -752,55 +751,43 @@ public class ESTER2EN {
 				String gsfilename = fl.readLine();
 				if (gsfilename==null) break;
 				List<DetGraph> gs = gio.loadAllGraphs(gsfilename);
-				String lastgroup = "NO";
 				for (int i=0;i<gs.size();i++) {
 					DetGraph g = gs.get(i);
 					g.clearGroups();
 					for (int j=0;j<g.getNbMots();j++) {
 						for (int k=0;k<ens.length;k++) {
 							String sen = fens[k].readLine();
-							for (;;) {
-								sen=sen.trim();
-								if (sen.length()>0) break;
-								sen = fens[k].readLine();
-							}
 							String[] ss = sen.split("\t");
-							if (ss[recol].charAt(ss[recol].length()-1)=='B') {
+							if (ss[recol].equals(ens[k]+'B')) {
 								if (debin[k]>=0) {
-									g.addgroup(debin[k], j-1, lastgroup);
+									g.addgroup(debin[k], j-1, ens[k]);
 								}
 								debin[k]=j;
-								lastgroup = ss[recol].substring(0,ss[recol].length()-1);
-							} else if (ss[recol].charAt(ss[recol].length()-1)=='I') {
+							} else if (ss[recol].equals(ens[k]+'I')) {
 								if (debin[k]<0) {
 									System.err.println("warning: enIn without Begin "+ens[k]);
 									debin[k]=j;
-									lastgroup = ss[recol].substring(0,ss[recol].length()-1);
 								}
 							} else {
 								if (debin[k]>=0) {
-									g.addgroup(debin[k], j-1, lastgroup);
+									g.addgroup(debin[k], j-1, ens[k]);
 								}
 								debin[k]=-1;
-								lastgroup = "NO";
 							}
 						}
 					}
 					for (int k=0;k<ens.length;k++) {
 						if (debin[k]>=0) {
-							g.addgroup(debin[k], g.getNbMots()-1, lastgroup);
+							g.addgroup(debin[k], g.getNbMots()-1, ens[k]);
 							debin[k]=-1;
-							lastgroup = "NO";
 						}
 					}
-/*
 					if (g.getNbMots()>0) {
 						for (int k=0;k<ens.length;k++) {
 							String sen = fens[k].readLine();
 							if (sen.trim().length()>0) System.err.println("warning: decalage des phrases ? "+sen);
 						}
 					}
-					*/
 				}
 				gio.save(gs, gsfilename+".merged.xml");
 			}
