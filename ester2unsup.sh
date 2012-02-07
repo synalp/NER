@@ -32,8 +32,8 @@ echo "unsup clustering"
 cat gw.xmll > unlab.xmll
 rm -f train.xmll test.xmll
 touch train.xmll test.xmll
-#ls train/*.xml > train.xmll
-#ls test/*.xml | grep -v -e merged > test.xmll
+ls train/*.xml > train.xmll
+ls test/*.xml | grep -v -e merged > test.xmll
 java -cp "$JCP" ester2.Unsup -creeObs unlab.xmll train.xmll test.xmll > creeobs.log
 gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 ./en2.exe | tee en.log

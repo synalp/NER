@@ -48,12 +48,14 @@ public class JCommands {
 	
 	public static void main(String[] args) {
 		if (args.length==0) {
+/*
 			makeTABSforCRF_v2(false);
 			insertClasses_v2(false);
 			trainCRF_v2();
 			makeTABSforCRF_v2(true);
 			insertClasses_v2(true);
 			testCRF_v2();
+*/
 			merge_v2();
 			eval();
 			return;
@@ -233,7 +235,7 @@ public class JCommands {
 
 	public static void merge() {
 		String[] args = new String[allens4merge.length+2];
-		args[0]="-mergeen";
+		args[0]="-mergeens";
 		args[1]="test.xmll";
 		int i=2;
 		for (String en : allens4merge) args[i++]=en;
@@ -241,7 +243,7 @@ public class JCommands {
 	}
 	public static void merge_v2() {
 		String[] args = new String[3];
-		args[0]="-mergeen";
+		args[0]="-mergeens";
 		args[1]="test.xmll";
 		args[2]="all";
 		ESTER2EN.main(args);
@@ -396,7 +398,11 @@ public class JCommands {
 				en="NO";
 				String s = fs[0].readLine();
 				if (s==null) break;
-				if (s.trim().length()==0) continue;
+				if (s.trim().length()==0) {
+					for (int i=1;i<allens.length;i++)
+						fs[i].readLine();
+					continue;
+				}
 				String[] ss = s.split("\t");
 				if (en.equals("NO")&&!ss[ss.length-1].equals("NO")) {
 					en=ss[ss.length-1];
