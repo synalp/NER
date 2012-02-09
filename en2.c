@@ -816,16 +816,14 @@ int main(int ARGC, char *ARGV[]) {
     resample_c(N, alphaC, alphaV, c, d, e, post_thetaC, post_thetaV, thetaE, v, Nc, VV, Nen);
     resample_e(N, alphaW, c, d, e, post_thetaW, thetaE, w, Nen, VW);
 
-if (iter>=20) {
-  dump_c(N,c);
-  dump_e(N,e);
-}
-
     loglik = compute_log_posterior(N, Nc, Nd, Nen, VV, VW, alphaC, alphaD, alphaE, alphaV, alphaW, c, d, e, post_thetaC, post_thetaD, thetaE, post_thetaV, post_thetaW, v, w);
     fprintf(stderr, "\t%g", loglik);
     if ((iter==1)||(loglik>bestloglik)) {
       bestloglik = loglik;
       fprintf(stderr, " *");
+      printf("\n");
+      dump_c(N,c);
+      dump_e(N,e);
     }
     fprintf(stderr, "\n");
     fflush(stderr);

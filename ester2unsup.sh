@@ -32,7 +32,7 @@ echo "unsup clustering"
 cat gw.xmll > unlab.xmll
 rm -f train.xmll test.xmll
 touch train.xmll test.xmll
-ls train/*.xml > train.xmll
+ls train/*_mate.xml > train.xmll
 ls test/*.xml | grep -v -e merged > test.xmll
 java -cp "$JCP" ester2.Unsup -creeObs unlab.xmll train.xmll test.xmll > creeobs.log
 gcc -g stats.c samplib.c en2.c -o en2.exe -lm
@@ -40,6 +40,22 @@ gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 java -cp "$JCP" ester2.Unsup -analyse en.log > an.log
 fi
 exit
+
+if [ "0" == "0" ]; then
+echo "creation fichiers de train du CRF"
+cat gw.xmll > unlab.xmll
+rm -f train.xmll test.xmll
+touch train.xmll test.xmll
+ls train/*_mate.xml > train.xmll
+ls test/*_mate.xml | grep -v -e merged > test.xmll
+
+for i in $allens
+do
+  java -cp "$JCP" ester2.Unsup -inserttab en.log groups.$i.tab.train groups.$i.tab.test unlab.xmll train.xmll test.xmll
+done
+fi
+exit
+
 
 # le reste se fait dorenavant sur le cluster
 # il faut donc copier les fichiers necessaires sur le cluster:

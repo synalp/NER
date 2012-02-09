@@ -81,9 +81,8 @@ do
   echo $i" test/"$j".xml" >> test/trs2xml.list
 done
 fi
-exit
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
 ls test/*.xml | grep -v -e merged > tmp.xmll
 for i in $allens
@@ -91,8 +90,10 @@ do
   echo $i
   # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
   java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER tmp.xmll $i
+  cp -f groups.$i.tab groups.$i.tab.test
 done
 fi
+exit
 
 if [ "1" == "0" ]; then
 for en in $allens
