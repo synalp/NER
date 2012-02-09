@@ -149,7 +149,7 @@ public class Unsup {
 	}
 	static void insertInTab(String enlog, String unlabxmll, String trainxmll, String testxmll, String tabtrain, String tabtest) {
 
-//		testdebug(testxmll);
+		//		testdebug(testxmll);
 
 		int hbcidx = 0;
 		try {
@@ -234,32 +234,34 @@ public class Unsup {
 								}
 								String taboutline = tabline;
 								if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
+									boolean isHbcSample = true;
 									int d = g.getDep(i);
 									if (d>=0) {
-										String deplab = g.getDepLabel(d);
 										int h = g.getHead(d);
 										if (g.getMot(h).getPOS().startsWith("P")) {
 											// cas particulier "il a réuni à Paris"
 											int dh = g.getDep(h);
-											if (dh<0) continue;
+											if (dh<0) isHbcSample=false;
 											h = g.getHead(dh);
-											deplab=g.getDepLabel(dh);
 										}
+										if (h>=0) {
+											if (!g.getMot(h).getPOS().startsWith("VER")) isHbcSample=false;
+											if (g.getMot(h).getLemme().equals("être")) isHbcSample=false;
+											if (g.getMot(h).getLemme().equals("avoir")) isHbcSample=false;
 
-										if (!g.getMot(h).getPOS().startsWith("VER")) continue;
-										if (g.getMot(h).getLemme().equals("être")) continue;
-										if (g.getMot(h).getLemme().equals("avoir")) continue;
-
-										// on a une instance = 1 sample de HBC
-										int cl = Integer.parseInt(st.nextToken());
-										if (ftabout!=null) {
-											String[] stt = tabline.split("\t");
-											if (stt!=null&&stt.length>=3) {
-												stt[1]="CLW"+cl;
-												taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCLW"+"\t"+"NOCLV"+"\t"+stt[3];
+											if (isHbcSample) {
+												// on a une instance = 1 sample de HBC
+												int cl = Integer.parseInt(st.nextToken());
+												if (ftabout!=null) {
+													String[] stt = tabline.split("\t");
+													if (stt!=null&&stt.length>=3) {
+														stt[1]="CLW"+cl;
+														taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
+													}
+												}
+												hbcidx++;
 											}
 										}
-										hbcidx++;
 									}
 								}
 								ftabout.println(taboutline);
@@ -297,32 +299,35 @@ public class Unsup {
 								}
 								String taboutline = tabline;
 								if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
+									boolean isHbcSample = true;
 									int d = g.getDep(i);
 									if (d>=0) {
-										String deplab = g.getDepLabel(d);
 										int h = g.getHead(d);
 										if (g.getMot(h).getPOS().startsWith("P")) {
 											// cas particulier "il a réuni à Paris"
 											int dh = g.getDep(h);
-											if (dh<0) continue;
+											if (dh<0) isHbcSample=false;
 											h = g.getHead(dh);
-											deplab=g.getDepLabel(dh);
 										}
 
-										if (!g.getMot(h).getPOS().startsWith("VER")) continue;
-										if (g.getMot(h).getLemme().equals("être")) continue;
-										if (g.getMot(h).getLemme().equals("avoir")) continue;
+										if (h>=0) {
+											if (!g.getMot(h).getPOS().startsWith("VER")) isHbcSample=false;
+											if (g.getMot(h).getLemme().equals("être")) isHbcSample=false;
+											if (g.getMot(h).getLemme().equals("avoir")) isHbcSample=false;
 
-										// on a une instance = 1 sample de HBC
-										int cl = Integer.parseInt(st.nextToken());
-										if (ftabout!=null) {
-											String[] stt = tabline.split("\t");
-											if (stt!=null&&stt.length>=3) {
-												stt[1]="CLW"+cl;
-												taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCLW"+"\t"+"NOCLV"+"\t"+stt[3];
+											if (isHbcSample) {
+												// on a une instance = 1 sample de HBC
+												int cl = Integer.parseInt(st.nextToken());
+												if (ftabout!=null) {
+													String[] stt = tabline.split("\t");
+													if (stt!=null&&stt.length>=3) {
+														stt[1]="CLW"+cl;
+														taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
+													}
+												}
+												hbcidx++;
 											}
 										}
-										hbcidx++;
 									}
 								}
 								ftabout.println(taboutline);
