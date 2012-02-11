@@ -41,8 +41,8 @@ fi
 
 if [ "1" == "0" ]; then
 echo "create training files for CRF"
-ls train/*.xml > tmp.xmll
-for i in pers fonc org loc prod time amount unk
+ls train/*_mate.xml > tmp.xmll
+for i in pers fonc org loc prod time amount
 do
   echo $i
   # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab

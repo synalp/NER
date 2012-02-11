@@ -768,6 +768,9 @@ int main(int ARGC, char *ARGV[]) {
   v = load_discrete1("enV", &N, &VV);
   d = load_discrete1("enD", &N, &Nd);
 
+  printf ("sizes %d %d %d %d\n",N,VW,VV,Nd);
+  printf ("debug V %d\n",v[154623]);
+
   /* variables defined with --loadM or --loadMI */
 
   fprintf(stderr, "Allocating memory...\n");
