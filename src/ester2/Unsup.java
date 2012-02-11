@@ -83,6 +83,60 @@ public class Unsup {
 
 	}
 
+	// permet de centraliser en un seul endroit l'extraction des instances pour HBC depuis les graphes
+	interface InstanceHandler {
+		public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception;
+	}
+	static class SelectInstances {
+		static InstanceHandler ih = null;
+		static void parseCorpus(String xmll) {
+			try {
+				GraphIO gio = new GraphIO(null);
+				BufferedReader flist = new BufferedReader(new FileReader(xmll));
+				int nfiles=0, ngraphs=0, nwords=0, nhbc=0;
+				for (;;) {
+					String s = flist.readLine();
+					if (s==null) break;
+					nfiles++;
+					List<DetGraph> gs = gio.loadAllGraphs(s);
+					ngraphs+=gs.size();
+					for (DetGraph g : gs) {
+						nwords+=g.getNbMots();
+						for (int i=0;i<g.getNbMots();i++) {
+							if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
+								boolean isHbcSample = true;
+								int d = g.getDep(i);
+								if (d>=0) {
+									int h = g.getHead(d);
+									if (g.getMot(h).getPOS().startsWith("P")) {
+										// cas particulier "il a réuni à Paris"
+										int dh = g.getDep(h);
+										if (dh<0) isHbcSample=false;
+										h = g.getHead(dh);
+									}
+									if (h>=0) {
+										if (!g.getMot(h).getPOS().startsWith("VER")) isHbcSample=false;
+										if (g.getMot(h).getLemme().equals("être")) isHbcSample=false;
+										if (g.getMot(h).getLemme().equals("avoir")) isHbcSample=false;
+
+										if (isHbcSample) {
+											ih.nextWord(g, i, true);
+											nhbc++;
+										} else ih.nextWord(g, i, false);
+									}
+								}
+							} else ih.nextWord(g, i, false);
+						}
+					}
+				}
+				flist.close();
+				System.out.println("nfiles "+nfiles+" ngraphs "+ngraphs+" nwords "+nwords+" nhbc "+nhbc);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	/**
 	 * Insere (ou plutot remplace), dans la colonne 3 d'un TAB file qui a été créé pour le Stanford NER,
 	 * les classes obtenues automatiquement avec HBC.
@@ -103,45 +157,17 @@ public class Unsup {
 	 */
 	static void testdebug(String trainxmll) {
 		try {
-			int nw=0, nhbc=0;
-			GraphIO gio = new GraphIO(null);
-			{ // train
-				BufferedReader flist = new BufferedReader(new FileReader(trainxmll));
-				for (;;) {
-					String s = flist.readLine();
-					if (s==null) break;
-					List<DetGraph> gs = gio.loadAllGraphs(s);
-					for (DetGraph g : gs) {
-						for (int i=0;i<g.getNbMots();i++) {
-							nw++;
-							String tabline=null;
-							if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
-								int d = g.getDep(i);
-								if (d>=0) {
-									String deplab = g.getDepLabel(d);
-									int h = g.getHead(d);
-									if (g.getMot(h).getPOS().startsWith("P")) {
-										// cas particulier "il a réuni à Paris"
-										int dh = g.getDep(h);
-										if (dh<0) continue;
-										h = g.getHead(dh);
-										deplab=g.getDepLabel(dh);
-									}
-
-									if (!g.getMot(h).getPOS().startsWith("VER")) continue;
-									if (g.getMot(h).getLemme().equals("être")) continue;
-									if (g.getMot(h).getLemme().equals("avoir")) continue;
-
-									// on a une instance = 1 sample de HBC
-									nhbc++;
-								}
-							}
-						}
-					}
+			final int[] counts = {0,0};
+			SelectInstances.ih = new InstanceHandler() {
+				@Override
+				public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) {
+					if (isInstance)
+						counts[1]++;
+					counts[0]++;
 				}
-				flist.close();
-			}
-			System.out.println("nwords "+nw+" nhbc "+nhbc);
+			};
+			SelectInstances.parseCorpus(trainxmll);
+			System.out.println("nwords in train graphs "+counts[0]+" nhbc "+counts[1]);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -149,9 +175,9 @@ public class Unsup {
 	}
 	static void insertInTab(String enlog, String unlabxmll, String trainxmll, String testxmll, String tabtrain, String tabtest) {
 
-		//		testdebug(testxmll);
+//		testdebug(unlabxmll);
 
-		int hbcidx = 0;
+		final int[] hbcidx = {0};
 		try {
 			// lecture des classes
 			String bests=null;
@@ -168,176 +194,98 @@ public class Unsup {
 				System.err.println("ERROR: no samples found !");
 				return;
 			}
-			StringTokenizer st = new StringTokenizer(bests," ");
+			final StringTokenizer st = new StringTokenizer(bests," ");
 			st.nextToken(); // e
 			st.nextToken(); // =
 
 			GraphIO gio = new GraphIO(null);
 			{
-				{ // unlab
-					BufferedReader flist = new BufferedReader(new FileReader(unlabxmll));
-					for (;;) {
-						String s = flist.readLine();
-						if (s==null) break;
-						List<DetGraph> gs = gio.loadAllGraphs(s);
-						for (DetGraph g : gs) {
-							for (int i=0;i<g.getNbMots();i++) {
-								if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
-									int d = g.getDep(i);
-									if (d>=0) {
-										String deplab = g.getDepLabel(d);
-										int h = g.getHead(d);
-										if (g.getMot(h).getPOS().startsWith("P")) {
-											// cas particulier "il a réuni à Paris"
-											int dh = g.getDep(h);
-											if (dh<0) continue;
-											h = g.getHead(dh);
-											deplab=g.getDepLabel(dh);
-										}
-
-										if (!g.getMot(h).getPOS().startsWith("VER")) continue;
-										if (g.getMot(h).getLemme().equals("être")) continue;
-										if (g.getMot(h).getLemme().equals("avoir")) continue;
-
-										// on a une instance = 1 sample de HBC
-										hbcidx++;
-										st.nextToken();
-									}
-								}
-							}
+				SelectInstances.ih = new InstanceHandler() {
+					@Override
+					public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) {
+						if (isInstance) {
+							hbcidx[0]++;
+							st.nextToken();
 						}
 					}
-					flist.close();
-				}
-				{ // train
-					BufferedReader ftabin = null;
-					PrintWriter ftabout = null;
-
+				};
+				SelectInstances.parseCorpus(unlabxmll);
+				{
+					// train
+					final Object[] ftabs = {null,null};
+					SelectInstances.ih = new InstanceHandler() {
+						@Override
+						public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception {
+							String tabline=null;
+							if (ftabs[0]!=null) {
+								for (;;) {
+									tabline = ((BufferedReader)ftabs[0]).readLine();
+									tabline = tabline.trim();
+									if (tabline.length()>0) break;
+								}
+							}
+							String taboutline = tabline;
+							if (isInstance) {
+								int cl = Integer.parseInt(st.nextToken());
+								if (ftabs[0]!=null) {
+									String[] stt = tabline.split("\t");
+									if (stt!=null&&stt.length>=3) {
+										stt[1]="CLW"+cl;
+										taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
+									}
+								}
+								hbcidx[0]++;
+							}
+							((PrintWriter)ftabs[1]).println(taboutline);
+						}
+					};
 					if (tabtrain!=null) {
-						ftabin = FileUtils.openFileUTF(tabtrain);
-						ftabout = FileUtils.writeFileUTF(tabtrain+".out");
+						ftabs[0]= FileUtils.openFileUTF(tabtrain);
+						ftabs[1]= FileUtils.writeFileUTF(tabtrain+".out");
 					}
-					BufferedReader flist = new BufferedReader(new FileReader(trainxmll));
-					for (;;) {
-						String s = flist.readLine();
-						if (s==null) break;
-						List<DetGraph> gs = gio.loadAllGraphs(s);
-						for (DetGraph g : gs) {
-							for (int i=0;i<g.getNbMots();i++) {
-								String tabline=null;
-								if (ftabout!=null) {
-									for (;;) {
-										tabline = ftabin.readLine();
-										tabline = tabline.trim();
-										if (tabline.length()>0) break;
-									}
-								}
-								String taboutline = tabline;
-								if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
-									boolean isHbcSample = true;
-									int d = g.getDep(i);
-									if (d>=0) {
-										int h = g.getHead(d);
-										if (g.getMot(h).getPOS().startsWith("P")) {
-											// cas particulier "il a réuni à Paris"
-											int dh = g.getDep(h);
-											if (dh<0) isHbcSample=false;
-											h = g.getHead(dh);
-										}
-										if (h>=0) {
-											if (!g.getMot(h).getPOS().startsWith("VER")) isHbcSample=false;
-											if (g.getMot(h).getLemme().equals("être")) isHbcSample=false;
-											if (g.getMot(h).getLemme().equals("avoir")) isHbcSample=false;
-
-											if (isHbcSample) {
-												// on a une instance = 1 sample de HBC
-												int cl = Integer.parseInt(st.nextToken());
-												if (ftabout!=null) {
-													String[] stt = tabline.split("\t");
-													if (stt!=null&&stt.length>=3) {
-														stt[1]="CLW"+cl;
-														taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
-													}
-												}
-												hbcidx++;
-											}
-										}
-									}
-								}
-								ftabout.println(taboutline);
-							}
-						}
-					}
-					flist.close();
-					if (ftabout!=null) {
-						ftabin.close();
-						ftabout.close();
+					SelectInstances.parseCorpus(trainxmll);
+					if (tabtrain!=null) {
+						((BufferedReader)ftabs[0]).close();
+						((PrintWriter)ftabs[1]).close();
 					}
 				}
-				{ // test
-					BufferedReader ftabin = null;
-					PrintWriter ftabout = null;
-
-					if (tabtest!=null) {
-						ftabin = FileUtils.openFileUTF(tabtest);
-						ftabout = FileUtils.writeFileUTF(tabtest+".out");
-					}
-					BufferedReader flist = new BufferedReader(new FileReader(testxmll));
-					for (;;) {
-						String s = flist.readLine();
-						if (s==null) break;
-						List<DetGraph> gs = gio.loadAllGraphs(s);
-						for (DetGraph g : gs) {
-							for (int i=0;i<g.getNbMots();i++) {
-								String tabline=null;
-								if (ftabout!=null) {
-									for (;;) {
-										tabline = ftabin.readLine();
-										tabline = tabline.trim();
-										if (tabline.length()>0) break;
-									}
+				{
+					// test
+					final Object[] ftabs = {null,null};
+					SelectInstances.ih = new InstanceHandler() {
+						@Override
+						public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception {
+							String tabline=null;
+							if (ftabs[0]!=null) {
+								for (;;) {
+									tabline = ((BufferedReader)ftabs[0]).readLine();
+									tabline = tabline.trim();
+									if (tabline.length()>0) break;
 								}
-								String taboutline = tabline;
-								if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
-									boolean isHbcSample = true;
-									int d = g.getDep(i);
-									if (d>=0) {
-										int h = g.getHead(d);
-										if (g.getMot(h).getPOS().startsWith("P")) {
-											// cas particulier "il a réuni à Paris"
-											int dh = g.getDep(h);
-											if (dh<0) isHbcSample=false;
-											h = g.getHead(dh);
-										}
-
-										if (h>=0) {
-											if (!g.getMot(h).getPOS().startsWith("VER")) isHbcSample=false;
-											if (g.getMot(h).getLemme().equals("être")) isHbcSample=false;
-											if (g.getMot(h).getLemme().equals("avoir")) isHbcSample=false;
-
-											if (isHbcSample) {
-												// on a une instance = 1 sample de HBC
-												int cl = Integer.parseInt(st.nextToken());
-												if (ftabout!=null) {
-													String[] stt = tabline.split("\t");
-													if (stt!=null&&stt.length>=3) {
-														stt[1]="CLW"+cl;
-														taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
-													}
-												}
-												hbcidx++;
-											}
-										}
-									}
-								}
-								ftabout.println(taboutline);
 							}
+							String taboutline = tabline;
+							if (isInstance) {
+								int cl = Integer.parseInt(st.nextToken());
+								if (ftabs[0]!=null) {
+									String[] stt = tabline.split("\t");
+									if (stt!=null&&stt.length>=3) {
+										stt[1]="CLW"+cl;
+										taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
+									}
+								}
+								hbcidx[0]++;
+							}
+							((PrintWriter)ftabs[1]).println(taboutline);
 						}
+					};
+					if (tabtest!=null) {
+						ftabs[0]= FileUtils.openFileUTF(tabtest);
+						ftabs[1]= FileUtils.writeFileUTF(tabtest+".out");
 					}
-					flist.close();
-					if (ftabout!=null) {
-						ftabin.close();
-						ftabout.close();
+					SelectInstances.parseCorpus(testxmll);
+					if (tabtest!=null) {
+						((BufferedReader)ftabs[0]).close();
+						((PrintWriter)ftabs[1]).close();
 					}
 				}
 			}

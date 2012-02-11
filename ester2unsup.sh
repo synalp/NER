@@ -55,28 +55,28 @@ do
 done
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "train CRF"
 for en in $allens
 do
-  sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab.train,g' syn.props > tmp.props
-  java -Xmx2g -cp lib/detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
+  sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab.train.out,g' syn.props > tmp.props
+  java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
   mv kiki.mods en.$en.mods
 done
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 for en in $allens
 do
   echo "test the CRF for $en"
-  java -Xmx1g -cp lib/detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab.test.out > test.$en.log
+  java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab.test.out > test.$en.log
 done
 fi
 
 # merge les res dans un seul stmne
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "put all CRF outputs into a single xml file"
-java -Xmx1g -cp "$JCP" ester2.ESTER2EN -mergeens test.xmll $allens
+java -Xmx20g -cp "$JCP" ester2.ESTER2EN -mergeens test.xmll $allens
 echo "convert the graph.xml into a .stm-ne file"
 nl=`wc -l test/trs2xml.list | cut -d' ' -f1`
 for (( c=1; c<=$nl; c++ ))
@@ -85,7 +85,7 @@ do
   grs=`awk '{if (NR=='$c') print $2}' test/trs2xml.list | sed 's,\.xml,.xml.merged.xml,g'`
   out=`echo $grs | sed 's,\.xml\.merged\.xml,,g'`".stm-ne"
   echo "build stmne from $trs $grs $out"
-  java -Xmx1g -cp "$JCP" ester2.STMNEParser -project2stmne $grs $trs $out
+  java -Xmx20g -cp "$JCP" ester2.STMNEParser -project2stmne $grs $trs $out
 done
 fi
 
