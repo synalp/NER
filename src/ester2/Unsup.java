@@ -1,24 +1,17 @@
 package ester2;
 
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
-import java.sql.NClob;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
-import utils.DET;
 import utils.FileUtils;
 
 import jsafran.DetGraph;
@@ -85,7 +78,7 @@ public class Unsup {
 
 	// permet de centraliser en un seul endroit l'extraction des instances pour HBC depuis les graphes
 	interface InstanceHandler {
-		public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception;
+		public void nextWord(DetGraph g, int wordInGraph, int head, int depidx, boolean isInstance) throws Exception;
 	}
 	static class SelectInstances {
 		static InstanceHandler ih = null;
@@ -120,12 +113,12 @@ public class Unsup {
 										if (g.getMot(h).getLemme().equals("avoir")) isHbcSample=false;
 
 										if (isHbcSample) {
-											ih.nextWord(g, i, true);
+											ih.nextWord(g, i, h, d, true);
 											nhbc++;
-										} else ih.nextWord(g, i, false);
-									}
-								}
-							} else ih.nextWord(g, i, false);
+										} else ih.nextWord(g, i, h, d, false);
+									} else ih.nextWord(g, i, h, d, false);
+								} else ih.nextWord(g, i, -1, d, false);
+							} else ih.nextWord(g, i, -1, -1, false);
 						}
 					}
 				}
@@ -160,7 +153,7 @@ public class Unsup {
 			final int[] counts = {0,0};
 			SelectInstances.ih = new InstanceHandler() {
 				@Override
-				public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) {
+				public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) {
 					if (isInstance)
 						counts[1]++;
 					counts[0]++;
@@ -202,7 +195,7 @@ public class Unsup {
 			{
 				SelectInstances.ih = new InstanceHandler() {
 					@Override
-					public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) {
+					public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) {
 						if (isInstance) {
 							hbcidx[0]++;
 							st.nextToken();
@@ -215,7 +208,7 @@ public class Unsup {
 					final Object[] ftabs = {null,null};
 					SelectInstances.ih = new InstanceHandler() {
 						@Override
-						public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception {
+						public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) throws Exception {
 							String tabline=null;
 							if (ftabs[0]!=null) {
 								for (;;) {
@@ -253,8 +246,9 @@ public class Unsup {
 					// test
 					final Object[] ftabs = {null,null};
 					SelectInstances.ih = new InstanceHandler() {
+						int nex=0;
 						@Override
-						public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception {
+						public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) throws Exception {
 							String tabline=null;
 							if (ftabs[0]!=null) {
 								for (;;) {
@@ -263,6 +257,8 @@ public class Unsup {
 									if (tabline.length()>0) break;
 								}
 							}
+							nex++;
+							System.out.println("nex "+nex+" "+tabline);
 							String taboutline = tabline;
 							if (isInstance) {
 								int cl = Integer.parseInt(st.nextToken());
@@ -539,65 +535,34 @@ public class Unsup {
 
 	// pour le stanford CRF
 	public static void creeObsFile(String unlabxmls, String trainxmls, String testxmls) throws Exception {
-		GraphIO gio = new GraphIO(null);
-		PrintWriter fv = new PrintWriter(new FileWriter("enV"));
-		PrintWriter fw = new PrintWriter(new FileWriter("enO"));
-		PrintWriter fd = new PrintWriter(new FileWriter("enD"));
+		final PrintWriter fv = new PrintWriter(new FileWriter("enV"));
+		final PrintWriter fw = new PrintWriter(new FileWriter("enO"));
+		final PrintWriter fd = new PrintWriter(new FileWriter("enD"));
 
-		long nobsInHBC=0, nobsInTAB=0;
+		final long[] nobs = {0,0}; // inHBC, inTAB
 		final String[] tmps = {unlabxmls,trainxmls,testxmls};
 		for (String tmpx : tmps) {
-			long nobsint=0;
-			BufferedReader flist = new BufferedReader(new FileReader(tmpx));
-			for (;;) {
-				String s = flist.readLine();
-				if (s==null) break;
-				String xmlFile = s.trim();
-				List<DetGraph> gs = gio.loadAllGraphs(xmlFile);
-				for (DetGraph g : gs) {
-					// cherche les verbes
-					for (int i=0;i<g.getNbMots();i++) {
-						if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
-							int d = g.getDep(i);
-							if (d>=0) {
-								String deplab = g.getDepLabel(d);
-								// considere suj, obj, p_obj, a_obj, ...
-								//if (!(deplab.startsWith("suj")||deplab.endsWith("obj"))) continue;
-
-								int h = g.getHead(d);
-								if (g.getMot(h).getPOS().startsWith("P")) {
-									// cas particulier "il a réuni à Paris"
-									int dh = g.getDep(h);
-									if (dh<0) continue;
-									h = g.getHead(dh);
-									deplab=g.getDepLabel(dh);
-								}
-
-								if (!g.getMot(h).getPOS().startsWith("VER")) continue;
-								if (g.getMot(h).getLemme().equals("être")) continue;
-								if (g.getMot(h).getLemme().equals("avoir")) continue;
-
-								System.out.println("save "+g.getMot(i).getForme()+" "+g.getMot(h).getForme());
-								int v = getVocID(vocV, g.getMot(h).getLemme());
-								int w = getVocID(vocW, g.getMot(i).getForme());
-								int dl = getVocID(vocD, deplab);
-								++v; ++w; ++dl;
-								fv.println(v);
-								fw.println(w);
-								fd.println(dl);
-								++nobsInHBC;
-								++nobsint;
-							}
-						}
-						++nobsInTAB;
+			SelectInstances.ih = new InstanceHandler() {
+				@Override
+				public void nextWord(DetGraph g, int wordInGraph, int h, int d, boolean isInstance) {
+					if (isInstance) {
+						int v = getVocID(vocV, g.getMot(h).getLemme());
+						int w = getVocID(vocW, g.getMot(wordInGraph).getForme());
+						int dl = getVocID(vocD, g.getDepLabel(d));
+						++v; ++w; ++dl;
+						fv.println(v);
+						fw.println(w);
+						fd.println(dl);
+						nobs[0]++;
 					}
+					nobs[1]++;
 				}
-			}
-			System.out.println("nobsinternal "+tmpx+" "+nobsint);
-			flist.close();
+			};
+			SelectInstances.parseCorpus(tmpx);
+
 			// sauve l'indice des obs dans le fichier HBC des 3 parties
-			System.out.println("indexobsHBC "+nobsInHBC+" "+tmpx);
-			System.out.println("indexobsTAB "+nobsInTAB+" "+tmpx);
+			System.out.println("indexobsHBC "+nobs[0]+" "+tmpx);
+			System.out.println("indexobsTAB "+nobs[1]+" "+tmpx);
 		}
 		fd.close();
 		fv.close();

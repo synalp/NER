@@ -812,7 +812,7 @@ int main(int ARGC, char *ARGV[]) {
   initialize_post_thetaV(post_thetaV, N, Nc, VV, c, v);
   initialize_post_thetaW(post_thetaW, N, Nen, VW, e, w);
 
-  for (iter=1; iter<=1000; iter++) {
+  for (iter=1; iter<=100; iter++) {
     fprintf(stderr, "iter %d", iter);
     fflush(stderr);
     resample_thetaE(N, Nc, Nd, Nen, alphaE, c, d, e, thetaE);

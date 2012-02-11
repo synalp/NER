@@ -747,16 +747,25 @@ public class ESTER2EN {
 			for (int i=0;i<ens.length;i++) fens[i]=new BufferedReader(new FileReader("test."+ens[i]+".log"));
 			int debin[] = new int[ens.length];
 			Arrays.fill(debin, -1);
+			int nfiles=0, ngraphs=0, nwords=0;
 			for (;;) {
 				String gsfilename = fl.readLine();
 				if (gsfilename==null) break;
+				nfiles++;
 				List<DetGraph> gs = gio.loadAllGraphs(gsfilename);
+				ngraphs+=gs.size();
 				for (int i=0;i<gs.size();i++) {
 					DetGraph g = gs.get(i);
 					g.clearGroups();
+					nwords+=g.getNbMots();
 					for (int j=0;j<g.getNbMots();j++) {
 						for (int k=0;k<ens.length;k++) {
-							String sen = fens[k].readLine();
+							String sen;
+							for (;;) {
+								sen = fens[k].readLine();
+								sen=sen.trim();
+								if (sen.length()>0) break;
+							}
 							String[] ss = sen.split("\t");
 							if (ss[recol].equals(ens[k]+'B')) {
 								if (debin[k]>=0) {
@@ -782,16 +791,11 @@ public class ESTER2EN {
 							debin[k]=-1;
 						}
 					}
-					if (g.getNbMots()>0) {
-						for (int k=0;k<ens.length;k++) {
-							String sen = fens[k].readLine();
-							if (sen.trim().length()>0) System.err.println("warning: decalage des phrases ? "+sen);
-						}
-					}
 				}
 				gio.save(gs, gsfilename+".merged.xml");
 			}
 			for (int i=0;i<ens.length;i++) fens[i].close();
+			System.out.println("nfiles "+nfiles+" ngraphs "+ngraphs+" nwords "+nwords);
 			fl.close();
 		} catch (IOException e) {
 			e.printStackTrace();
