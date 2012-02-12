@@ -61,7 +61,8 @@ public class STMNEParser {
 		uttdebs.add(0f);
 		uttidx.add(0);
 		try {
-			BufferedReader f=  FileUtils.getReaderGuessEncoding(trsOriging);
+//			BufferedReader f=  FileUtils.getReaderGuessEncoding(trsOriging);
+			BufferedReader f=  FileUtils.openFileISO(trsOriging);
 			float endturntime = Float.NaN;
 			float lastsync = 0;
 			for (;;) {

@@ -63,6 +63,7 @@ public class Unsup {
 	public static void main(String args[]) throws Exception {
 		if (args[0].equals("-creeObs")) creeObsFile(args[1],args[2],args[3]);
 		else if (args[0].equals("-analyse")) analyse(args[1]);
+		else if (args[0].equals("-dbg")) debg();
 		else if (args[0].equals("-inserttab")) {
 			int i=0;
 			String enlog = args[++i];
@@ -129,7 +130,7 @@ public class Unsup {
 			}
 		}
 	}
-	
+
 	/**
 	 * Insere (ou plutot remplace), dans la colonne 3 d'un TAB file qui a été créé pour le Stanford NER,
 	 * les classes obtenues automatiquement avec HBC.
@@ -168,7 +169,8 @@ public class Unsup {
 	}
 	static void insertInTab(String enlog, String unlabxmll, String trainxmll, String testxmll, String tabtrain, String tabtest) {
 
-//		testdebug(unlabxmll);
+		//		testdebug(unlabxmll);
+		final boolean baseline = false;
 
 		final int[] hbcidx = {0};
 		try {
@@ -229,7 +231,10 @@ public class Unsup {
 								}
 								hbcidx[0]++;
 							}
-							((PrintWriter)ftabs[1]).println(taboutline);
+							if (baseline)
+								((PrintWriter)ftabs[1]).println(tabline);
+							else
+								((PrintWriter)ftabs[1]).println(taboutline);
 						}
 					};
 					if (tabtrain!=null) {
@@ -271,7 +276,10 @@ public class Unsup {
 								}
 								hbcidx[0]++;
 							}
-							((PrintWriter)ftabs[1]).println(taboutline);
+							if (baseline)
+								((PrintWriter)ftabs[1]).println(tabline);
+							else
+								((PrintWriter)ftabs[1]).println(taboutline);
 						}
 					};
 					if (tabtest!=null) {
@@ -568,5 +576,52 @@ public class Unsup {
 		fv.close();
 		fw.close();
 		saveVoc();
+	}
+
+	static void debg() {
+		try {
+			// lecture des indices des words
+			BufferedReader f = new BufferedReader(new FileReader(fn+".w"));
+			for (;;) {
+				String s = f.readLine();
+				if (s==null) break;
+				int i=s.lastIndexOf(' ');
+				int idx = Integer.parseInt(s.substring(i+1));
+				String word = s.substring(0,i);
+				vocW.put(word, idx);
+			}
+			f.close();
+			System.out.println("word voc read "+vocW.size());
+			
+			int Breteauidx = vocW.get("Breteau");
+			
+			String bests = null;
+			f = new BufferedReader(new FileReader("en.log"));
+			for (;;) {
+				String s= f.readLine();
+				if (s==null) break;
+				if (s.indexOf("e = ")>=0) bests=s;
+			}
+			f.close();
+			StringTokenizer st = new StringTokenizer(bests);
+			st.nextToken();
+			st.nextToken();
+			
+			f = new BufferedReader(new FileReader("enO"));
+			for (int i=0;;i++) {
+				String s = f.readLine();
+				if (s==null) break;
+				int w = Integer.parseInt(s);
+				String en = st.nextToken();
+				if (i<449960) continue;
+				if (w==Breteauidx) {
+					System.out.println(en);
+				}
+			}
+			f.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 	}
 }
