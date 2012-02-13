@@ -3,7 +3,7 @@ useWord=true
 useTags=true
 usePrev=true
 useNext=true
-useSynt1=false
+useSynt1=true
 useSynt2=false
 useSynt3=false
 
