@@ -13,7 +13,7 @@
 
 JCP="bin:../utils/bin:../../git/jsafran/jsafran.jar"
 allens="pers fonc org loc prod time amount"
-dest2="/home/xtof/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
+dest2="/home/ubuntu/windisk/data/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
 if [ "1" == "0" ]; then
@@ -34,13 +34,14 @@ rm -f train.xmll test.xmll
 touch train.xmll test.xmll
 ls train/*_mate.xml > train.xmll
 ls test/*.xml | grep -v -e merged > test.xmll
-java -cp "$JCP" ester2.Unsup -creeObs unlab.xmll train.xmll test.xmll > creeobs.log
+java -Xmx2500m -cp "$JCP" ester2.Unsup -creeObs unlab.xmll train.xmll test.xmll > creeobs.log
+
 gcc -g stats.c samplib.c en2.c -o en2.exe -lm
 ./en2.exe | tee en.log
 java -cp "$JCP" ester2.Unsup -analyse en.log > an.log
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "creation fichiers de train du CRF"
 cat gw.xmll > unlab.xmll
 rm -f train.xmll test.xmll
@@ -50,7 +51,7 @@ ls test/*.xml | grep -v -e merged > test.xmll
 
 for i in $allens
 do
-  java -cp "$JCP" ester2.Unsup -inserttab en.log groups.$i.tab.train groups.$i.tab.test unlab.xmll train.xmll test.xmll
+  java -Xmx2500m -cp "$JCP" ester2.Unsup -inserttab en.log groups.$i.tab.train groups.$i.tab.test unlab.xmll train.xmll test.xmll
 done
 fi
 

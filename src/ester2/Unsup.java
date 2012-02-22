@@ -63,6 +63,7 @@ public class Unsup {
 	public static void main(String args[]) throws Exception {
 		if (args[0].equals("-creeObs")) creeObsFile(args[1],args[2],args[3]);
 		else if (args[0].equals("-analyse")) analyse(args[1]);
+		else if (args[0].equals("-dbg")) debg();
 		else if (args[0].equals("-inserttab")) {
 			int i=0;
 			String enlog = args[++i];
@@ -78,7 +79,7 @@ public class Unsup {
 
 	// permet de centraliser en un seul endroit l'extraction des instances pour HBC depuis les graphes
 	interface InstanceHandler {
-		public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception;
+		public void nextWord(DetGraph g, int wordInGraph, int head, int depidx, boolean isInstance) throws Exception;
 	}
 	static class SelectInstances {
 		static InstanceHandler ih = null;
@@ -113,12 +114,12 @@ public class Unsup {
 										if (g.getMot(h).getLemme().equals("avoir")) isHbcSample=false;
 
 										if (isHbcSample) {
-											ih.nextWord(g, i, true);
+											ih.nextWord(g, i, h, d, true);
 											nhbc++;
-										} else ih.nextWord(g, i, false);
-									}
-								}
-							} else ih.nextWord(g, i, false);
+										} else ih.nextWord(g, i, h, d, false);
+									} else ih.nextWord(g, i, h, d, false);
+								} else ih.nextWord(g, i, -1, d, false);
+							} else ih.nextWord(g, i, -1, -1, false);
 						}
 					}
 				}
@@ -129,7 +130,7 @@ public class Unsup {
 			}
 		}
 	}
-	
+
 	/**
 	 * Insere (ou plutot remplace), dans la colonne 3 d'un TAB file qui a été créé pour le Stanford NER,
 	 * les classes obtenues automatiquement avec HBC.
@@ -153,7 +154,7 @@ public class Unsup {
 			final int[] counts = {0,0};
 			SelectInstances.ih = new InstanceHandler() {
 				@Override
-				public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) {
+				public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) {
 					if (isInstance)
 						counts[1]++;
 					counts[0]++;
@@ -168,7 +169,8 @@ public class Unsup {
 	}
 	static void insertInTab(String enlog, String unlabxmll, String trainxmll, String testxmll, String tabtrain, String tabtest) {
 
-//		testdebug(unlabxmll);
+		//		testdebug(unlabxmll);
+		final boolean baseline = false;
 
 		final int[] hbcidx = {0};
 		try {
@@ -194,7 +196,7 @@ public class Unsup {
 			{
 				SelectInstances.ih = new InstanceHandler() {
 					@Override
-					public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) {
+					public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) {
 						if (isInstance) {
 							hbcidx[0]++;
 							st.nextToken();
@@ -207,7 +209,7 @@ public class Unsup {
 					final Object[] ftabs = {null,null};
 					SelectInstances.ih = new InstanceHandler() {
 						@Override
-						public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception {
+						public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) throws Exception {
 							String tabline=null;
 							if (ftabs[0]!=null) {
 								for (;;) {
@@ -230,7 +232,10 @@ public class Unsup {
 								}
 								hbcidx[0]++;
 							}
-							((PrintWriter)ftabs[1]).println(taboutline);
+							if (baseline)
+								((PrintWriter)ftabs[1]).println(tabline);
+							else
+								((PrintWriter)ftabs[1]).println(taboutline);
 						}
 					};
 					if (tabtrain!=null) {
@@ -247,8 +252,9 @@ public class Unsup {
 					// test
 					final Object[] ftabs = {null,null};
 					SelectInstances.ih = new InstanceHandler() {
+						int nex=0;
 						@Override
-						public void nextWord(DetGraph g, int wordInGraph, boolean isInstance) throws Exception {
+						public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) throws Exception {
 							String tabline=null;
 							if (ftabs[0]!=null) {
 								for (;;) {
@@ -257,21 +263,24 @@ public class Unsup {
 									if (tabline.length()>0) break;
 								}
 							}
+							nex++;
+							System.out.println("nex "+nex+" "+tabline);
 							String taboutline = tabline;
 							if (isInstance) {
 								int cl = Integer.parseInt(st.nextToken());
 								if (ftabs[0]!=null) {
 									String[] stt = tabline.split("\t");
 									if (stt!=null&&stt.length>=3) {
-										stt[1]="CLW"+cl;
-										// baseline
-										// stt[1]="NOCL";
+										taboutline = stt[0]+"\t"+stt[1]+"\t"+"CLW"+cl+"\t"+stt[3];
 										taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
 									}
 								}
 								hbcidx[0]++;
 							}
-							((PrintWriter)ftabs[1]).println(taboutline);
+							if (baseline)
+								((PrintWriter)ftabs[1]).println(tabline);
+							else
+								((PrintWriter)ftabs[1]).println(taboutline);
 						}
 					};
 					if (tabtest!=null) {
@@ -535,69 +544,85 @@ public class Unsup {
 
 	// pour le stanford CRF
 	public static void creeObsFile(String unlabxmls, String trainxmls, String testxmls) throws Exception {
-		GraphIO gio = new GraphIO(null);
-		PrintWriter fv = new PrintWriter(new FileWriter("enV"));
-		PrintWriter fw = new PrintWriter(new FileWriter("enO"));
-		PrintWriter fd = new PrintWriter(new FileWriter("enD"));
+		final PrintWriter fv = new PrintWriter(new FileWriter("enV"));
+		final PrintWriter fw = new PrintWriter(new FileWriter("enO"));
+		final PrintWriter fd = new PrintWriter(new FileWriter("enD"));
 
-		long nobsInHBC=0, nobsInTAB=0;
+		final long[] nobs = {0,0}; // inHBC, inTAB
 		final String[] tmps = {unlabxmls,trainxmls,testxmls};
 		for (String tmpx : tmps) {
-			long nobsint=0;
-			BufferedReader flist = new BufferedReader(new FileReader(tmpx));
-			for (;;) {
-				String s = flist.readLine();
-				if (s==null) break;
-				String xmlFile = s.trim();
-				List<DetGraph> gs = gio.loadAllGraphs(xmlFile);
-				for (DetGraph g : gs) {
-					// cherche les verbes
-					for (int i=0;i<g.getNbMots();i++) {
-						if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
-							int d = g.getDep(i);
-							if (d>=0) {
-								String deplab = g.getDepLabel(d);
-								// considere suj, obj, p_obj, a_obj, ...
-								//if (!(deplab.startsWith("suj")||deplab.endsWith("obj"))) continue;
-
-								int h = g.getHead(d);
-								if (g.getMot(h).getPOS().startsWith("P")) {
-									// cas particulier "il a réuni à Paris"
-									int dh = g.getDep(h);
-									if (dh<0) continue;
-									h = g.getHead(dh);
-									deplab=g.getDepLabel(dh);
-								}
-
-								if (!g.getMot(h).getPOS().startsWith("VER")) continue;
-								if (g.getMot(h).getLemme().equals("être")) continue;
-								if (g.getMot(h).getLemme().equals("avoir")) continue;
-
-								System.out.println("save "+g.getMot(i).getForme()+" "+g.getMot(h).getForme());
-								int v = getVocID(vocV, g.getMot(h).getLemme());
-								int w = getVocID(vocW, g.getMot(i).getForme());
-								int dl = getVocID(vocD, deplab);
-								++v; ++w; ++dl;
-								fv.println(v);
-								fw.println(w);
-								fd.println(dl);
-								++nobsInHBC;
-								++nobsint;
-							}
-						}
-						++nobsInTAB;
+			SelectInstances.ih = new InstanceHandler() {
+				@Override
+				public void nextWord(DetGraph g, int wordInGraph, int h, int d, boolean isInstance) {
+					if (isInstance) {
+						int v = getVocID(vocV, g.getMot(h).getLemme());
+						int w = getVocID(vocW, g.getMot(wordInGraph).getForme());
+						int dl = getVocID(vocD, g.getDepLabel(d));
+						++v; ++w; ++dl;
+						fv.println(v);
+						fw.println(w);
+						fd.println(dl);
+						nobs[0]++;
 					}
+					nobs[1]++;
 				}
-			}
-			System.out.println("nobsinternal "+tmpx+" "+nobsint);
-			flist.close();
+			};
+			SelectInstances.parseCorpus(tmpx);
+
 			// sauve l'indice des obs dans le fichier HBC des 3 parties
-			System.out.println("indexobsHBC "+nobsInHBC+" "+tmpx);
-			System.out.println("indexobsTAB "+nobsInTAB+" "+tmpx);
+			System.out.println("indexobsHBC "+nobs[0]+" "+tmpx);
+			System.out.println("indexobsTAB "+nobs[1]+" "+tmpx);
 		}
 		fd.close();
 		fv.close();
 		fw.close();
 		saveVoc();
+	}
+
+	static void debg() {
+		try {
+			// lecture des indices des words
+			BufferedReader f = new BufferedReader(new FileReader(fn+".w"));
+			for (;;) {
+				String s = f.readLine();
+				if (s==null) break;
+				int i=s.lastIndexOf(' ');
+				int idx = Integer.parseInt(s.substring(i+1));
+				String word = s.substring(0,i);
+				vocW.put(word, idx);
+			}
+			f.close();
+			System.out.println("word voc read "+vocW.size());
+			
+			int Breteauidx = vocW.get("Breteau");
+			
+			String bests = null;
+			f = new BufferedReader(new FileReader("en.log"));
+			for (;;) {
+				String s= f.readLine();
+				if (s==null) break;
+				if (s.indexOf("e = ")>=0) bests=s;
+			}
+			f.close();
+			StringTokenizer st = new StringTokenizer(bests);
+			st.nextToken();
+			st.nextToken();
+			
+			f = new BufferedReader(new FileReader("enO"));
+			for (int i=0;;i++) {
+				String s = f.readLine();
+				if (s==null) break;
+				int w = Integer.parseInt(s);
+				String en = st.nextToken();
+				if (i<449960) continue;
+				if (w==Breteauidx) {
+					System.out.println(en);
+				}
+			}
+			f.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 	}
 }

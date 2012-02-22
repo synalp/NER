@@ -768,6 +768,9 @@ int main(int ARGC, char *ARGV[]) {
   v = load_discrete1("enV", &N, &VV);
   d = load_discrete1("enD", &N, &Nd);
 
+  printf ("sizes %d %d %d %d\n",N,VW,VV,Nd);
+  printf ("debug V %d\n",v[154623]);
+
   /* variables defined with --loadM or --loadMI */
 
   fprintf(stderr, "Allocating memory...\n");
@@ -809,7 +812,7 @@ int main(int ARGC, char *ARGV[]) {
   initialize_post_thetaV(post_thetaV, N, Nc, VV, c, v);
   initialize_post_thetaW(post_thetaW, N, Nen, VW, e, w);
 
-  for (iter=1; iter<=1000; iter++) {
+  for (iter=1; iter<=100; iter++) {
     fprintf(stderr, "iter %d", iter);
     fflush(stderr);
     resample_thetaE(N, Nc, Nd, Nen, alphaE, c, d, e, thetaE);
