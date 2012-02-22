@@ -1,24 +1,17 @@
 package ester2;
 
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
-import java.sql.NClob;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
-import utils.DET;
 import utils.FileUtils;
 
 import jsafran.DetGraph;
@@ -198,7 +191,6 @@ public class Unsup {
 			st.nextToken(); // e
 			st.nextToken(); // =
 
-			GraphIO gio = new GraphIO(null);
 			{
 				SelectInstances.ih = new InstanceHandler() {
 					@Override
@@ -231,6 +223,8 @@ public class Unsup {
 									String[] stt = tabline.split("\t");
 									if (stt!=null&&stt.length>=3) {
 										stt[1]="CLW"+cl;
+										// baseline
+										// stt[1]="NOCL";
 										taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
 									}
 								}
@@ -270,6 +264,8 @@ public class Unsup {
 									String[] stt = tabline.split("\t");
 									if (stt!=null&&stt.length>=3) {
 										stt[1]="CLW"+cl;
+										// baseline
+										// stt[1]="NOCL";
 										taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
 									}
 								}

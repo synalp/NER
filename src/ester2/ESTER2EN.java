@@ -756,7 +756,13 @@ public class ESTER2EN {
 					g.clearGroups();
 					for (int j=0;j<g.getNbMots();j++) {
 						for (int k=0;k<ens.length;k++) {
-							String sen = fens[k].readLine();
+							// saute les lignes vides
+							String sen;
+							for (;;) {
+								sen = fens[k].readLine();
+								sen=sen.trim();
+								if (sen.length()>0) break;
+							}
 							String[] ss = sen.split("\t");
 							if (ss[recol].equals(ens[k]+'B')) {
 								if (debin[k]>=0) {
