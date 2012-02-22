@@ -744,6 +744,9 @@ public class ESTER2EN {
 			GraphIO gio = new GraphIO(null);
 			BufferedReader fl = new BufferedReader(new FileReader(xmllist));
 			BufferedReader fens[] = new BufferedReader[ens.length];
+			// pour debugging
+			int[] curline = new int[ens.length];
+			
 			for (int i=0;i<ens.length;i++) fens[i]=new BufferedReader(new FileReader("test."+ens[i]+".log"));
 			int debin[] = new int[ens.length];
 			Arrays.fill(debin, -1);
@@ -764,6 +767,7 @@ public class ESTER2EN {
 							String sen;
 							for (;;) {
 								sen = fens[k].readLine();
+								curline[k]++;
 								sen=sen.trim();
 								if (sen.length()>0) break;
 							}
@@ -790,12 +794,6 @@ public class ESTER2EN {
 						if (debin[k]>=0) {
 							g.addgroup(debin[k], g.getNbMots()-1, ens[k]);
 							debin[k]=-1;
-						}
-					}
-					if (g.getNbMots()>0) {
-						for (int k=0;k<ens.length;k++) {
-							String sen = fens[k].readLine();
-							if (sen.trim().length()>0) System.err.println("warning: decalage des phrases ? "+sen);
 						}
 					}
 				}

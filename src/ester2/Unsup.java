@@ -224,10 +224,8 @@ public class Unsup {
 								if (ftabs[0]!=null) {
 									String[] stt = tabline.split("\t");
 									if (stt!=null&&stt.length>=3) {
-										stt[1]="CLW"+cl;
-										// baseline
-										// stt[1]="NOCL";
-										taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
+										String wcl="CLW"+cl;
+										taboutline = stt[0]+"\t"+stt[1]+"\t"+wcl+"\t"+stt[3];
 									}
 								}
 								hbcidx[0]++;
@@ -271,8 +269,8 @@ public class Unsup {
 								if (ftabs[0]!=null) {
 									String[] stt = tabline.split("\t");
 									if (stt!=null&&stt.length>=3) {
-										taboutline = stt[0]+"\t"+stt[1]+"\t"+"CLW"+cl+"\t"+stt[3];
-										taboutline = stt[0]+"\t"+stt[1]+"\t"+"NOCL"+"\t"+stt[3];
+										String wcl="CLW"+cl;
+										taboutline = stt[0]+"\t"+stt[1]+"\t"+wcl+"\t"+stt[3];
 									}
 								}
 								hbcidx[0]++;
