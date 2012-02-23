@@ -131,24 +131,6 @@ public class Unsup {
 		}
 	}
 
-	/**
-	 * Insere (ou plutot remplace), dans la colonne 3 d'un TAB file qui a été créé pour le Stanford NER,
-	 * les classes obtenues automatiquement avec HBC.
-	 * sampdeb et sampend sont les indices des samples produits par HBC qu'il faut insérer dans le TAB file;
-	 * en effet, typiquement, le corpus utilisé par HBC contient 3 parties: unlabeled + train + test
-	 * tandis que le fichier TAB correspond soit a train soit a test.
-	 * Il faut donc indiquer les indices des dumps de HBC qu'il faut extraire et inserer dans le TAB.
-	 * De plus, HBC fait de nombreuses iterations; il faut donc moyenner les samples produits par HBC sur les iterations.
-	 * 
-	 * Attention ! Les indices du TAB file incluent tous les mots, tandis que les indices des samples de HBC n'incluent que certains noms.
-	 * Il faut donc reproduire exactement le processus de selection des observations a garder pour HBC pour faire matcher les indices
-	 * des 2 fichiers.
-	 * 
-	 * @param tabfile
-	 * @param wordsclassfile
-	 * @param sampdeb
-	 * @param sampend
-	 */
 	static void testdebug(String trainxmll) {
 		try {
 			final int[] counts = {0,0};
