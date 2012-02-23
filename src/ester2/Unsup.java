@@ -151,127 +151,165 @@ public class Unsup {
 	}
 	static void insertInTab(String enlog, String unlabxmll, String trainxmll, String testxmll, String tabtrain, String tabtest) {
 
-		//		testdebug(unlabxmll);
 		final boolean baseline = false;
 
+		// repere le debut du train et du test dans les samples
 		final int[] hbcidx = {0};
+		SelectInstances.ih = new InstanceHandler() {
+			@Override
+			public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) {
+				if (isInstance) {
+					hbcidx[0]++;
+				}
+			}
+		};
+		SelectInstances.parseCorpus(unlabxmll);
+		int debTrainInhHbc = hbcidx[0];
+		
 		try {
-			// lecture des classes
-			String bests=null;
+			// nombre de samples ?
+			int nsamp=0;
 			{
+				String s;
 				BufferedReader f = FileUtils.openFileUTF(enlog);
 				for (;;) {
-					String s=f.readLine();
+					s=f.readLine();
 					if (s==null) break;
-					if (s.indexOf("e = ")>=0) bests=s;
+					if (s.indexOf("e = ")>=0) break;
 				}
 				f.close();
+				StringTokenizer st = new StringTokenizer(s," ");
+				st.nextToken(); // e
+				st.nextToken(); // =
+				nsamp=st.countTokens();
 			}
-			if (bests==null) {
-				System.err.println("ERROR: no samples found !");
-				return;
-			}
-			final StringTokenizer st = new StringTokenizer(bests," ");
-			st.nextToken(); // e
-			st.nextToken(); // =
-
+			
+			// calcul de la moyenne des samples
+			final int[] samp2Vcl = new int[nsamp];
+			final int[] samp2Wcl = new int[nsamp];
 			{
-				SelectInstances.ih = new InstanceHandler() {
-					@Override
-					public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) {
-						if (isInstance) {
-							hbcidx[0]++;
-							st.nextToken();
+				final int nVclasses = 30;
+				final int nWclasses = 20;
+				int[][] samp2Vclasse = new int[nsamp][nVclasses];
+				int[][] samp2Wclasse = new int[nsamp][nWclasses];
+				
+				String s;
+				BufferedReader f = FileUtils.openFileUTF(enlog);
+				for (;;) {
+					s=f.readLine();
+					if (s==null) break;
+					if (s.indexOf("e = ")>=0) {
+						StringTokenizer st = new StringTokenizer(s," ");
+						st.nextToken(); // e
+						st.nextToken(); // =
+						for (int i=0;i<nsamp;i++) {
+							samp2Wclasse[i][Integer.parseInt(st.nextToken())-1]++;
 						}
-					}
-				};
-				SelectInstances.parseCorpus(unlabxmll);
-				{
-					// train
-					final Object[] ftabs = {null,null};
-					SelectInstances.ih = new InstanceHandler() {
-						@Override
-						public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) throws Exception {
-							String tabline=null;
-							if (ftabs[0]!=null) {
-								for (;;) {
-									tabline = ((BufferedReader)ftabs[0]).readLine();
-									tabline = tabline.trim();
-									if (tabline.length()>0) break;
-								}
-							}
-							String taboutline = tabline;
-							if (isInstance) {
-								int cl = Integer.parseInt(st.nextToken());
-								if (ftabs[0]!=null) {
-									String[] stt = tabline.split("\t");
-									if (stt!=null&&stt.length>=3) {
-										String wcl="CLW"+cl;
-										taboutline = stt[0]+"\t"+stt[1]+"\t"+wcl+"\t"+stt[3];
-									}
-								}
-								hbcidx[0]++;
-							}
-							if (baseline)
-								((PrintWriter)ftabs[1]).println(tabline);
-							else
-								((PrintWriter)ftabs[1]).println(taboutline);
+					} else if (s.indexOf("c = ")>=0) {
+						StringTokenizer st = new StringTokenizer(s," ");
+						st.nextToken(); // c
+						st.nextToken(); // =
+						for (int i=0;i<nsamp;i++) {
+							samp2Vclasse[i][Integer.parseInt(st.nextToken())-1]++;
 						}
-					};
-					if (tabtrain!=null) {
-						ftabs[0]= FileUtils.openFileUTF(tabtrain);
-						ftabs[1]= FileUtils.writeFileUTF(tabtrain+".out");
-					}
-					SelectInstances.parseCorpus(trainxmll);
-					if (tabtrain!=null) {
-						((BufferedReader)ftabs[0]).close();
-						((PrintWriter)ftabs[1]).close();
 					}
 				}
-				{
-					// test
-					final Object[] ftabs = {null,null};
-					SelectInstances.ih = new InstanceHandler() {
-						int nex=0;
-						@Override
-						public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) throws Exception {
-							String tabline=null;
-							if (ftabs[0]!=null) {
-								for (;;) {
-									tabline = ((BufferedReader)ftabs[0]).readLine();
-									tabline = tabline.trim();
-									if (tabline.length()>0) break;
-								}
+				f.close();
+				for (int i=0;i<nsamp;i++) {
+					samp2Vcl[i]=0;
+					for (int j=1;j<nVclasses;j++)
+						if (samp2Vclasse[i][j]>samp2Vclasse[i][samp2Vcl[i]]) samp2Vcl[i]=j;
+					samp2Wcl[i]=0;
+					for (int j=1;j<nWclasses;j++)
+						if (samp2Wclasse[i][j]>samp2Wclasse[i][samp2Wcl[i]]) samp2Wcl[i]=j;
+				}
+			}
+			
+			final int[] sampidx = {0};
+			{
+				// train
+				final Object[] ftabs = {null,null};
+				SelectInstances.ih = new InstanceHandler() {
+					@Override
+					public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) throws Exception {
+						String tabline=null;
+						if (ftabs[0]!=null) {
+							for (;;) {
+								tabline = ((BufferedReader)ftabs[0]).readLine();
+								tabline = tabline.trim();
+								if (tabline.length()>0) break;
 							}
-							nex++;
-							System.out.println("nex "+nex+" "+tabline);
-							String taboutline = tabline;
-							if (isInstance) {
-								int cl = Integer.parseInt(st.nextToken());
-								if (ftabs[0]!=null) {
-									String[] stt = tabline.split("\t");
-									if (stt!=null&&stt.length>=3) {
-										String wcl="CLW"+cl;
-										taboutline = stt[0]+"\t"+stt[1]+"\t"+wcl+"\t"+stt[3];
-									}
-								}
-								hbcidx[0]++;
-							}
-							if (baseline)
-								((PrintWriter)ftabs[1]).println(tabline);
-							else
-								((PrintWriter)ftabs[1]).println(taboutline);
 						}
-					};
-					if (tabtest!=null) {
-						ftabs[0]= FileUtils.openFileUTF(tabtest);
-						ftabs[1]= FileUtils.writeFileUTF(tabtest+".out");
+						String taboutline = tabline;
+						if (isInstance) {
+							// je n'utilise pour le moment QUE la classe W
+							int cl = samp2Wcl[sampidx[0]++];
+							if (ftabs[0]!=null) {
+								String[] stt = tabline.split("\t");
+								if (stt!=null&&stt.length>=3) {
+									String wcl="CLW"+cl;
+									taboutline = stt[0]+"\t"+stt[1]+"\t"+wcl+"\t"+stt[3];
+								}
+							}
+							hbcidx[0]++;
+						}
+						if (baseline)
+							((PrintWriter)ftabs[1]).println(tabline);
+						else
+							((PrintWriter)ftabs[1]).println(taboutline);
 					}
-					SelectInstances.parseCorpus(testxmll);
-					if (tabtest!=null) {
-						((BufferedReader)ftabs[0]).close();
-						((PrintWriter)ftabs[1]).close();
+				};
+				if (tabtrain!=null) {
+					ftabs[0]= FileUtils.openFileUTF(tabtrain);
+					ftabs[1]= FileUtils.writeFileUTF(tabtrain+".out");
+				}
+				SelectInstances.parseCorpus(trainxmll);
+				if (tabtrain!=null) {
+					((BufferedReader)ftabs[0]).close();
+					((PrintWriter)ftabs[1]).close();
+				}
+			}
+			{
+				// test
+				final Object[] ftabs = {null,null};
+				SelectInstances.ih = new InstanceHandler() {
+					@Override
+					public void nextWord(DetGraph g, int wordInGraph, int head, int d, boolean isInstance) throws Exception {
+						String tabline=null;
+						if (ftabs[0]!=null) {
+							for (;;) {
+								tabline = ((BufferedReader)ftabs[0]).readLine();
+								tabline = tabline.trim();
+								if (tabline.length()>0) break;
+							}
+						}
+						String taboutline = tabline;
+						if (isInstance) {
+							// je n'utilise pour le moment QUE la classe W
+							int cl = samp2Wcl[sampidx[0]++];
+							if (ftabs[0]!=null) {
+								String[] stt = tabline.split("\t");
+								if (stt!=null&&stt.length>=3) {
+									String wcl="CLW"+cl;
+									taboutline = stt[0]+"\t"+stt[1]+"\t"+wcl+"\t"+stt[3];
+								}
+							}
+							hbcidx[0]++;
+						}
+						if (baseline)
+							((PrintWriter)ftabs[1]).println(tabline);
+						else
+							((PrintWriter)ftabs[1]).println(taboutline);
 					}
+				};
+				if (tabtest!=null) {
+					ftabs[0]= FileUtils.openFileUTF(tabtest);
+					ftabs[1]= FileUtils.writeFileUTF(tabtest+".out");
+				}
+				SelectInstances.parseCorpus(testxmll);
+				if (tabtest!=null) {
+					((BufferedReader)ftabs[0]).close();
+					((PrintWriter)ftabs[1]).close();
 				}
 			}
 		} catch (Exception e) {
