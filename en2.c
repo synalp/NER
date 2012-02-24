@@ -753,10 +753,10 @@ int main(int ARGC, char *ARGV[]) {
 
 
   /* variables defined with --define */
-  Nc = 30;
-  Nen = 20;
-  alphaC = 2;
-  alphaD = 2;
+  Nc = 100;
+  Nen = 40;
+  alphaC = 1;
+  alphaD = 1;
   alphaE = 1.0e-5;
   alphaV = 1.0e-3;
   alphaW = 1.0e-3;
@@ -824,10 +824,10 @@ int main(int ARGC, char *ARGV[]) {
     if ((iter==1)||(loglik>bestloglik)) {
       bestloglik = loglik;
       fprintf(stderr, " *");
-      printf("\n");
-      dump_c(N,c);
-      dump_e(N,e);
     }
+    printf("\n");
+    dump_c(N,c);
+    dump_e(N,e);
     fprintf(stderr, "\n");
     fflush(stderr);
   }

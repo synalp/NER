@@ -97,29 +97,20 @@ public class Unsup {
 					for (DetGraph g : gs) {
 						nwords+=g.getNbMots();
 						for (int i=0;i<g.getNbMots();i++) {
-							if (g.getMot(i).getPOS().startsWith("NOM") || g.getMot(i).getPOS().startsWith("NAM")) {
-								boolean isHbcSample = true;
-								int d = g.getDep(i);
-								if (d>=0) {
-									int h = g.getHead(d);
-									if (g.getMot(h).getPOS().startsWith("P")) {
-										// cas particulier "il a réuni à Paris"
-										int dh = g.getDep(h);
-										if (dh<0) isHbcSample=false;
-										h = g.getHead(dh);
-									}
-									if (h>=0) {
-										if (!g.getMot(h).getPOS().startsWith("VER")) isHbcSample=false;
-										if (g.getMot(h).getLemme().equals("être")) isHbcSample=false;
-										if (g.getMot(h).getLemme().equals("avoir")) isHbcSample=false;
-
-										if (isHbcSample) {
-											ih.nextWord(g, i, h, d, true);
-											nhbc++;
-										} else ih.nextWord(g, i, h, d, false);
-									} else ih.nextWord(g, i, h, d, false);
-								} else ih.nextWord(g, i, -1, d, false);
-							} else ih.nextWord(g, i, -1, -1, false);
+							int d = g.getDep(i);
+							if (d>=0) {
+								int h = g.getHead(d);
+								if (g.getMot(h).getPOS().startsWith("P")) {
+									// cas particulier "il a réuni à Paris"
+									int dh = g.getDep(h);
+									if (dh>=0) h = g.getHead(dh);
+								}
+								ih.nextWord(g, i, h, d, true);
+								nhbc++;
+							} else {
+								ih.nextWord(g, i, -1, -1, true);
+								nhbc++;
+							}
 						}
 					}
 				}
@@ -188,8 +179,8 @@ public class Unsup {
 			final int[] samp2Vcl = new int[nsamp];
 			final int[] samp2Wcl = new int[nsamp];
 			{
-				final int nVclasses = 30;
-				final int nWclasses = 20;
+				final int nVclasses = 100;
+				final int nWclasses = 40;
 				int[][] samp2Vclasse = new int[nsamp][nVclasses];
 				int[][] samp2Wclasse = new int[nsamp][nWclasses];
 				
@@ -565,7 +556,9 @@ public class Unsup {
 		final PrintWriter fv = new PrintWriter(new FileWriter("enV"));
 		final PrintWriter fw = new PrintWriter(new FileWriter("enO"));
 		final PrintWriter fd = new PrintWriter(new FileWriter("enD"));
-
+		
+		// dans cette nouvelle version, TOUT mot est affecte a une classe, qui depend du mot qui est son HEAD, quelque soit la relation
+		
 		final long[] nobs = {0,0}; // inHBC, inTAB
 		final String[] tmps = {unlabxmls,trainxmls,testxmls};
 		for (String tmpx : tmps) {
@@ -573,9 +566,11 @@ public class Unsup {
 				@Override
 				public void nextWord(DetGraph g, int wordInGraph, int h, int d, boolean isInstance) {
 					if (isInstance) {
-						int v = getVocID(vocV, g.getMot(h).getLemme());
+						int v = getVocID(vocV, "ROOT");
+						if (h>=0) v = getVocID(vocV, g.getMot(h).getLemme());
 						int w = getVocID(vocW, g.getMot(wordInGraph).getForme());
-						int dl = getVocID(vocD, g.getDepLabel(d));
+						int dl = getVocID(vocD,"ROOT");
+						if (h>=0) dl = getVocID(vocD, g.getDepLabel(d));
 						++v; ++w; ++dl;
 						fv.println(v);
 						fw.println(w);
