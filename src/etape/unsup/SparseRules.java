@@ -55,7 +55,8 @@ public class SparseRules {
 				if (patelt.charAt(0)=='<') {
 					// dans un premier temps, on regarde juste si ca matche
 				} else {
-					Pattern p = Pattern.compile(patelt);
+					String ps = patelt.replace('_', ' ');
+					Pattern p = Pattern.compile(ps);
 					int maxlen=0;
 					for (int len=1;curtok+len<toks.size();len++) {
 						StringBuilder scand = new StringBuilder();
@@ -111,11 +112,23 @@ public class SparseRules {
 	}
 	
 	// =======================================
+	static void debug() {
+		String s="il y a 3 ans";
+		Pattern p = Pattern.compile("(pendant|durant|il y a) (\\d+)+ (heure(s)?|mois|an(s)?|semaine(s)?)");
+		boolean m = p.matcher(s).matches();
+		System.out.println(m);
+		System.exit(1);
+	}
 	
 	List<Integer> applyTime1(List<String> s) {
 		final String[] pats = {
-				"<time.hour.rel> <time-modifier> pendant </time-modifier> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.rel>",
-				"<time.hour.rel> <time-modifier> durant </time-modifier> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.rel>",
+				"<time.hour.rel> <time-modifier> (pendant|durant|il_y_a) </time-modifier> <val> (\\d+)+ </val> <unit> (heure(s)?|mois|an(s)?|semaine(s)?) </unit> </time.hour.rel>",
+				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> (\\d+)+ </val> <unit> minute(s)? </unit>",
+				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> et <val> (\\d+)+ </val> <unit> minute(s)? </unit>",
+				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> (\\d+)+ </val>",
+				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> et demi(e)? </val>",
+				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> et quart </val>",
+				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> trois quart(s)? </val>",
 				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs>",
 		};
 		
