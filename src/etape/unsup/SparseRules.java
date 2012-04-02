@@ -1,5 +1,6 @@
 package etape.unsup;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
@@ -34,7 +35,17 @@ public class SparseRules {
 	}
 	
 	// =======================================
-	void parse(String pat, Annotations annot, int annotdeb, List<String> toks, int tokdeb) {
+	/**
+	 * 
+	 * @param pat
+	 * @param annot
+	 * @param annotdeb
+	 * @param toks
+	 * @param tokdeb
+	 * 
+	 * @return position of next (untreated) token, or -1 if no match
+	 */
+	int parse(String pat, Annotations annot, int annotdeb, List<String> toks, int tokdeb) {
 		boolean doesMatch = true;
 		{
 			int curtok=tokdeb;
@@ -95,20 +106,32 @@ public class SparseRules {
 					}
 				}
 			}
-		}
+			return curtok;
+		} else return -1;
 	}
 	
 	// =======================================
 	
-	void applyTime1(List<String> s) {
+	List<Integer> applyTime1(List<String> s) {
 		final String[] pats = {
+				"<time.hour.rel> <time-modifier> pendant </time-modifier> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.rel>",
+				"<time.hour.rel> <time-modifier> durant </time-modifier> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.rel>",
 				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs>",
 		};
 		
+		ArrayList<Integer> posApplied = new ArrayList<Integer>();
 		for (int i=0;i<s.size();i++) {
-			for (String p : pats) {
-				parse(p,corp.annots,corp.curSentDeb,s,i);
+			for (int pi=0;pi<pats.length;pi++) {
+				String p = pats[pi];
+				int m = parse(p,corp.annots,corp.curSentDeb,s,i);
+				if (m>=0) {
+					posApplied.add(i);
+					i=m-1;
+					// on applique les patterns dans l'ordre defini: si un pattent est applique, on n'applique pas les suivants !
+					break;
+				}
 			}
 		}
+		return posApplied;
 	}
 }
