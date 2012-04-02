@@ -57,12 +57,12 @@ public class NECorpus {
 				else {
 					String[] tys = annots.getTypDeb(i);
 					for (int j=0;j<tys.length;j++) {
-						f.print("<"+tys+"> ");
+						f.print("<"+tys[j]+"> ");
 					}
 					f.print(tok+" ");
 					tys = annots.getTypEnd(i);
 					for (int j=0;j<tys.length;j++) {
-						f.print("</"+tys+"> ");
+						f.print("</"+tys[j]+"> ");
 					}
 				}
 			}

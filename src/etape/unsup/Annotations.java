@@ -8,7 +8,7 @@ import java.util.List;
 
 public class Annotations {
 	
-	final public static String[] baseens = {"amount","func","loc","org","pers","prod","time","time","unk"};
+	final public static String[] baseens = {"amount","func","loc","org","pers","prod","time","unk"};
 	
 	final public static String[] transverse = {"demonym","kind","name","object","qualifier","range-mark","unit","val"};
 	final public static String[] specific_pers_ind = {"name.first","name.last","name.middle","title"};
@@ -65,19 +65,37 @@ public class Annotations {
 	}
 */
 	
+	boolean reverse = false;
 	class EN implements Comparable<EN> {
-		String typ;
+		String typ, shorttyp;
 		int end;
 		public EN(String t, int e) {
 			typ=t; end=e;
+			int i=typ.indexOf('.');
+			shorttyp=typ;
+			if (i>=0) shorttyp=typ.substring(0,i);
 		}
 		@Override
 		public int compareTo(EN o) {
-			if (end>o.end) return 1;
-			else if (end<o.end) return -1;
+			if (end>o.end) return -1;
+			else if (end<o.end) return 1;
 			else {
-				// TODO: trier par type
-				return 0;
+				boolean isBase=false, isOtherBase=false;
+				if (Arrays.binarySearch(baseens, shorttyp)>=0) {
+					if (!typ.startsWith("time.modifier")) isBase=true;
+				}
+				if (Arrays.binarySearch(baseens, o.shorttyp)>=0) {
+					if (!o.typ.startsWith("time.modifier")) isOtherBase=true;
+				}
+				if (reverse) {
+					if (isBase&&!isOtherBase) return 1;
+					if (!isBase&&isOtherBase) return -1;
+					return o.typ.compareTo(typ);
+				} else {
+					if (isBase&&!isOtherBase) return -1;
+					if (!isBase&&isOtherBase) return 1;
+					return typ.compareTo(o.typ);
+				}
 			}
 		}
 	}
@@ -102,7 +120,9 @@ public class Annotations {
 				ens.add(new EN(getEN(typen.get(i)),debs.get(i)));
 			}
 		}
+		reverse=true;
 		Collections.sort(ens);
+		reverse=false;
 		String[] res=new String[ens.size()];
 		for (int i=res.length-1;i>=0;i--)
 			res[i]=ens.get(i).typ;
