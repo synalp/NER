@@ -58,13 +58,15 @@ public class SparseRules {
 					String ps = patelt.replace('_', ' ');
 					Pattern p = Pattern.compile(ps);
 					int maxlen=0;
+					StringBuilder scand = new StringBuilder();
+					scand.append(toks.get(curtok));
 					for (int len=1;curtok+len<toks.size();len++) {
-						StringBuilder scand = new StringBuilder();
-						for (int i=curtok;i<curtok+len;i++) {
-							scand.append(toks.get(i)); scand.append(' ');
-						}
-						boolean m = p.matcher(scand.toString().trim()).matches();
+						boolean m = p.matcher(scand.toString()).matches();
 						if (!m) break;
+						scand.append(' ');
+						scand.append(toks.get(curtok+len));
+if (scand.toString().startsWith("il y a"))
+	System.out.println("debug "+toks);
 						maxlen=len;
 					}
 					if (maxlen>0) {
