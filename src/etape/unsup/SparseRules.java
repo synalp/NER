@@ -1,5 +1,9 @@
 package etape.unsup;
 
+import java.util.List;
+import java.util.StringTokenizer;
+import java.util.regex.Pattern;
+
 /**
  * 
  * @author cerisara
@@ -12,11 +16,99 @@ public class SparseRules {
 		this.corp=corp;
 	}
 	
+	void deterministic() {
+		for (;;) {
+			List<String> toks = corp.getNextSentence();
+			if (toks==null) break;
+			applyTime1(toks);
+		}
+	}
+	
 	public static void main(String args[]) throws Exception {
 		NECorpus corp = new NECorpus();
 		corp.load("/home/xtof/corpus/ETAPE2/Dom/Etape/quaero-ne-normalized/19990617_1900_1920_inter_fm_dga.ne");
+		corp.annots.clear();
 		SparseRules m = new SparseRules(corp);
-//		m.deterministic();
+		m.deterministic();
 		corp.save("rec.ne");
+	}
+	
+	// =======================================
+	void parse(String pat, Annotations annot, int annotdeb, List<String> toks, int tokdeb) {
+		boolean doesMatch = true;
+		{
+			int curtok=tokdeb;
+			StringTokenizer patelts = new StringTokenizer(pat);
+			while (patelts.hasMoreTokens()) {
+				String patelt = patelts.nextToken();
+				if (patelt.charAt(0)=='<') {
+					// dans un premier temps, on regarde juste si ca matche
+				} else {
+					Pattern p = Pattern.compile(patelt);
+					int maxlen=0;
+					for (int len=1;curtok+len<toks.size();len++) {
+						StringBuilder scand = new StringBuilder();
+						for (int i=curtok;i<curtok+len;i++) {
+							scand.append(toks.get(i)); scand.append(' ');
+						}
+						boolean m = p.matcher(scand.toString().trim()).matches();
+						if (!m) break;
+						maxlen=len;
+					}
+					if (maxlen>0) {
+						curtok+=maxlen;
+					} else {
+						doesMatch=false; break;
+					}
+				}
+			}
+		}
+		if (doesMatch) {
+			int curtok=tokdeb;
+			StringTokenizer patelts = new StringTokenizer(pat);
+			while (patelts.hasMoreTokens()) {
+				String patelt = patelts.nextToken();
+				if (patelt.charAt(0)=='<') {
+					if (patelt.charAt(1)=='/') {
+						String en = patelt.substring(2,patelt.length()-1);
+						corp.annots.closePreviousEN(corp.curSentDeb+curtok-1, en);
+					} else {
+						String en = patelt.substring(1,patelt.length()-1);
+						corp.annots.startNewEN(corp.curSentDeb+curtok, en);
+					}
+				} else {
+					Pattern p = Pattern.compile(patelt);
+					int maxlen=0;
+					StringBuilder scand = new StringBuilder();
+					scand.append(toks.get(curtok));
+					for (int len=1;curtok+len<toks.size();len++) {
+						boolean m = p.matcher(scand.toString()).matches();
+						if (!m) break;
+						scand.append(' ');
+						scand.append(toks.get(curtok+len));
+						maxlen=len;
+					}
+					if (maxlen>0) {
+						curtok+=maxlen;
+					} else {
+						doesMatch=false; break;
+					}
+				}
+			}
+		}
+	}
+	
+	// =======================================
+	
+	void applyTime1(List<String> s) {
+		final String[] pats = {
+				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs>",
+		};
+		
+		for (int i=0;i<s.size();i++) {
+			for (String p : pats) {
+				parse(p,corp.annots,corp.curSentDeb,s,i);
+			}
+		}
 	}
 }

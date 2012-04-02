@@ -9,7 +9,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -17,10 +16,23 @@ public class NECorpus {
 	final String EOL = "__EOL__";
 	
 	List<String> tokens = new ArrayList<String>();
-	Annotations annots = new Annotations();
+	public Annotations annots = new Annotations();
+	int nextSentDeb = 0;
+	public int curSentDeb = -1;
 	
 	public NECorpus() {}
 
+	public List<String> getNextSentence() {
+		if (nextSentDeb>=tokens.size()) return null;
+		curSentDeb = nextSentDeb;
+		for (int i=curSentDeb;;i++) {
+			if (tokens.get(i)==EOL) {
+				nextSentDeb=i+1;
+				return tokens.subList(curSentDeb, i);
+			}
+		}
+	}
+	
 	private void parseString(String s) {
 		s=s.trim();
 		s=s.replaceAll("<", " <");

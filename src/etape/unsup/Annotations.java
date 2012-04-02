@@ -24,7 +24,10 @@ public class Annotations {
 
 	HashMap<String, Integer> ne2id = new HashMap<String, Integer>();
 
-	
+	public void clear() {
+		debs.clear(); ends.clear(); typen.clear();
+		openDebs.clear(); openTyps.clear();
+	}
 	public void startNewEN(int tokenDeb, String entyp) {
 		openDebs.add(tokenDeb);
 		openTyps.add(getENid(entyp));
