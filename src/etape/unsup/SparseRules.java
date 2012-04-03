@@ -315,7 +315,7 @@ public class SparseRules {
 	}
 	
 	String applyTitle(String corp) {
-		final String[] titres = {"Dr.","dr.","Pr.","pr.","docteur","professeur","commandant","académicien","général","caporal","lieutenant","lieutenant de marine",
+		final String[] titres = {"Dr\\.","dr\\.","Pr\\.","pr\\.","docteur","professeur","commandant","académicien","général","caporal","lieutenant","lieutenant de marine",
 				"sa majesté le roi", "Cheick",
 		};
 
@@ -327,7 +327,7 @@ public class SparseRules {
 				String[] forbids = {"title"};
 				calcZonesInterdites(corp,forbids);
 				String m=titres[mi];
-				String p = pats[pi].replaceAll("%T", m);
+				String p = pats[pi].replaceAll("%T", Matcher.quoteReplacement(m));
 				corp = parse(p,"RTitres"+pi,corp);
 			}
 		}
