@@ -21,9 +21,14 @@ public class SparseRules {
 	
 	String deterministic() {
 		String fc = corp.fullcorp;
+		
+		fc = applyTitle(fc);
+
+		/*
 		fc = applyProd1(fc);
 		fc = applyTime1(fc);
 		fc = applyPers(fc);
+		 */
 		return fc;
 	}
 	
@@ -305,6 +310,26 @@ public class SparseRules {
 			calcZonesInterdites(corp,forbids);
 			String p = pats[pi];
 			corp = parse(p,"RPers"+pi,corp);
+		}
+		return corp;
+	}
+	
+	String applyTitle(String corp) {
+		final String[] titres = {"Dr.","dr.","Pr.","pr.","docteur","professeur","commandant","académicien","général","caporal","lieutenant","lieutenant de marine",
+				"sa majesté le roi", "Cheick",
+		};
+
+		final String[] pats = {
+				"<title> %T </title>",
+		};		
+		for (int pi=0;pi<pats.length;pi++) {
+			for (int mi=0;mi<titres.length;mi++) {
+				String[] forbids = {"title"};
+				calcZonesInterdites(corp,forbids);
+				String m=titres[mi];
+				String p = pats[pi].replaceAll("%T", m);
+				corp = parse(p,"RTitres"+pi,corp);
+			}
 		}
 		return corp;
 	}
