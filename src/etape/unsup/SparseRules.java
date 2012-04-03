@@ -1,8 +1,10 @@
 package etape.unsup;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -17,12 +19,11 @@ public class SparseRules {
 		this.corp=corp;
 	}
 	
-	void deterministic() {
-		for (;;) {
-			List<String> toks = corp.getNextSentence();
-			if (toks==null) break;
-			applyTime1(toks);
-		}
+	String deterministic() {
+		String fc = corp.fullcorp;
+		fc = applyProd1(fc);
+		fc = applyTime1(fc);
+		return fc;
 	}
 	
 	public static void main(String args[]) throws Exception {
@@ -30,7 +31,8 @@ public class SparseRules {
 		corp.load("/home/xtof/corpus/ETAPE2/Dom/Etape/quaero-ne-normalized/19990617_1900_1920_inter_fm_dga.ne");
 		corp.annots.clear();
 		SparseRules m = new SparseRules(corp);
-		m.deterministic();
+		String fullcorp = m.deterministic();
+		corp.fullcorp=fullcorp;
 		corp.save("rec.ne");
 	}
 	
@@ -45,7 +47,20 @@ public class SparseRules {
 	 * 
 	 * @return position of next (untreated) token, or -1 if no match
 	 */
+	@Deprecated
 	int parse(String pat, Annotations annot, int annotdeb, List<String> toks, int tokdeb) {
+
+		// supprime tous les capturing groups
+		String pat2 = Pattern.compile("\\(([^\\?])").matcher(pat).replaceAll("(?$1");
+		
+		if (true) {
+			// debug: supprime les balises a ajouter
+			String pat3 = Pattern.compile("<[^>]+>").matcher(pat).replaceAll("");
+			pat3 = pat3.replaceAll("  +", " ");
+			System.out.println("debug "+pat3);
+			
+		}
+		
 		boolean doesMatch = true;
 		{
 			int curtok=tokdeb;
@@ -57,20 +72,22 @@ public class SparseRules {
 				} else {
 					String ps = patelt.replace('_', ' ');
 					Pattern p = Pattern.compile(ps);
-					int maxlen=0;
+					int maxlen = ps.split(" ").length;
+					int matchlen=0;
 					StringBuilder scand = new StringBuilder();
 					scand.append(toks.get(curtok));
-					for (int len=1;curtok+len<toks.size();len++) {
+					// cherche quelle longueur peut matcher le pattern-elt
+					for (int len=1;len<=maxlen&&curtok+len<toks.size();len++) {
 						boolean m = p.matcher(scand.toString()).matches();
-						if (!m) break;
+						if (m) {
+							matchlen=len;
+							break;
+						}
 						scand.append(' ');
 						scand.append(toks.get(curtok+len));
-if (scand.toString().startsWith("il y a"))
-	System.out.println("debug "+toks);
-						maxlen=len;
 					}
-					if (maxlen>0) {
-						curtok+=maxlen;
+					if (matchlen>0) {
+						curtok+=matchlen;
 					} else {
 						doesMatch=false; break;
 					}
@@ -122,11 +139,139 @@ if (scand.toString().startsWith("il y a"))
 		System.exit(1);
 	}
 	
-	List<Integer> applyTime1(List<String> s) {
+	final int[] zone0={};
+	int[] debZoneInterdite = zone0;
+	int[] finZoneInterdite = zone0;
+	void clearZonesInterdites() {
+		debZoneInterdite=finZoneInterdite=zone0;
+	}
+	boolean isInZoneInterdite(int off) {
+		int i=Arrays.binarySearch(debZoneInterdite, off);
+		if (i<0) i=-i-2;
+		if (i<0) return false;
+		// off se trouve apres la zone dont le debut est indexe par i
+		return (off<finZoneInterdite[i]);
+	}
+
+	String parse(String pat, String ruleName, String fullcorp) {
+		String pat2 = Pattern.compile("\\(([^\\?])").matcher(pat).replaceAll("(?:$1");
+		
+		StringBuilder sbm=new StringBuilder();
+		StringBuilder sbr=new StringBuilder();
+		
+		for (int i=1, x=0;x<pat2.length();) {
+			int y=pat2.indexOf('<',x);
+			if (y>x) {
+				sbm.append(' ');
+				sbm.append('(');
+				sbm.append(pat2.substring(x, y-1));
+				sbm.append(')');
+				sbr.append(' ');
+				sbr.append("$"+i++);
+			}
+			if (y>=0) {
+				x=pat2.indexOf('>',y)+1;
+				sbr.append(' ');
+				sbr.append(pat2.substring(y, x++));
+			} else {
+				sbr.append(pat2.substring(x));
+				break;
+			}
+		}
+		String mats = sbm.toString().trim();
+		String reps = sbr.toString().trim();
+		String reps0="";
+		{
+			// pour les zones interdites:
+			int i=reps.lastIndexOf('$')+1;
+			assert i>=0;
+			int j=reps.indexOf(' ',i);
+			int ngroups = Integer.parseInt(reps.substring(i, j));
+			StringBuilder sb = new StringBuilder();
+			for (i=1;i<=ngroups;i++) {
+				sb.append(" $"+i);
+			}
+			reps0 = sb.toString().trim();
+		}
+		System.out.println("dbugm ["+sbm+"]");
+		System.out.println("dbugr "+sbr);
+		
+		Matcher mat = Pattern.compile(mats).matcher(fullcorp);
+		mat.reset();
+		StringBuffer sb = new StringBuffer();
+		while (mat.find()) {
+			System.out.println("dbg matfound "+mat.start()+" "+mat.group()+" --- "+reps);
+			if (isInZoneInterdite(mat.start())) {
+				mat.appendReplacement(sb, reps0);
+			} else {
+				mat.appendReplacement(sb, reps);
+			}
+		}
+		mat.appendTail(sb);
+		
+		String res = sb.toString();
+		
+		System.out.println("debug res: "+res.substring(0, 100));
+		return res;
+	}
+	
+	void calcZonesInterdites(String corp, String balise) {
+		ArrayList<Integer> debs = new ArrayList<Integer>();
+		ArrayList<Integer> ends = new ArrayList<Integer>();
+		final String debbal = "<"+balise;
+		final String endbal = "</"+balise;
+		int i=0;
+		for (;;) {
+			int j=corp.indexOf(debbal,i);
+			if (j<0) break;
+			int k=corp.indexOf(endbal,j);
+			i=corp.indexOf('>',k)+1;
+			debs.add(j);
+			ends.add(i);
+		}
+		debZoneInterdite = new int[debs.size()];
+		finZoneInterdite = new int[debs.size()];
+		for (i=0;i<debs.size();i++) {
+			debZoneInterdite[i]=debs.get(i);
+			finZoneInterdite[i]=ends.get(i);
+		}
+	}
+	
+	// chaque fonction est non-ambigue, mais l'application d'une fonction ou d'une autre est ambigue !
+	
+	String applyProd1(String fullcorp) {
+		// TODO: charger ces gazettes depuis un fichier de listes
+		final String[] medias = {"France-Inter","France Inter","France-Culture","France Culture","France-Info","France Info","France2",
+				"France 2","France 3", "TF1", "Radio France","France Soir","France-Soir"
+		};
 		final String[] pats = {
-				"<time.hour.rel> <time-modifier> (pendant|durant|il_y_a) </time-modifier> <val> (\\d+)+ </val> <unit> (heure(s)?|mois|an(s)?|semaine(s)?) </unit> </time.hour.rel>",
+				"<prod.media> <kind> journal </kind> <name> %M </name> </prod.media>",
+				"<prod.media> <kind> radio </kind> <name> %M </name> </prod.media>",
+				"<prod.media> <kind> chaîne de télévision </kind> <name> %M </name> </prod.media>",
+				"<prod.media> <name> %M </name> </prod.media>",
+		};
+		
+		for (int pi=0;pi<pats.length;pi++) {
+			for (int mi=0;mi<medias.length;mi++) {
+				// lorsqu'une zone est matchee, ne plus la matcher ensuite dans la meme function
+				calcZonesInterdites(fullcorp,"prod.media");
+				String m=medias[mi];
+				String p = pats[pi].replaceAll("%M", m);
+				fullcorp = parse(p,"RProd"+pi,fullcorp);
+			}
+		}
+		return fullcorp;
+	}
+	
+	String applyTime1(String fullcorp) {
+		final String[] pats = {
+				"<time.hour.rel> <time-modifier> il y a </time-modifier> <amount> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </amount> </time.hour.rel>",
+				"<amount> <qualifier> (pendant|durant) </qualifier> <val> (\\d+)+ </val> <unit> (heure(s)?|mois|an(s)?|semaine(s)?) </unit> </amount>",
+				"<time.date.rel> <time-modifier> il y a </time-modifier> <amount> <val> (\\d+)+ </val> <unit> (mois|an(s)?|semaine(s)?) </unit> </amount> </time.date.rel>",
+
+// TODO: tous les suivants doivent etre ambigus avec <amount>
 				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> (\\d+)+ </val> <unit> minute(s)? </unit>",
-				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> et <val> (\\d+)+ </val> <unit> minute(s)? </unit>",
+				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> et <val> (\\d+)+ </val> <unit> minute(s)? </unit> </time.hour.abs>",
 				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> (\\d+)+ </val>",
 				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> et demi(e)? </val>",
 				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs> <val> et quart </val>",
@@ -134,19 +279,10 @@ if (scand.toString().startsWith("il y a"))
 				"<time.hour.abs> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </time.hour.abs>",
 		};
 		
-		ArrayList<Integer> posApplied = new ArrayList<Integer>();
-		for (int i=0;i<s.size();i++) {
-			for (int pi=0;pi<pats.length;pi++) {
-				String p = pats[pi];
-				int m = parse(p,corp.annots,corp.curSentDeb,s,i);
-				if (m>=0) {
-					posApplied.add(i);
-					i=m-1;
-					// on applique les patterns dans l'ordre defini: si un pattent est applique, on n'applique pas les suivants !
-					break;
-				}
-			}
+		for (int pi=0;pi<pats.length;pi++) {
+			String p = pats[pi];
+			fullcorp = parse(p,"RTime"+pi,fullcorp);
 		}
-		return posApplied;
+		return fullcorp;
 	}
 }

@@ -15,14 +15,20 @@ import java.util.StringTokenizer;
 public class NECorpus {
 	final String EOL = "__EOL__";
 	
+	@Deprecated
 	List<String> tokens = new ArrayList<String>();
+	List<String> sentences = new ArrayList<String>();
+
 	public Annotations annots = new Annotations();
 	int nextSentDeb = 0;
+
+	@Deprecated
 	public int curSentDeb = -1;
 	
 	public NECorpus() {}
 
-	public List<String> getNextSentence() {
+	@Deprecated
+	public List<String> getNextSentence0() {
 		if (nextSentDeb>=tokens.size()) return null;
 		curSentDeb = nextSentDeb;
 		for (int i=curSentDeb;;i++) {
@@ -33,6 +39,7 @@ public class NECorpus {
 		}
 	}
 	
+	@Deprecated
 	private void parseString(String s) {
 		s=s.trim();
 		s=s.replaceAll("<", " <");
@@ -60,7 +67,8 @@ public class NECorpus {
 //			System.out.println("WARNING: utt ended with ENs open !");
 	}
 	
-	public void save(String outfile) {
+	@Deprecated
+	public void save0(String outfile) {
 		try {
 			PrintWriter f = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outfile),Charset.forName("ISO-8859-1")));
 			for (int i=0;i<tokens.size();i++) {
@@ -83,7 +91,17 @@ public class NECorpus {
 			e.printStackTrace();
 		}
 	}
-	public void load(String nefile) {
+	public void save(String outfile) {
+		try {
+			PrintWriter f = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outfile),Charset.forName("ISO-8859-1")));
+			f.println(fullcorp);
+			f.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	@Deprecated
+	public void load0(String nefile) {
 		try {
 			BufferedReader f = new BufferedReader(new InputStreamReader(new FileInputStream(nefile), Charset.forName("ISO-8859-1")));
 			for (;;) {
@@ -92,6 +110,28 @@ public class NECorpus {
 				parseString(s);
 			}
 			f.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	// je concatene tout le corpus car les sorties de reco n'ont pas de ponct et ne sont pas segmentees !
+	public String fullcorp = null;
+	public void load(String nefile) {
+		try {
+			BufferedReader f = new BufferedReader(new InputStreamReader(new FileInputStream(nefile), Charset.forName("ISO-8859-1")));
+			StringBuilder sb = new StringBuilder();
+			for (;;) {
+				String s=f.readLine();
+				if (s==null) break;
+				// remove previous annotations
+				s=s.replaceAll("<[^>]*>", "");
+				sb.append(s);
+				sb.append(' ');
+			}
+			f.close();
+			String s=sb.toString().replaceAll("  +", " ");
+			s=s.trim();
+			fullcorp=s;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
