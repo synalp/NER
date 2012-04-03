@@ -23,6 +23,7 @@ public class SparseRules {
 		String fc = corp.fullcorp;
 		fc = applyProd1(fc);
 		fc = applyTime1(fc);
+		fc = applyPers(fc);
 		return fc;
 	}
 	
@@ -215,23 +216,25 @@ public class SparseRules {
 		return res;
 	}
 	
-	void calcZonesInterdites(String corp, String balise) {
+	void calcZonesInterdites(String corp, String[] balises) {
 		ArrayList<Integer> debs = new ArrayList<Integer>();
 		ArrayList<Integer> ends = new ArrayList<Integer>();
-		final String debbal = "<"+balise;
-		final String endbal = "</"+balise;
-		int i=0;
-		for (;;) {
-			int j=corp.indexOf(debbal,i);
-			if (j<0) break;
-			int k=corp.indexOf(endbal,j);
-			i=corp.indexOf('>',k)+1;
-			debs.add(j);
-			ends.add(i);
+		for (String balise : balises) {
+			final String debbal = "<"+balise;
+			final String endbal = "</"+balise;
+			int i=0;
+			for (;;) {
+				int j=corp.indexOf(debbal,i);
+				if (j<0) break;
+				int k=corp.indexOf(endbal,j);
+				i=corp.indexOf('>',k)+1;
+				debs.add(j);
+				ends.add(i);
+			}
 		}
 		debZoneInterdite = new int[debs.size()];
 		finZoneInterdite = new int[debs.size()];
-		for (i=0;i<debs.size();i++) {
+		for (int i=0;i<debs.size();i++) {
 			debZoneInterdite[i]=debs.get(i);
 			finZoneInterdite[i]=ends.get(i);
 		}
@@ -254,7 +257,8 @@ public class SparseRules {
 		for (int pi=0;pi<pats.length;pi++) {
 			for (int mi=0;mi<medias.length;mi++) {
 				// lorsqu'une zone est matchee, ne plus la matcher ensuite dans la meme function
-				calcZonesInterdites(fullcorp,"prod.media");
+				String[] forbids = {"prod.media"};
+				calcZonesInterdites(fullcorp,forbids);
 				String m=medias[mi];
 				String p = pats[pi].replaceAll("%M", m);
 				fullcorp = parse(p,"RProd"+pi,fullcorp);
@@ -265,6 +269,11 @@ public class SparseRules {
 	
 	String applyTime1(String fullcorp) {
 		final String[] pats = {
+				"<time.date.abs> <time-modifier> en </time-modifier> l' <kind> an </kind> <year> [12][0-9][0-9][0-9] </year> </time.date.abs>",
+				"<time.date.abs> <kind> an </kind> <year> [12][0-9][0-9][0-9] </year> </time.date.abs>",
+// TODO: autre strategie: elargir une EN, ou annoter en sous-niveaux d'abord (year - firstname - ...) puis extrapoler les ENs à partir de ces annots
+				"<time.date.abs> <kind> année </kind> <year> [12][0-9][0-9][0-9] </year> </time.date.abs>",
+				
 				"<time.hour.rel> <time-modifier> il y a </time-modifier> <amount> <val> (\\d+)+ </val> <unit> heure(s)? </unit> </amount> </time.hour.rel>",
 				"<amount> <qualifier> (pendant|durant) </qualifier> <val> (\\d+)+ </val> <unit> (heure(s)?|mois|an(s)?|semaine(s)?) </unit> </amount>",
 				"<time.date.rel> <time-modifier> il y a </time-modifier> <amount> <val> (\\d+)+ </val> <unit> (mois|an(s)?|semaine(s)?) </unit> </amount> </time.date.rel>",
@@ -284,5 +293,19 @@ public class SparseRules {
 			fullcorp = parse(p,"RTime"+pi,fullcorp);
 		}
 		return fullcorp;
+	}
+	
+	String applyPers(String corp) {
+		final String[] pats = {
+				// TODO: should be ambiguous with loc, ...
+				"<pers.ind> <name.first> [A-Z][a-zéèëêàâôöûùüï]+ </name.first> <name.last> [A-Z][a-zéèëêàâôöûùüï]+ </name.last> </pers.ind>",
+		};		
+		for (int pi=0;pi<pats.length;pi++) {
+			String[] forbids = {"prod.media"};
+			calcZonesInterdites(corp,forbids);
+			String p = pats[pi];
+			corp = parse(p,"RPers"+pi,corp);
+		}
+		return corp;
 	}
 }
