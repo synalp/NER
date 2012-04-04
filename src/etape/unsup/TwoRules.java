@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import utils.FileUtils;
 
@@ -266,6 +267,52 @@ public class TwoRules {
 				}
 			}
 		}
+	}
+	
+	
+	double addLog(double x, double y) {
+		if (x==-Double.MAX_VALUE) { return y; }
+		if (y==-Double.MAX_VALUE) { return x; }
+
+		if (x-y > 16) { return x; }
+		else if (x > y) { return x + Math.log(1 + Math.exp(y-x)); }
+		else if (y-x > 16) { return y; }
+		else { return y + Math.log(1 + Math.exp(x-y)); }
+	}
+	void normalizeLog(double[] x) {
+		double s;
+		int i;
+		s = -Double.MAX_VALUE;
+		for (i=0; i<x.length; i++) s = addLog(s, x[i]);
+		for (i=0; i<x.length; i++) x[i] = Math.exp(x[i] - s);
+	}
+
+	Random rand = new Random();
+	int sample_Mult(double[] th) {
+		double s=0;
+		for (int i=0;i<th.length;i++) s+=th[i];
+		s *= rand.nextDouble();
+		for (int i=0;i<th.length;i++) {
+			s-=th[i];
+			if (s<0) return i;
+		}
+		return 0;
+	}
+	int sampleFrom(List<Double> th) {
+		double s=0;
+		for (int i=0;i<th.size();i++) s+=th.get(i);
+		s *= rand.nextDouble();
+		for (int i=0;i<th.size();i++) {
+			s-=th.get(i);
+			if (s<0) return i;
+		}
+		return 0;
+	}
+	
+	// comptes (E,W)
+	int[][] countsEW;
+	double getLogPost(DetGraph g) {
+		// pref lex
 	}
 	
 	void deleteTmpGroups(DetGraph g) {
