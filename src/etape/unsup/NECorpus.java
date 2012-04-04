@@ -136,4 +136,16 @@ public class NECorpus {
 			e.printStackTrace();
 		}
 	}
+	
+	public static void main(String args[]) {
+		NECorpus m = new NECorpus();
+		m.load("/home/xtof/corpus/ETAPE2/Dom/Etape/quaero-ne-normalized/19990621_1900_1920_inter_fm_dga.ne");
+		try {
+			PrintWriter f = new PrintWriter(new OutputStreamWriter(new FileOutputStream("corp.txt"),Charset.forName("UTF-8")));
+			f.println(m.fullcorp);
+			f.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }
