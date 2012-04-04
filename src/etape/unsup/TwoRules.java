@@ -9,6 +9,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
@@ -17,6 +18,7 @@ import utils.FileUtils;
 import jsafran.DetGraph;
 import jsafran.GraphIO;
 import jsafran.JSafran;
+import jsafran.Mot;
 
 public class TwoRules {
 	final String[] ens = {
@@ -31,7 +33,9 @@ public class TwoRules {
 	};
 
 	String[] prenoms, prods;
-
+	LexPref[] lexprefs;
+	final ArrayList<Rule> allrules = new ArrayList<TwoRules.Rule>();
+	
 	void loadGazettes() {
 		try {
 			{
@@ -57,7 +61,6 @@ public class TwoRules {
 					ll.add(s);
 				}
 				f.close();
-				Collections.sort(ll);
 				prods = ll.toArray(new String[ll.size()]);
 			}
 
@@ -66,8 +69,6 @@ public class TwoRules {
 		}
 	}
 
-	final ArrayList<Rule> allrules = new ArrayList<TwoRules.Rule>();
-	
 	public TwoRules() {
 		allrules.add(ruleName1);
 		allrules.add(ruleProd1);
@@ -94,6 +95,7 @@ public class TwoRules {
 			}
 			return false;
 		}
+		public String toString() {return "RName";}
 	};
 	Rule ruleProd1 = new Rule() {
 		@Override
@@ -107,6 +109,7 @@ public class TwoRules {
 			}
 			return false;
 		}
+		public String toString() {return "RProd";}
 	};
 	Rule ruleName2 = new Rule() {
 		@Override
@@ -118,13 +121,14 @@ public class TwoRules {
 			}
 			return false;
 		}
+		public String toString() {return "RNameDic";}
 	};
 	Rule ruleProd2 = new Rule() {
 		@Override
 		public boolean apply(DetGraph g, int w) {
 			for (String s : prods) {
 				String[] st = s.split(" ");
-				if (w+st.length>=g.getNbMots()) continue;
+				if (w+st.length>g.getNbMots()) continue;
 				boolean found=true;
 				for (int i=0;i<st.length;i++) {
 					if (!g.getMot(w+i).getForme().equals(st[i])) {found=false; break;}
@@ -136,6 +140,7 @@ public class TwoRules {
 			}
 			return false;
 		}
+		public String toString() {return "RProdDic";}
 	};
 
 	// =============================================
@@ -241,31 +246,151 @@ public class TwoRules {
 			}
 		}
 	}
+	/**
+	 * - il ne faut pas ajouter la meme EN ou composant 2x sur le meme mot
+	 * - il ne faut pas avoir 2 ENs de meme taille au meme endroit
+	 * 
+	 * @param g
+	 * @return
+	 */
+	boolean checkNotDuplicateEns(DetGraph g) {
+		for (int i=0;i<g.getNbMots();i++) {
+			int[] grps = g.getGroups(i);
+			if (grps!=null&&grps.length>1) {
+				HashSet<String> enOuComp = new HashSet<String>();
+				for (int gr : grps) {
+					String gn = g.groupnoms.get(gr);
+					if (gn.charAt(0)=='R') gn=gn.substring(1);
+					enOuComp.add(gn);
+				}
+				if (enOuComp.size()!=grps.length) return false;
+			}
+		}
+		for (int i=0;i<g.getNbMots();i++) {
+			int[] grps = g.getGroupsThatStartHere(i);
+			if (grps!=null&&grps.length>1) {
+				ArrayList<Integer> ensx = new ArrayList<Integer>();
+				for (int gr : grps) {
+					String gn = g.groupnoms.get(gr);
+					if (gn.charAt(0)=='R') gn=gn.substring(1);
+					if (Arrays.binarySearch(ens, gn)>=0) {
+						ensx.add(gr);
+					}
+				}
+				HashSet<Integer> lens = new HashSet<Integer>();
+				for (int gr : ensx) {
+					lens.add(g.groups.get(gr).size());
+				}
+				if (lens.size()!=ensx.size()) return false;
+			}
+		}
+		return true;
+	}
 	void unsup(List<DetGraph> gs) {
+		final String[] ensused = {"pers.ind","prod.media","name","name.first","name.last"};
+		lexprefs = new LexPref[ensused.length];
+		for (int i=0;i<ensused.length;i++) {
+			lexprefs[i]=new LexPref(gs, ensused[i]);
+		}
+		for (LexPref lp : lexprefs)
+			for (DetGraph g : gs)
+				lp.increaseFrameCounts(g);
+				
+		final Rule rnull = new Rule() {
+			@Override
+			public boolean apply(DetGraph g, int w) {
+				return true;
+			}
+			public String toString() {return "Rnull";}
+		};
+		final Rule rdel = new Rule() {
+			@Override
+			public boolean apply(DetGraph g, int gr) {
+				g.groupnoms.remove(gr);
+				g.groups.remove(gr);
+				return true;
+			}
+			public String toString() {return "RDel";}
+		};
+		
 		int niters=100;
 		for (int iter=0;iter<niters;iter++) {
+			double logtot = 0;
 			for (DetGraph g : gs) {
+				for (LexPref lp : lexprefs) lp.decreaseFrameCounts(g);
+				if (g.groups!=null) {
+					// TODO: qu'est-ce qui est mieux ?
+					// - supprimer tous les groupes a chaque fois et sampler les regles qui les ajoutent => PB: on ne peut pas appliquer plusieurs regles sur le meme mot !
+					// - ou laisser les groupes mais samples les rules qui ajoutent et qui suppriment ? ==> je prends cette sol
+					// g.groupnoms.clear(); g.groups.clear();
+				}
+				ArrayList<Rule> sampleCandidates = new ArrayList<TwoRules.Rule>();
+				ArrayList<Integer> posCandidate = new ArrayList<Integer>();
+				ArrayList<Double> sampleProb = new ArrayList<Double>();
 				for (int i=0;i<g.getNbMots();i++) {
-					ArrayList<Rule> sampleCandidates = new ArrayList<TwoRules.Rule>();
-					ArrayList<Double> sampleProb = new ArrayList<Double>();
 					for (Rule r : allrules) {
 						if (r.apply(g, i)) {
-							sampleCandidates.add(r);
-							double p = getLogPost(g);
-							sampleProb.add(p);
+							if (checkNotDuplicateEns(g)) {
+								double p = getLogPost(g);
+								sampleCandidates.add(r);
+								posCandidate.add(i);
+								sampleProb.add(p);
+							}
 							deleteTmpGroups(g);
 						}
 					}
-					sampleCandidates.add(null);
-					double p = getLogPost(g);
-					sampleProb.add(p);
-					int r = sampleFrom(sampleProb);
-					if (sampleCandidates.get(r)!=null) {
-						sampleCandidates.get(r).apply(g, i);
-						fixTmpGroups(g);
+				}
+				// regle = on supprime un des groupes
+				if (g.groups!=null) {
+					for (int i=0;i<g.groupnoms.size();i++) {
+						String delgrnom = g.groupnoms.remove(i);
+						ArrayList<Mot> delgrmots = g.groups.remove(i);
+						double p = getLogPost(g);
+						sampleCandidates.add(rdel);
+						posCandidate.add(i);
+						sampleProb.add(p);
+						g.groupnoms.add(i, delgrnom);
+						g.groups.add(i,delgrmots);
 					}
 				}
+				// regle = on ne fait rien
+				sampleCandidates.add(rnull);
+				posCandidate.add(0);
+				double p = getLogPost(g);
+				sampleProb.add(p);
+
+				normalizeLog(sampleProb);
+					
+				int r = sampleFrom(sampleProb);
+				
+				if (false) {
+					if (g==gs.get(0)) {
+						int fridx = lexprefs[0].getFrameIndex(gs.get(0), 0);
+						System.out.println("fridx "+fridx);
+						{
+							int[] counts = lexprefs[0].dep2frameCounts.get("YES");
+							if (counts!=null) System.out.println("debug France pers.ind "+counts[fridx]);
+						}
+						{
+							int[] counts = lexprefs[0].dep2frameCounts.get("NONE");
+							if (counts!=null) System.out.println("debug France nopers   "+counts[fridx]);
+						}
+						if (sampleProb.size()>1) System.out.println("sampled "+r+" "+sampleProb);
+						String[] xlabs = new String[sampleProb.size()];
+						for (int ii=0;ii<xlabs.length;ii++) xlabs[ii]=sampleCandidates.get(ii).toString()+"-"+posCandidate.get(ii);
+						SimpleBarChart.drawChart(sampleProb, xlabs);
+					}
+				}
+
+				logtot+=sampleProb.get(r); // TODO: calculer plutot le log-like 
+				if (sampleCandidates.get(r)!=rnull) {
+					sampleCandidates.get(r).apply(g, posCandidate.get(r));
+					fixTmpGroups(g);
+				}
+					
+				for (LexPref lp : lexprefs) lp.increaseFrameCounts(g);
 			}
+			System.out.println("iter "+iter+" "+logtot);
 		}
 	}
 	
@@ -285,6 +410,13 @@ public class TwoRules {
 		s = -Double.MAX_VALUE;
 		for (i=0; i<x.length; i++) s = addLog(s, x[i]);
 		for (i=0; i<x.length; i++) x[i] = Math.exp(x[i] - s);
+	}
+	void normalizeLog(List<Double> x) {
+		double s;
+		int i;
+		s = -Double.MAX_VALUE;
+		for (i=0; i<x.size(); i++) s = addLog(s, x.get(i));
+		for (i=0; i<x.size(); i++) x.set(i, Math.exp(x.get(i) - s));
 	}
 
 	Random rand = new Random();
@@ -309,10 +441,14 @@ public class TwoRules {
 		return 0;
 	}
 	
-	// comptes (E,W)
-	int[][] countsEW;
+	// un lexpref par type d'EN
 	double getLogPost(DetGraph g) {
-		// pref lex
+		double logp=0;
+		for (LexPref lp : lexprefs) {
+			for (int i=0;i<g.getNbMots();i++)
+				logp+=lp.getLogDirMult(g, i);
+		}
+		return logp;
 	}
 	
 	void deleteTmpGroups(DetGraph g) {
@@ -338,7 +474,8 @@ public class TwoRules {
 		List<DetGraph> gs = gio.loadAllGraphs("corp.xml");
 		TwoRules m = new TwoRules();
 		m.loadGazettes();
-		m.determ(gs);
+		m.unsup(gs);
+//		m.determ(gs);
 		//		m.saveNE(gs);
 		JSafran.viewGraph(gs.toArray(new DetGraph[gs.size()]));
 	}
