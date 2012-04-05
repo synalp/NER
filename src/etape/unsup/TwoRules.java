@@ -72,8 +72,8 @@ public class TwoRules {
 	public TwoRules() {
 		allrules.add(ruleName1);
 		allrules.add(ruleProd1);
-		allrules.add(ruleName2);
-		allrules.add(ruleProd2);
+		allrules.add(ruleNameDico);
+		allrules.add(ruleProdDico);
 	}
 	
 	interface Rule {
@@ -111,7 +111,7 @@ public class TwoRules {
 		}
 		public String toString() {return "RProd";}
 	};
-	Rule ruleName2 = new Rule() {
+	Rule ruleNameDico = new Rule() {
 		@Override
 		public boolean apply(DetGraph g, int w) {
 			String ws = g.getMot(w).getForme();
@@ -123,7 +123,7 @@ public class TwoRules {
 		}
 		public String toString() {return "RNameDic";}
 	};
-	Rule ruleProd2 = new Rule() {
+	Rule ruleProdDico = new Rule() {
 		@Override
 		public boolean apply(DetGraph g, int w) {
 			for (String s : prods) {
@@ -134,6 +134,7 @@ public class TwoRules {
 					if (!g.getMot(w+i).getForme().equals(st[i])) {found=false; break;}
 				}
 				if (found) {
+if (g==gdebug) System.out.println("debug rproddico "+s);
 					g.addgroup(w, w+st.length-1, "Rprod.media");
 					return true;
 				}
@@ -143,6 +144,8 @@ public class TwoRules {
 		public String toString() {return "RProdDic";}
 	};
 
+	DetGraph gdebug;
+	
 	// =============================================
 
 	void saveNE(List<DetGraph> gs) {
@@ -287,6 +290,8 @@ public class TwoRules {
 		return true;
 	}
 	void unsup(List<DetGraph> gs) {
+		gdebug=gs.get(0);
+		
 		final String[] ensused = {"pers.ind","prod.media","name","name.first","name.last"};
 		lexprefs = new LexPref[ensused.length];
 		for (int i=0;i<ensused.length;i++) {
@@ -366,7 +371,7 @@ public class TwoRules {
 				if (false) {
 					if (g==gs.get(0)) {
 						int fridx = lexprefs[0].getFrameIndex(gs.get(0), 0);
-						System.out.println("fridx "+fridx);
+						System.out.println("fridx "+fridx+" sampled "+r);
 						{
 							int[] counts = lexprefs[0].dep2frameCounts.get("YES");
 							if (counts!=null) System.out.println("debug France pers.ind "+counts[fridx]);
@@ -378,6 +383,8 @@ public class TwoRules {
 						if (sampleProb.size()>1) System.out.println("sampled "+r+" "+sampleProb);
 						String[] xlabs = new String[sampleProb.size()];
 						for (int ii=0;ii<xlabs.length;ii++) xlabs[ii]=sampleCandidates.get(ii).toString()+"-"+posCandidate.get(ii);
+						System.out.println(g);
+						System.out.println(g.printGroups());
 						SimpleBarChart.drawChart(sampleProb, xlabs);
 					}
 				}
