@@ -172,7 +172,7 @@ public class PrepHDB {
 				int cmax=0;
 				for (int l=1;l<counts[k].length;l++)
 					if (counts[k][l]>counts[k][cmax]) cmax=l;
-				obs2classe[k]=counts[k][cmax];
+				obs2classe[k]=cmax;
 			}
 
 			// lecture des obs
@@ -208,12 +208,12 @@ public class PrepHDB {
 					if (obs2classeidx>=obs2classe.length&&idxkept<idxendInKeptList)
 						System.out.println("ERROR too many words "+obs2classeidx+" "+obs2classe.length);
 					else {
-						String BayesFeat = "CLUNK";
+						String BayesFeat = "UNK";
 //						System.out.println("devyf "+obs2classeidx+" "+idxdebInBigList+" "+(curInstInBigList)+" next="+indexeskept[idxkept]+" "+(idxkept-idxendInKeptList));
 						// normalement, ne peut pas etre >
 						if (idxkept<indexeskept.length&&curInstInBigList>=indexeskept[idxkept]) {
 							idxkept++;
-							BayesFeat = "CL"+obs2classe[obs2classeidx++];
+							BayesFeat = ""+obs2classe[obs2classeidx++];
 						} else {
 							// c'est un exemple qui n'a pas été pris en compte (trop rare)
 						}
