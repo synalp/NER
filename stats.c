@@ -64,6 +64,31 @@ int sample_Mult(double*th, int lo, int hi) {
   return lo;
 }
 
+static int    hs[20];
+int detsample_Mult_smooth(double eta, double*th, int lo, int hi, int *possibleH, int possibleHlen) {
+  int nhs=0;
+  int i,j,h;
+
+  for (i=0;i<possibleHlen;i++) {
+    h=possibleH[i];
+    if (h<0) continue;
+    for (j=0;j<nhs;j++)
+      if (hs[j]==h) break;
+    if (j==nhs) hs[nhs++]=h;
+  }
+
+  double s=0;
+  for (i=0;i<nhs;i++) { s+=th[hs[i]] + eta; }
+  double rv = ranf();
+  s = rv * s;
+  for (i=0; i<nhs; i++) {
+    s -= th[hs[i]] + eta;
+    if (s<0) { return hs[i]; }
+  }
+  return hs[0];
+}
+
+
 int sample_Mult_smooth(double eta, double*th, int lo, int hi) {
   double s;
   int i;
@@ -72,6 +97,8 @@ int sample_Mult_smooth(double eta, double*th, int lo, int hi) {
   //for (i=0; i<=hi-lo; i++) { s += th[i] + eta; }
   s = th[hi-lo+1] + eta*(hi-lo+1);
   s = ranf() * s;
+
+printf("detdebug %e\n",ranf());
   for (i=0; i<=hi-lo; i++) {
     s -= th[i] + eta;
     if (s<0) { return i+lo; }

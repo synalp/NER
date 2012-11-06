@@ -9,7 +9,7 @@ useSynt3=false
 
 backgroundSymbol=NO
 
-tolerance=0.001
+tolerance=0.01
 
 trainFile=synfeats0.tab
 serializeTo=kiki.mods
@@ -26,4 +26,7 @@ useTypeSeqs2=true
 useTypeySequences=true
 wordShape=chris2useLC
 useDisjunctive=true
+
+gazette=prenoms
+sloppyGazette=true
 
