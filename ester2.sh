@@ -3,6 +3,9 @@
 JCP="bin:../../git/jsafran/jsafran.jar:../../softs/mallet-2.0.5/dist/mallet.jar:../../softs/mallet-2.0.5/dist/mallet-deps.jar:../../softs/mallet-2.0.5/lib/trove-2.0.2.jar"
 
 allens="pers fonc org loc prod time amount"
+# debug
+allens="pers"
+
 dest2="/home/didiot/NER_Xtof/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
@@ -59,7 +62,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "train CRF"
 for en in pers fonc org loc prod time amount unk
 do
@@ -83,13 +86,18 @@ do
   java -cp "$JCP" ester2.ESTER2EN -trs2xml tmp.trsl
   grep -v -e '^<group> ' output.xml > oo2.xml
   java -cp "$JCP" jsafran.ponctuation.UttSegmenter oo2.xml
-  java -cp "$JCP" jsafran.JSafran -retag output.xml
-  mv output_treetagged.xml test/$j".xml"
+  mv -f output.xml /tmp/
+  pushd .
+  cd ../jsafran
+  java -cp "$JCP" jsafran.JSafran -retag /tmp/output.xml
+  mv -f output_treetagged.xml /tmp/
+  popd
+  mv /tmp/output_treetagged.xml test/$j".xml"
   echo $i" test/"$j".xml" >> test/trs2xml.list
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
 ls test/*.xml | grep -v -e merged > tmp.xmll
 for i in $allens
@@ -100,15 +108,16 @@ do
   cp -f groups.$i.tab groups.$i.tab.test
 done
 fi
-exit
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 for en in $allens
 do
   echo "test the CRF for $en"
-  java -Xmx1g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab > test.$en.log
+  # I use a compiled version instead of the jar because I put verbose=2 so that to see all samples from Gibbs, and not just the best one
+  java -Xmx1g -cp ../../softs/stanfordNER/stanford-ner-2013-11-12/classes edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab > test.$en.log
 done
 fi
+exit
 
 # eval chaque EN individuellement
 if [ "1" == "0" ]; then

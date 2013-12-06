@@ -25,4 +25,5 @@ wordShape=chris2useLC
 useDisjunctive=true
 
 doGibbs=true
+useUniformPrior=true
 
