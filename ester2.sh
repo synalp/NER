@@ -6,7 +6,7 @@ allens="pers fonc org loc prod time amount"
 dest2="/home/didiot/NER_Xtof/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
-if [ "1" == "0" ]; then
+if [ "0" == "1" ]; then
 echo "conversion du train en .xml"
 mkdir train
 for i in /home/xtof/corpus/ESTER2ftp/EN/train/trs_train_EN_v1.1/*.trs
@@ -17,8 +17,13 @@ do
   java -cp "$JCP" ester2.ESTER2EN -trs2xml tmp.trsl
   mv output.xml oo2.xml
   java -cp "$JCP" jsafran.ponctuation.UttSegmenter oo2.xml
-  java -cp "$JCP" jsafran.JSafran -retag output.xml
-  mv output_treetagged.xml train/$j
+  mv -f output.xml /tmp/
+  pushd .
+  cd ../../git/jsafran
+  java -cp "$JCP" jsafran.JSafran -retag /tmp/output.xml
+  mv -f output_treetagged.xml /tmp/
+  popd
+  mv /tmp/output_treetagged.xml train/$j
 done
 fi
 
@@ -42,6 +47,8 @@ fi
 if [ "1" == "0" ]; then
 echo "create training files for CRF"
 ls train/*_mate.xml > tmp.xmll
+echo "no syntax"
+ls train/*.xml > tmp.xmll
 for i in pers fonc org loc prod time amount
 do
   echo $i
@@ -52,12 +59,12 @@ do
 done
 fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "train CRF"
 for en in pers fonc org loc prod time amount unk
 do
   sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab.train,g' syn.props > tmp.props
-  java -Xmx20g -cp detcrf.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
+  java -Xmx20g -cp ../../softs/stanfordNER/stanford-ner-2013-11-12/stanford-ner-2013-11-12.jar edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
   mv kiki.mods en.$en.mods
 done
 fi

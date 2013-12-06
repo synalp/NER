@@ -193,8 +193,6 @@ public class NECorpus {
 		try {
 			PrintWriter fout = new PrintWriter(new OutputStreamWriter(new FileOutputStream(outfile),Charset.forName("ISO-8859-1")));
 			BufferedReader f = new BufferedReader(new InputStreamReader(new FileInputStream(inputNEfile), Charset.forName("ISO-8859-1")));
-
-			int 
 			
 			for (int si=0;;) {
 				String s=f.readLine();
