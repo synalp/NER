@@ -17,7 +17,7 @@ import java.util.StringTokenizer;
 import utils.JDiff;
 import utils.SuiteDeMots;
 
-import com.sun.org.apache.xml.internal.security.utils.ElementCheckerImpl.FullChecker;
+//import com.sun.org.apache.xml.internal.security.utils.ElementCheckerImpl.FullChecker;
 
 import jsafran.DetGraph;
 

@@ -52,7 +52,7 @@ echo "create training files for CRF"
 ls train/*_mate.xml > tmp.xmll
 echo "no syntax"
 ls train/*.xml > tmp.xmll
-for i in pers fonc org loc prod time amount
+for i in pers org loc prod
 do
   echo $i
   # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab

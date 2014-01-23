@@ -22,7 +22,7 @@ public class STMNEParser {
 
 	/**
 	 * sauve un corpus au format .stm sans annotations d'EN (!) 
-	 * utile pour passer sur ce corpus le LIAEN
+	 * utile pour passer sur ce corpus le LIANE
 	 * 
 	 * @param g
 	 */
