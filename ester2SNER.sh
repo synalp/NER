@@ -49,17 +49,17 @@ fi
 #done
 #fi
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "create training files for CRF"
-#ls parser/*_mate.xml > tmp.xmll
+#ls parser/*_mate.xml > train.xmll
 #echo "no syntax"
-ls train/*.xml > tmp.xmll
+ls train/*.xml > train.xmll
 for i in pers fonc org loc prod time amount
 do
   echo $i
   # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
   # laisse le champs syntaxique vide
-  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER tmp.xmll $i
+  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER train.xmll $i
   cp -f groups.$i.tab groups.$i.tab.train
 done
 fi
@@ -124,12 +124,12 @@ done
 fi
 if [ "0" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
-ls test/*.xml | grep -v -e merged > tmp.xmll
+ls test/*.xml | grep -v -e merged > train.xmll
 for i in $allens
 do
   echo $i
   # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
-  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER tmp.xmll $i
+  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER train.xmll $i
   cp -f groups.$i.tab groups.$i.tab.test
 done
 fi
@@ -157,8 +157,8 @@ fi
 # merge les res dans un seul stmne
 if [ "0" == "0" ]; then
 echo "put all CRF outputs into a single xml file"
-ls test/*.xml | grep -v -e merged > tmp.xmll
-java -cp "$JCP" ester2.ESTER2EN -mergeens tmp.xmll $allens
+ls test/*.xml | grep -v -e merged > train.xmll
+java -cp "$JCP" ester2.ESTER2EN -mergeens train.xmll $allens
 echo "convert the graph.xml into a .stm-ne file"
 nl=`wc -l test/trs2xml.list | cut -d' ' -f1`
 for (( c=1; c<=$nl; c++ )) 

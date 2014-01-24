@@ -150,6 +150,24 @@ False alarm rate: 0.45 %
 Precision: 67.82 %
 Recall: 40.76 %
 F-measure: 0.51 %
+======================================
+Three classes 
+persB persI and persO
+======================================
+[1000][2000]CRFClassifier tagged 87497 words in 2974 documents at 18719.94 words per second.
+         Entity	P	R	F1	TP	FP	FN
+          persB	0.5380	0.5202	0.5289	567	487	523
+          persI	0.0923	0.0271	0.0419	12	118	431
+          persO	0.5713	0.5725	0.5719	557	418	416
+         Totals	0.5262	0.4533	0.4870	1136	1023	1370
+
+SER (Slot Error Rate): 84.09 % 
+Miss rate: 69.84 %
+False alarm rate: 0.42 %
+Precision: 62.88 %
+Recall: 30.16 %
+F-measure: 0.41 %
+
 
 
 
