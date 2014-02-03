@@ -1,5 +1,6 @@
 package ester2;
 
+import LinearClassifier.AnalyzeClassifier;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -45,15 +46,9 @@ import com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl;
 
 import corpus.text.TextSegments;
 import corpus.text.TextSegments.segtypes;
-import edu.stanford.nlp.classify.ColumnDataClassifier;
-
-
-import edu.stanford.nlp.classify.GeneralDataset;
-import edu.stanford.nlp.classify.LinearClassifier;
-import edu.stanford.nlp.io.IOUtils;
 import java.util.HashMap;
-import java.util.Properties;
 import java.util.Stack;
+
 
 /**
  * Static class
@@ -69,12 +64,7 @@ import java.util.Stack;
  * -->
  */
 public class ESTER2EN {
-        public static String MODELFILE="bin.%S.lc.mods";
-        public static String TRAINFILE="groups.%S.tab.lc.train";
-        public static String TESTFILE="groups.%S.lc.tab.test";
-        public static String LISTTRAINFILES="esterTrain.xmll";
-        public static String UTF8_ENCODING="UTF8";
-        public static String PROPERTIES_FILE="slinearclassifier.props";
+
     
 	ArrayList<TypedSegments> segsPerTRS = new ArrayList<>();
 	// contient la racine du nom du fichier TRS
@@ -91,7 +81,7 @@ public class ESTER2EN {
 	ArrayList<String[]> motsseqs = new ArrayList<>();
 	ArrayList<Integer> seqcat = new ArrayList<>();
 	ArrayList<String> cats = new ArrayList<>();
-        public static String[] groupsOfNE = {"pers", "fonc", "org", "loc", "prod"};
+        
 	
 	public int getNbTRSfichs() {
 		return TRSfile.size();
@@ -1071,160 +1061,48 @@ public class ESTER2EN {
 		return res;
 	}
 
-   public void updatingPropFile(String nameEntity){
-       
 
-        Properties prop = new Properties();
-        try {
-            prop.load(new FileInputStream(PROPERTIES_FILE)); // FileInputStream
-            prop.setProperty("trainFile", TRAINFILE.replace("%S", nameEntity));
-            prop.store(new FileOutputStream(PROPERTIES_FILE),""); // FileOutputStream 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
-
-
-   }     
-        
-   public  void saveGroups(){
-        for(String str:groupsOfNE){
-            
-            saveTrainForLClassifier(LISTTRAINFILES, str);
-        }
-    }
-        
-    public void saveTrainForLClassifier(String xmllist, String en) {
-            try {
-                GraphIO gio = new GraphIO(null);
-                PrintWriter fout = FileUtils.writeFileUTF(TRAINFILE.replace("%S", en));
-                BufferedReader fl = new BufferedReader(new FileReader(xmllist));
-                for (;;) {
-                    String s = fl.readLine();
-                    if (s==null) break;
-                    List<DetGraph> gs = gio.loadAllGraphs(s);
-                    for (int i=0;i<gs.size();i++) {
-                            DetGraph group = gs.get(i);
-                            int nexinutt=0;
-                            for (int j=0;j<group.getNbMots();j++) {
-                                    nexinutt++;
-
-                                    // calcul du label
-                                    String lab = "NO";
-                                    int[] groups = group.getGroups(j);
-                                    if (groups!=null)
-                                        for (int gr : groups) {
-                                            if (group.groupnoms.get(gr).startsWith(en)) {
-                                                int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                if (debdugroupe==j) lab = en+"B";    
-                                                else lab = en+"I";
-                                                break;
-                                            }
-                                            }
-                                    fout.println(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS());
-                            }
-                            /*if (nexinutt>0)
-                                    fout.println();*/
-                    }
-                }
-                fout.close();
-                fl.close();
-                ErrorsReporting.report("groups saved in groups.*.tab");
-            } catch (IOException e) {
-                    e.printStackTrace();
-            }
-    }         
-        
-    /**
-     * Returns the different models for each type of NE,
-     * save the models in a file, so there is no need to retrain each time
-     * @param labeled
-     * @return 
-     */    
-    public List<LinearClassifier> trainLinearClassifier(boolean blsavegroups) {
-        //save the trainset
-        if(blsavegroups)
-            saveGroups();
-        //call the classifier
-        List<LinearClassifier> models = new ArrayList<>();
-        
-        for(String str:groupsOfNE){
-            
-            File mfile = new File(MODELFILE.replace("%S", str));
-            if(!mfile.exists()){
-                updatingPropFile(str);
-                ColumnDataClassifier columnDataClass = new ColumnDataClassifier("slinearclassifier.props");                
-                GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", str));
-                LinearClassifier model = (LinearClassifier) columnDataClass.makeClassifier(data);
-                models.add(model);
-                //model.
-                //save the model in a file
-                try {
-                    IOUtils.writeObjectToFile(model, mfile);
-                } catch (IOException ex) {
-                    
-                }
-                
-            }else{
-                Object object;
-                try {
-                    object = IOUtils.readObjectFromFile(mfile);
-                    LinearClassifier model=(LinearClassifier)object;
-                    models.add(model);
-                    //double[][] feats = new double[model.features().size()]();
-                    List features = new ArrayList<>(model.features());
-                    for(int i=0; i<features.size();i++){
-                        Object obj = features.get(i);
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                } 
-
-            }
-        }
-        return models;
-    }
     
      
         
-	public static void main(String args[]) {
-		ESTER2EN esterTools =new ESTER2EN();
-                if(args.length<1){
-                    esterTools.trainLinearClassifier(false);
-                    return;
-                }
-                if (args[0].equals("-train")) {
-			esterTools.loadTrain();
-			esterTools.loadListes();
-			esterTools.allFeats();
-		} else if (args[0].equals("-trs2stmne")) {
-			String trslist = args[1];
-			esterTools.loadTRS(trslist);
-			esterTools.saveSTMNE("yy.stm-ne");
-		} else if (args[0].equals("-mergeens")) {
-			String xmllist = args[1];
-			mergeENs(xmllist,Arrays.copyOfRange(args, 2, args.length));
-		} else if (args[0].equals("-saveNER")) {
-			System.out.println("saveNER");
-			String xmllist = args[1];
-			String en = args[2];
-			saveGroups(xmllist, en);
-		} else if (args[0].equals("-test")) {
-			System.out.println("test0: save feats for all test");
-			//m.loadTRS("dev.trsl");
-                        esterTools.loadTRS("tmp.trsl");
-			esterTools.loadListes();
-			System.out.println("test1: infer types and save stm-ne");
-			esterTools.inferNE();
-			esterTools.saveSTMNE("yy.stm-ne");
-		} else if (args[0].equals("-trs2xml")) {
-			esterTools.loadTRS(args[1]);
-			List<DetGraph> gs = esterTools.toGraphs();
-			GraphIO gio = new GraphIO(null);
-			gio.save(gs, "output.xml");
-		} else if (args[0].equals("-load")) {
-			esterTools.loadTRS(args[1]);
-			esterTools.print();
-		}
-	}
+public static void main(String args[]) {
+        ESTER2EN esterTools =new ESTER2EN();
+        if(args.length<1){
+            //esterTools.trainLinearClassifier(false);
+            return;
+        }
+        if (args[0].equals("-train")) {
+                esterTools.loadTrain();
+                esterTools.loadListes();
+                esterTools.allFeats();
+        } else if (args[0].equals("-trs2stmne")) {
+                String trslist = args[1];
+                esterTools.loadTRS(trslist);
+                esterTools.saveSTMNE("yy.stm-ne");
+        } else if (args[0].equals("-mergeens")) {
+                String xmllist = args[1];
+                mergeENs(xmllist,Arrays.copyOfRange(args, 2, args.length));
+        } else if (args[0].equals("-saveNER")) {
+                System.out.println("saveNER");
+                String xmllist = args[1];
+                String en = args[2];
+                saveGroups(xmllist, en);
+        } else if (args[0].equals("-test")) {
+                System.out.println("test0: save feats for all test");
+                //m.loadTRS("dev.trsl");
+                esterTools.loadTRS("tmp.trsl");
+                esterTools.loadListes();
+                System.out.println("test1: infer types and save stm-ne");
+                esterTools.inferNE();
+                esterTools.saveSTMNE("yy.stm-ne");
+        } else if (args[0].equals("-trs2xml")) {
+                esterTools.loadTRS(args[1]);
+                List<DetGraph> gs = esterTools.toGraphs();
+                GraphIO gio = new GraphIO(null);
+                gio.save(gs, "output.xml");
+        } else if (args[0].equals("-load")) {
+                esterTools.loadTRS(args[1]);
+                esterTools.print();
+        }
+}
 }
