@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package LinearClassifier;
+package linearclassifier;
 
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.util.Index;
@@ -15,16 +15,17 @@ import java.util.List;
  * It retrieves the features and weights computed
  * by the classifier
  * 
- * based on the Margin class implemented by Christophe Cerisara.
+ * taken from the Margin class implemented by Christophe Cerisara.
  * 
  * @author rojasbar
  */
 public class Margin {
+    //Weights
     private double[][] weights;
     private Index<String> labelIdx, featureIdx;
     private LinearClassifier stanfordModel;
-    private int numInstances;
-    private double[] sumfeatsPerInst;
+    //private int numInstances;
+    //private double[] sumfeatsPerInst;
 
     
     public Margin(LinearClassifier model) {
@@ -39,12 +40,12 @@ public class Margin {
     }
     
     /**
-     * Return the weights for a given instance in X
-     * @param instance
+     * Return the weights for a given feature in X
+     * @param feature
      * @return 
      */
-    public double[] getWeights(int instance){
-        return weights[instance];
+    public double[] getWeights(int feature){
+        return weights[feature];
     }
     /*
      * Return the number of features
@@ -60,8 +61,19 @@ public class Margin {
         return weights[0].length;
     }
     
+    public Index<String> getLabelIndex(){
+        return this.labelIdx;
+    }
 
-     public float getScore(List<Integer> features, int label) {
+    public Index<String> getFeatureIndex(){
+        return this.featureIdx;
+    }  
+    
+    public LinearClassifier getClassifier(){
+        return this.stanfordModel;
+    }
+    
+    public float getScore(List<Integer> features, int label) {
         float sumWeightsOf1Features = 0;
         for (int j=0;j<features.size();j++) {
             sumWeightsOf1Features += weights[features.get(j)][label];

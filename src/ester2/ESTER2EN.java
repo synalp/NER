@@ -1,6 +1,6 @@
 package ester2;
 
-import LinearClassifier.AnalyzeClassifier;
+import linearclassifier.AnalyzeClassifier;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
