@@ -200,12 +200,11 @@ public class AnalyzeClassifier {
             modelMap.put(sclassifier,model);
             Margin margin = new Margin(model);
             marginMAP.put(sclassifier,margin);  
-            //compute the values for instances in the testset
-            if(!(new File(TESTFILE.replace("%S", sclassifier)).exists()))
-                saveGroups((sclassifier.equals(ONLYONEPNOUNCLASS)),false);
-            getValues(TESTFILE.replace("%S", sclassifier),model,featsperInst,labelperInst);
+            //compute the values for instances in the trainset
+            /*getValues(TRAINFILE.replace("%S", sclassifier),model,featsperInst,labelperInst);
+            System.out.println("Total number of features: "+ model.features().size());
             featInstMap.put(sclassifier,featsperInst);
-            lblInstMap.put(sclassifier, labelperInst);
+            lblInstMap.put(sclassifier, labelperInst);*/
     
         }        
     }
@@ -606,7 +605,8 @@ public class AnalyzeClassifier {
             
                 var[i][j] = (float)gmm.getVar(i, j, j);
                 mean[i][j] = (float)gmm.getMean(i, j);
-     
+                /*System.out.println("var["+i+"]["+j+"]"+var[i][j]);
+                System.out.println("mean["+i+"]["+j+"]"+mean[i][j]);*/
                 
             }
             
@@ -654,17 +654,25 @@ public class AnalyzeClassifier {
    public void unsupervisedClassifier(String sclass) {
         final int niters = 10000;
         final float eps = 0.1f;   
-        
-        if(!modelMap.containsKey(sclass))
-            trainOneClassifier(sclass);        
+        //train the classifier with a small set of train files
+        trainOneClassifier(sclass);  
         LinearClassifier model = modelMap.get(sclass);
+        Margin margin = marginMAP.get(sclass);
+        //scan the test instances for train the gmm
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>(); 
+        getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
+        featInstMap.put(sclass,featsperInst);
+        lblInstMap.put(sclass, labelperInst);        
+        
         HashSet<String> emptyfeats = new HashSet<>();
         System.out.println("Working with classifier "+sclass);
         float estimr0 = computeROfTheta(sclass);
         System.out.println("init R "+estimr0);
         testingClassifier(model,TESTFILE.replace("%S", sclass));
         
-        Margin margin = marginMAP.get(sclass);
+        
+        System.out.println("Number of features" + margin.getNfeats());
         for (int iter=0;iter<niters;iter++) {
             double[][] weightsForFeat=margin.getWeights();
             final float[] gradw = new float[weightsForFeat.length];
@@ -701,6 +709,13 @@ public class AnalyzeClassifier {
                         weightsForFeat[i][w] -= gradw[w] * eps;
                                      
                 }
+                
+                for(int w=0;w < weightsForFeat[0].length;w++){ 
+                    weightsForFeat[0][w]= Math.random();
+                    weightsForFeat[1][w]= Math.random();
+                }
+                
+                
                 estimr0 = computeROfTheta(sclass);
                 System.out.println("*******************************"); 
                 System.out.println("R estim ["+iter+"] = "+estimr0);            
@@ -721,11 +736,11 @@ public class AnalyzeClassifier {
         AnalyzeClassifier analyzing = new AnalyzeClassifier();
         ///*
         //trainLinearclassifier(ispn,blsavegroups)
-        analyzing.trainAllLinearClassifier(true,true);
+        //analyzing.trainAllLinearClassifier(true,true);
         //analyzing.computeFThetaOfX();
         //analyzing.computeROfTheta("pn");
         //testingClassifier(ispn,blsavegroups,smodel)
-        analyzing.testingClassifier(true,true, "");
+        //analyzing.testingClassifier(true,true, "");
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
