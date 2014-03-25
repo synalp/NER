@@ -6,6 +6,7 @@ package linearclassifier;
 
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.util.Index;
+import edu.stanford.nlp.util.Triple;
 import java.util.Arrays;
 import java.util.List;
 
@@ -100,5 +101,20 @@ public class Margin {
         return bestlab;
     }    
     
-    
+    public int[] getTopWeights(){
+        int[] featIndexes = new int[50];
+        List<Triple<String,String,Double>> topFeatures = stanfordModel.getTopFeatures(0.5, true, 50);
+        int i=0;
+        for(Triple obj:topFeatures){
+            System.out.println(obj.first.toString());
+            featIndexes[i] =featureIdx.indexOf(obj.first.toString());
+            i++;
+            //label
+            //System.out.println(obj.second.toString());
+            //weight
+            //System.out.println(obj.third.toString());
+            
+        }
+        return featIndexes;
+    }
 }

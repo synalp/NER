@@ -4,8 +4,6 @@
  */
 package linearclassifier;
 
-import edu.stanford.nlp.classify.LinearClassifier;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,11 +14,7 @@ import edu.stanford.nlp.classify.GeneralDataset;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.Datum;
-import edu.stanford.nlp.stats.ClassicCounter;
-import edu.stanford.nlp.stats.Counter;
-import edu.stanford.nlp.stats.Counters;
-import edu.stanford.nlp.stats.Distribution;
-import edu.stanford.nlp.util.Pair;
+
 import gmm.GMMDiag;
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,6 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,8 +37,12 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Stack;
 import java.util.TreeMap;
+
 import jsafran.DetGraph;
 import jsafran.GraphIO;
+import resources.WikipediaAPI;
+import tools.CNConstants;
+import tools.PlotAPI;
 import utils.ErrorsReporting;
 import utils.FileUtils;
 
@@ -59,8 +60,9 @@ public class AnalyzeClassifier {
     public static String UTF8_ENCODING="UTF8";
     public static String PROPERTIES_FILE="slinearclassifier.props";
     public static String NUMFEATSINTRAINFILE="2-";
-    public static String ONLYONEPNOUNCLASS="pn";
-    public static String[] groupsOfNE = {"pers","org", "loc", "prod"};
+    public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
+    public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
+    public static int    TRAINSIZE=Integer.MAX_VALUE;
     
     
     private HashMap<String, LinearClassifier> modelMap = new HashMap<>();
@@ -73,32 +75,41 @@ public class AnalyzeClassifier {
     public AnalyzeClassifier(){
 
     }
-    public void updatingPropFile(String nameEntity){
+    public void updatingPropFile(String nameEntity, boolean iswiki){
        
 
         Properties prop = new Properties();
         try {
             prop.load(new FileInputStream(PROPERTIES_FILE)); // FileInputStream
             prop.setProperty("trainFile", TRAINFILE.replace("%S", nameEntity));
+            
+            if(iswiki)
+                 prop.setProperty("3.useString","true");
+            else{
+                if(prop.getProperty("3.useString")!=null)
+                    prop.remove("3.useString");
+            }
             prop.store(new FileOutputStream(PROPERTIES_FILE),""); // FileOutputStream 
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        
    }     
         
-   public  void saveGroups(boolean ispn,boolean bltrain){
+   public  void saveGroups(boolean ispn,boolean bltrain, boolean iswiki){
        //only one proper noun classifier
        String[] classStr={ONLYONEPNOUNCLASS};
        if(!ispn)
            classStr=groupsOfNE;
        
        for(String str:classStr)
-           saveFilesForLClassifier(str,bltrain);
+           saveFilesForLClassifier(str,bltrain, iswiki);
 
     }
         
-    public void saveFilesForLClassifier(String en, boolean bltrain) {
+    public void saveFilesForLClassifier(String en, boolean bltrain, boolean iswiki) {
             try {
+                //WikipediaAPI.loadWiki();
                 GraphIO gio = new GraphIO(null);
                 OutputStreamWriter outFile =null;
                 String xmllist=LISTTRAINFILES;
@@ -109,6 +120,7 @@ public class AnalyzeClassifier {
                     outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),UTF8_ENCODING);
                 }
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
+                int uttCounter=0;
                 for (;;) {
                     String s = inFile.readLine();
                     if (s==null) break;
@@ -144,10 +156,26 @@ public class AnalyzeClassifier {
                                                 }
                                             }
                                         }
-                                            
+                                    ///*        
+                                    if(iswiki){
+                                        if(!isStopWord(group.getMot(j).getPOS())){
+                                            String inWiki ="F";
+                                            if(!group.getMot(j).getPOS().startsWith("PRO") && !group.getMot(j).getPOS().startsWith("ADJ"))
+                                                inWiki =(WikipediaAPI.processPage(group.getMot(j).getForme()).equals(CNConstants.CHAR_NULL))?"F":"T";
+                                            outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+ inWiki +"\n");
+                                        } 
+                                    }
+                                     //*/                                  
                                     if(!isStopWord(group.getMot(j).getPOS()))
                                         outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\n");
+                                        
                             }
+                            
+                            uttCounter++;
+                            if(bltrain && uttCounter> TRAINSIZE){
+                                break;
+                            }
+                            
                             /*
                             if (nexinutt>0)
                                 outFile.append("NO\tES\tES\n");
@@ -155,21 +183,24 @@ public class AnalyzeClassifier {
                                 outFile.append("NO\tES\tES\n");
                             */
                     }
+                            if(bltrain && uttCounter> TRAINSIZE){
+                                break;
+                            }                    
                 }
                 outFile.flush();
                 outFile.close();
                 inFile.close();
-                ErrorsReporting.report("groups saved in groups.*.tab");
+                ErrorsReporting.report("groups saved in groups.*.tab number of utterances: "+ uttCounter);
             } catch (IOException e) {
                     e.printStackTrace();
             }
     }   
     
-    public void trainOneClassifier(String sclassifier){
+    public void trainOneClassifier(String sclassifier, boolean iswiki){
         LinearClassifier model = null;
         File mfile = new File(MODELFILE.replace("%S", sclassifier));
         if(!mfile.exists()){
-            updatingPropFile(sclassifier);
+            updatingPropFile(sclassifier, iswiki);
             ColumnDataClassifier columnDataClass = new ColumnDataClassifier("slinearclassifier.props");                
             GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", sclassifier));
             model = (LinearClassifier) columnDataClass.makeClassifier(data);
@@ -215,12 +246,12 @@ public class AnalyzeClassifier {
      * @param labeled
      * @return 
      */    
-    public void trainAllLinearClassifier(boolean ispn,boolean blsavegroups) {
+    public void trainAllLinearClassifier(boolean ispn,boolean blsavegroups, boolean iswiki) {
         //TreeMap<String,Double> lcfeatsDict = new TreeMap<>();
         //TreeMap<String,Double> featsDict = new TreeMap<>();
         //save the trainset
         if(blsavegroups)
-            saveGroups(ispn,true);
+            saveGroups(ispn,true,iswiki);
         //only one proper noun classifier
         String[] classStr={ONLYONEPNOUNCLASS};
         if(!ispn)
@@ -233,7 +264,7 @@ public class AnalyzeClassifier {
              if(!str.equals("pers"))
                 continue;
             //*/
-            trainOneClassifier(str);
+            trainOneClassifier(str, iswiki);
             
         }
         
@@ -374,6 +405,11 @@ public class AnalyzeClassifier {
         }
     }
     
+    public LinearClassifier getModel(String classifier){
+        if(modelMap.containsKey(classifier))
+            return modelMap.get(classifier);
+        return null;
+    }
     
     /**
      * Return the features per instance associated at one classifier
@@ -448,14 +484,14 @@ public class AnalyzeClassifier {
     /**
      * Test the classifier
      */
-    public void testingClassifier(boolean ispn,boolean isSavingGroups, String smodel){
+    public void testingClassifier(boolean ispn,boolean isSavingGroups, String smodel, boolean iswiki){
        if(isSavingGroups)
-            saveGroups(ispn,false);
+            saveGroups(ispn,false, iswiki);
        
        if(ispn)
            smodel=ONLYONEPNOUNCLASS;
        
-       updatingPropFile(smodel);
+       updatingPropFile(smodel,iswiki);
         try {
             //command
             //String cmd="java -Xmx1g -cp  \"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\" edu.stanford.nlp.classify.ColumnDataClassifier -prop slinearclassifier.props groups.pers.tab.lc.train -testFile groups.pers.tab.lc.test > out.txt";
@@ -498,10 +534,12 @@ public class AnalyzeClassifier {
        System.out.println("ok");
        
     }
-    public void testingClassifier(LinearClassifier model, String testfile){
+    public double testingClassifier(LinearClassifier model, String testfile){
+       
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
         columnDataClass.testClassifier(model, testfile);
-       
+        return columnDataClass.f1;
+        
     }   
     public String printVector(double[] matrix){
 	
@@ -586,7 +624,27 @@ public class AnalyzeClassifier {
                                                                                 t * ( 0.17087277))))))))));
         if (z >= 0) return  ans;
         else        return -ans;
+    } 
+    
+    /**
+     * Le GMM modélise les scores de la class 0, i.e: (mu_0,0 ; sigma_0,0) et (mu_1,0 ; sigma_1,0)
+     */
+    static float computeR(GMMDiag gmm, final float[] py) {
+        final float sqrtpi = (float)Math.sqrt(Math.PI);
+        final float pi = (float)Math.PI;
+        final float sigma00 = (float)Math.sqrt(gmm.getVar(0, 0, 0));
+        final float sigma10 = (float)Math.sqrt(gmm.getVar(1, 0, 0));
+        final float var00 = (float)gmm.getVar(0, 0, 0);
+        final float var10 = (float)gmm.getVar(1, 0, 0);
+        final float mean00  = (float)gmm.getMean(0, 0);
+        final float mean10  = (float)gmm.getMean(1, 0);
+        float t1 = py[0]*(1f-2f*mean00)/(4f*sigma00*sqrtpi) * (1f+(float)erf( (0.5-mean00)/sigma00 ));
+        float t2 = py[0]/(2f*pi) * (float)Math.exp( -(0.5f-mean00)*(0.5f-mean00)/var00 );
+        float t3 = py[1]*(1f+2f*mean10)/(4f*sigma10*sqrtpi) * (1f-(float)erf( (-0.5-mean10)/sigma10 ));
+        float t4 = py[1]/(2f*pi) * (float)Math.exp( -(-0.5f-mean10)*(-0.5f-mean10)/var10 );
+        return t1+t2+t3+t4;
     }    
+    
     /**
      * From the solved equation of R_{theta}
      * @param gmm
@@ -599,16 +657,24 @@ public class AnalyzeClassifier {
 	    final float sqrtpi = (float)Math.sqrt(2*pi);
 	    final float var[][] = new float[nLabels][nLabels];
             final float mean[][] = new float[nLabels][nLabels];
-            
+            /*
             for(int i=0;i<nLabels;i++)
                 for(int j=0;j<nLabels;j++){
             
                 var[i][j] = (float)gmm.getVar(i, j, j);
                 mean[i][j] = (float)gmm.getMean(i, j);
-                /*System.out.println("var["+i+"]["+j+"]"+var[i][j]);
-                System.out.println("mean["+i+"]["+j+"]"+mean[i][j]);*/
+                //System.out.println("var["+i+"]["+j+"]"+var[i][j]);
+                //System.out.println("mean["+i+"]["+j+"]"+mean[i][j]);
                 
-            }
+            }*/
+            var[0][0]=(float)gmm.getVar(0, 0, 0);
+            var[0][1]=var[0][0];
+            var[1][0]=(float)gmm.getVar(1, 0, 0);
+            var[1][1]=var[1][0];
+            mean[0][0]=(float)gmm.getMean(0, 0);
+            mean[1][0]=-mean[0][0];
+            mean[1][0]=(float)gmm.getMean(1, 0);
+            mean[1][1]=-mean[1][0];
             
             for(int y=0;y<nLabels;y++){
                 for(int l=0; l<nLabels;l++){
@@ -643,7 +709,26 @@ public class AnalyzeClassifier {
         gmm.setClassifier(sclassifier);
         gmm.train(this, marginMAP.get(sclassifier));
         System.out.println("GMM trained");
-        return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
+        //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
+        return computeR(gmm, priors); //xtof
+        
+    }
+    
+    public void testingRForCorpus(String sclass, boolean iswiki){
+                //train the classifier with a small set of train files
+        trainOneClassifier(sclass, iswiki);  
+        LinearClassifier model = modelMap.get(sclass);
+        //scan the test instances for train the gmm
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>(); 
+        getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
+        featInstMap.put(sclass,featsperInst);
+        lblInstMap.put(sclass, labelperInst);        
+        
+        
+        System.out.println("Working with classifier "+sclass);
+        float estimr0 = computeROfTheta(sclass);
+        System.out.println("init R "+estimr0);
         
     }
    /**
@@ -652,12 +737,18 @@ public class AnalyzeClassifier {
      * @param sclass 
      */ 
    public void unsupervisedClassifier(String sclass) {
+        PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
+        PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
+        
+      
         final int niters = 10000;
         final float eps = 0.1f;   
+        int counter=0;
         //train the classifier with a small set of train files
-        trainOneClassifier(sclass);  
+        trainOneClassifier(sclass,false);  
         LinearClassifier model = modelMap.get(sclass);
         Margin margin = marginMAP.get(sclass);
+        int selectedFeats[] = margin.getTopWeights();
         //scan the test instances for train the gmm
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>(); 
@@ -669,26 +760,29 @@ public class AnalyzeClassifier {
         System.out.println("Working with classifier "+sclass);
         float estimr0 = computeROfTheta(sclass);
         System.out.println("init R "+estimr0);
-        testingClassifier(model,TESTFILE.replace("%S", sclass));
-        
+        plotR.addPoint(counter, estimr0);
+        double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
+        plotF1.addPoint(counter,f1);
         
         System.out.println("Number of features" + margin.getNfeats());
         for (int iter=0;iter<niters;iter++) {
             double[][] weightsForFeat=margin.getWeights();
             final float[] gradw = new float[weightsForFeat.length];
-            for(int i=0;i<weightsForFeat.length;i++){
-                for(int w=0;w < weightsForFeat[i].length;w++){
-                    float w0 = (float) weightsForFeat[i][w];
+            //for(int i=0;i<weightsForFeat.length;i++){
+            for(int i=0;i<selectedFeats.length;i++){
+                int featIdx = selectedFeats[i];
+                for(int w=0;w < weightsForFeat[featIdx].length;w++){
+                    float w0 = (float) weightsForFeat[featIdx][w];
                     if (emptyfeats.contains("["+i+","+w+"]")) continue;
                     float delta = 0.5f;
                     /*for (int j=0;;j++) {
                         if(j>10)
                             break;*/
                         System.out.println("before weight= "+w0);
-                        weightsForFeat[i][w] = w0 + w0*delta;
+                        weightsForFeat[featIdx][w] = w0 + w0*delta;
                         System.out.println("after delta= "+ delta);
                         System.out.println("after w0 + w0*delta= "+ (w0 + w0*delta));
-                        System.out.println("after weight= "+weightsForFeat[i][w]);
+                        System.out.println("after weight= "+weightsForFeat[featIdx][w]);
                         //TODO:updating the new weights in the gmm?
                         float estimr = computeROfTheta(sclass);
                         System.out.println("For feat["+ i +"] weight["+ w +"] R estim ["+iter+"] = "+estimr0);    
@@ -700,31 +794,33 @@ public class AnalyzeClassifier {
                         else break;*/
                     //}
                     
-                    weightsForFeat[i][w]=w0;    
+                    weightsForFeat[featIdx][w]=w0;    
                 }
-                for(int w=0;w < weightsForFeat[i].length;w++){ 
+                for(int w=0;w < weightsForFeat[featIdx].length;w++){ 
                     if (gradw[w]==0) 
                             emptyfeats.add("["+i+","+w+"]");
                     else    
-                        weightsForFeat[i][w] -= gradw[w] * eps;
+                        weightsForFeat[featIdx][w] -= gradw[w] * eps;
                                      
                 }
-                
+                /*
                 for(int w=0;w < weightsForFeat[0].length;w++){ 
                     weightsForFeat[0][w]= Math.random();
                     weightsForFeat[1][w]= Math.random();
-                }
-                
-                
-                estimr0 = computeROfTheta(sclass);
-                System.out.println("*******************************"); 
-                System.out.println("R estim ["+iter+"] = "+estimr0);            
-                System.out.println("*******************************");
-                model.setWeights(weightsForFeat);
-                testingClassifier(model,TESTFILE.replace("%S", sclass));
-                System.out.println("*******************************");
+                }*/
+            counter++;
+            estimr0 = computeROfTheta(sclass);
+            System.out.println("*******************************"); 
+            System.out.println("R estim ["+iter+"] = "+estimr0);     
+            plotR.addPoint(counter, estimr0);
+            System.out.println("*******************************");
+            model.setWeights(weightsForFeat);
+            f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
+            plotF1.addPoint(counter, f1);
+            System.out.println("*******************************");    
 
             }
+        
         }
         for(String emptyW:emptyfeats){
             System.out.println(emptyW);
@@ -734,18 +830,48 @@ public class AnalyzeClassifier {
     
     public static void main(String args[]) {
         AnalyzeClassifier analyzing = new AnalyzeClassifier();
-        ///*
+        
+        /*
+        AnalyzeClassifier.TRAINSIZE=20;
+        for(int i=0; i<20;i++){
+            System.out.println("********** Corpus size (#utts)"+AnalyzeClassifier.TRAINSIZE);
+            String sclass="pn";
+            File mfile = new File(MODELFILE.replace("%S", sclass));
+            mfile.delete();
+            mfile = new File(TRAINFILE.replace("%S", sclass));
+            mfile.delete();
+            mfile = new File(TESTFILE.replace("%S", sclass));
+            mfile.delete();
+            analyzing.trainAllLinearClassifier(true,true);
+            analyzing.testingClassifier(true,true, "");
+            analyzing.testingRForCorpus(sclass);
+            AnalyzeClassifier.TRAINSIZE+=50;
+            
+        }
+        */
         //trainLinearclassifier(ispn,blsavegroups)
-        //analyzing.trainAllLinearClassifier(true,true);
+        analyzing.trainAllLinearClassifier(true,true,false);
+        /*
+        analyzing.trainAllLinearClassifier(true,false);
+        String sclass="pn";
+        LinearClassifier model = analyzing.getModel(sclass);
+        analyzing.testingClassifier(model, TESTFILE.replace("%S", sclass));
+        */
         //analyzing.computeFThetaOfX();
         //analyzing.computeROfTheta("pn");
-        //testingClassifier(ispn,blsavegroups,smodel)
-        //analyzing.testingClassifier(true,true, "");
+        //testingClassifier(ispn,blsavegroups,smodel,iswiki)
+       
+        analyzing.testingClassifier(true,true, "",false);
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
         analyzing.unsupervisedClassifier("pn");
-        
+        /* //Debuggin the Stanford Classifier
+            ColumnDataClassifier columnDataClass = new ColumnDataClassifier("slinearclassifier.props");                
+            GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", "pn"));
+            LinearClassifier model = (LinearClassifier) columnDataClass.makeClassifier(data);        
+         
+         //*/
     }
   
 }
