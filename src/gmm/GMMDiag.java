@@ -62,6 +62,15 @@ public class GMMDiag extends GMM {
         double loglikeYt = - gconst[y] - o;
         return loglikeYt;
     }
+    
+    public double getLike(int y, int l, float alphal){
+        double inexp= 0.0;
+        inexp=((alphal-means[y][l])*(alphal-means[y][l]))/(2*diagvar[y][l]);
+        double loglike=- gconst[y] - inexp;
+        double like = logMath.logToLinear((float)loglike);
+        return like;
+    }
+    
     public double getLoglike(AnalyzeClassifier analyzer, Margin margin) {
         final float[] z = new float[nlabs];
         double loglike=0;

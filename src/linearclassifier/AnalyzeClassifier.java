@@ -4,6 +4,7 @@
  */
 package linearclassifier;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,7 @@ import jsafran.DetGraph;
 import jsafran.GraphIO;
 import resources.WikipediaAPI;
 import tools.CNConstants;
+import tools.Histoplot;
 import tools.PlotAPI;
 import utils.ErrorsReporting;
 import utils.FileUtils;
@@ -62,7 +64,7 @@ public class AnalyzeClassifier {
     public static String NUMFEATSINTRAINFILE="2-";
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
-    public static int    TRAINSIZE=Integer.MAX_VALUE;
+    public static int    TRAINSIZE=20;  //Integer.MAX_VALUE;
     
     
     private HashMap<String, LinearClassifier> modelMap = new HashMap<>();
@@ -83,9 +85,11 @@ public class AnalyzeClassifier {
             prop.load(new FileInputStream(PROPERTIES_FILE)); // FileInputStream
             prop.setProperty("trainFile", TRAINFILE.replace("%S", nameEntity));
             
-            if(iswiki)
-                 prop.setProperty("3.useString","true");
-            else{
+            if(iswiki){
+                System.out.println("Entro a is wiki updatingPropFile " + PROPERTIES_FILE);
+                prop.put("3.useString","true");
+                //prop.setProperty("3.useString","true");
+            }else{
                 if(prop.getProperty("3.useString")!=null)
                     prop.remove("3.useString");
             }
@@ -133,7 +137,7 @@ public class AnalyzeClassifier {
                                     nexinutt++;
 
                                     // calcul du label
-                                    String lab = "NO";
+                                    String lab = CNConstants.NOCLASS;
                                     int[] groups = group.getGroups(j);
                                     if (groups!=null)
                                         for (int gr : groups) {
@@ -164,11 +168,9 @@ public class AnalyzeClassifier {
                                                 inWiki =(WikipediaAPI.processPage(group.getMot(j).getForme()).equals(CNConstants.CHAR_NULL))?"F":"T";
                                             outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+ inWiki +"\n");
                                         } 
-                                    }
-                                     //*/                                  
-                                    if(!isStopWord(group.getMot(j).getPOS()))
+                                    }else if(!isStopWord(group.getMot(j).getPOS()))
                                         outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\n");
-                                        
+                                     
                             }
                             
                             uttCounter++;
@@ -708,12 +710,43 @@ public class AnalyzeClassifier {
         GMMDiag gmm = new GMMDiag(2, priors);
         gmm.setClassifier(sclassifier);
         gmm.train(this, marginMAP.get(sclassifier));
+        System.out.println("mean 00 "+gmm.getMean(0, 0));
+        System.out.println("mean 01 "+gmm.getMean(0, 1));
+        System.out.println("mean 10 "+gmm.getMean(1, 0));
+        System.out.println("mean 11 "+gmm.getMean(1, 1));
         System.out.println("GMM trained");
+        
         //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
         return computeR(gmm, priors); //xtof
         
     }
     
+    static float computeRNumInt(GMMDiag gmm, final float[] py, int nLabels) {
+        float risk=0f;
+        
+        MonteCarloIntegration mcInt = new MonteCarloIntegration();
+        mcInt.computeEstimatedGaussian(gmm, nLabels);
+        for(int y=0;y<nLabels;y++){
+            //arguments gmm, distribution of the proposal, metropolis
+            risk+=py[y]*mcInt.integrate(gmm, y,CNConstants.UNIFORM, true);
+        }
+        
+        return risk;
+    }
+    public float computeROfThetaNumInt(String sclassifier) {
+
+        //final float[] priors = computePriors(sclassifier,model);
+        final float[] priors = {0.9f,0.1f};
+        // get scores
+        GMMDiag gmm = new GMMDiag(2, priors);
+        gmm.setClassifier(sclassifier);
+        gmm.train(this, marginMAP.get(sclassifier));
+        System.out.println("GMM trained");
+        
+        //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
+        return computeRNumInt(gmm, priors,marginMAP.get(sclassifier).getNlabs() ); //xtof
+        
+    }  
     public void testingRForCorpus(String sclass, boolean iswiki){
                 //train the classifier with a small set of train files
         trainOneClassifier(sclass, iswiki);  
@@ -754,11 +787,13 @@ public class AnalyzeClassifier {
         List<Integer> labelperInst = new ArrayList<>(); 
         getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
         featInstMap.put(sclass,featsperInst);
-        lblInstMap.put(sclass, labelperInst);        
-        
+        lblInstMap.put(sclass, labelperInst);   
+        double[] scores= new double[featsperInst.size()];
+        Arrays.fill(scores, 0.0);
+        //Histoplot.showit(scorest,featsperInst.size());
         HashSet<String> emptyfeats = new HashSet<>();
         System.out.println("Working with classifier "+sclass);
-        float estimr0 = computeROfTheta(sclass);
+        float estimr0 = computeROfThetaNumInt(sclass);
         System.out.println("init R "+estimr0);
         plotR.addPoint(counter, estimr0);
         double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
@@ -784,7 +819,7 @@ public class AnalyzeClassifier {
                         System.out.println("after w0 + w0*delta= "+ (w0 + w0*delta));
                         System.out.println("after weight= "+weightsForFeat[featIdx][w]);
                         //TODO:updating the new weights in the gmm?
-                        float estimr = computeROfTheta(sclass);
+                        float estimr = computeROfThetaNumInt(sclass);
                         System.out.println("For feat["+ i +"] weight["+ w +"] R estim ["+iter+"] = "+estimr0);    
                         gradw[w] = (estimr-estimr0)/(w0*delta);
                         System.out.println("grad "+gradw[w]);
@@ -809,7 +844,7 @@ public class AnalyzeClassifier {
                     weightsForFeat[1][w]= Math.random();
                 }*/
             counter++;
-            estimr0 = computeROfTheta(sclass);
+            estimr0 = computeROfThetaNumInt(sclass);
             System.out.println("*******************************"); 
             System.out.println("R estim ["+iter+"] = "+estimr0);     
             plotR.addPoint(counter, estimr0);
@@ -817,17 +852,75 @@ public class AnalyzeClassifier {
             model.setWeights(weightsForFeat);
             f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
             plotF1.addPoint(counter, f1);
-            System.out.println("*******************************");    
-
+            System.out.println("*******************************"); 
+                
+            Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
             }
-        
+            
         }
         for(String emptyW:emptyfeats){
             System.out.println(emptyW);
         }
         
    }      
-    
+
+   public void evaluationPOSTAGGER(){
+        BufferedReader testFile = null;
+        try {
+            testFile = new BufferedReader(new InputStreamReader(new FileInputStream(TESTFILE.replace("%S", CNConstants.PRNOUN)), UTF8_ENCODING));
+            int tp=0, tn=0, fp=0, fn=0;
+            for(;;){
+
+                String line = testFile.readLine();   
+                
+                if(line== null)
+                    break;                
+                
+                String values[] = line.split("\\t");
+                String label = values[0];
+                String pos = values[2];
+                
+                if(pos.equals(CNConstants.POSTAGNAM) && label.equals(CNConstants.PRNOUN))
+                    tp++;
+                
+                if(pos.equals(CNConstants.POSTAGNAM)&& label.equals(CNConstants.NOCLASS))
+                    fp++;
+                
+                if(label.equals(CNConstants.PRNOUN)&&!pos.equals(CNConstants.POSTAGNAM))
+                    fn++;
+                if(label.equals(CNConstants.NOCLASS)&& pos.equals(CNConstants.POSTAGNAM))
+                    fn++;
+
+            }
+            double precision= (double) tp/(tp+fp);
+            double recall= (double) tp/(tp+fn);
+            double f1=(2*precision*recall)/(precision+recall);
+            
+            System.out.println(" POSTAG PN precision: "+precision);
+            System.out.println(" POSTAG PN recall: "+recall);
+            System.out.println(" POSTAG PN f1: "+f1);
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                testFile.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+       
+       
+   }
+   
+   public void setFeaturesPerInst(HashMap<String, List<List<Integer>>>  fMap){
+       this.featInstMap=fMap;
+   }
+   
+   public void setLabelsPerInst(HashMap<String, List<Integer>> lMap){
+       this.lblInstMap=lMap;
+   }
+   
     public static void main(String args[]) {
         AnalyzeClassifier analyzing = new AnalyzeClassifier();
         
@@ -842,15 +935,15 @@ public class AnalyzeClassifier {
             mfile.delete();
             mfile = new File(TESTFILE.replace("%S", sclass));
             mfile.delete();
-            analyzing.trainAllLinearClassifier(true,true);
-            analyzing.testingClassifier(true,true, "");
-            analyzing.testingRForCorpus(sclass);
+            analyzing.trainAllLinearClassifier(true,true,false);
+            analyzing.testingClassifier(true,true, "",false);
+            analyzing.testingRForCorpus(sclass,false);
             AnalyzeClassifier.TRAINSIZE+=50;
             
         }
-        */
+        //*/
         //trainLinearclassifier(ispn,blsavegroups)
-        analyzing.trainAllLinearClassifier(true,true,false);
+        //analyzing.trainAllLinearClassifier(true,true,false);
         /*
         analyzing.trainAllLinearClassifier(true,false);
         String sclass="pn";
@@ -861,17 +954,41 @@ public class AnalyzeClassifier {
         //analyzing.computeROfTheta("pn");
         //testingClassifier(ispn,blsavegroups,smodel,iswiki)
        
-        analyzing.testingClassifier(true,true, "",false);
+        //analyzing.testingClassifier(true,true, "",false);
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
-        analyzing.unsupervisedClassifier("pn");
-        /* //Debuggin the Stanford Classifier
+        //analyzing.unsupervisedClassifier("pn");
+				/*
+				//Training without wiki
+				analyzing.trainAllLinearClassifier(true,true,false);
+				analyzing.testingClassifier(true,true, "",false);
+				*/
+
+        /* 
+				//Debuggin the Stanford Classifier
             ColumnDataClassifier columnDataClass = new ColumnDataClassifier("slinearclassifier.props");                
             GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", "pn"));
             LinearClassifier model = (LinearClassifier) columnDataClass.makeClassifier(data);        
          
          //*/
+        //analyzing.evaluationPOSTAGGER();
+        ///*Testing numerical integration
+        String sclass="pn";
+        analyzing.trainOneClassifier(sclass,false);  
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>();     
+        LinearClassifier model = analyzing.getModel(sclass);
+        analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
+        analyzing.featInstMap.put(sclass,featsperInst);
+        analyzing.lblInstMap.put(sclass, labelperInst);   
+        float  risk = analyzing.computeROfTheta(sclass);
+        System.out.println("Analitical sol: "+risk);
+                
+        risk = analyzing.computeROfThetaNumInt(sclass);
+        System.out.println("MCIntegration: "+risk);
+
+        //*/
     }
   
 }

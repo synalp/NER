@@ -28,6 +28,13 @@ package tools;
     public static String ORG="org"; 
     public static String LOC="loc"; 
     public static String PROD="prod";
+    public static String NOCLASS="NO";
+    
+    public static String GAUSSIAN="G";
+    public static String BETA="B";
+    public static String UNIFORM="U";
+    
+    public static String POSTAGNAM="NAM";
     
     public static   String HIBERNATE_CONFIG_FILE="hibernate.cfg.xml";
 }

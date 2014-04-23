@@ -166,6 +166,9 @@ public class GMM {
         double loglike = getLoglike(analyzer, margin);
         System.out.println("train1gauss loglike "+loglike);
     }
-    
+
+    public int getDimension(){
+        return nlabs;
+    }
 
 }

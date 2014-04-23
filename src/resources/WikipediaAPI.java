@@ -160,6 +160,7 @@ public class WikipediaAPI implements WikiConstants {
         try {
             Title toptitle=new Title(topic);
             if(allPages.isEmpty()){
+                System.out.println("Looking at the database");
                 Session session = HibernateUtil.beginTransaction();
                 SQLQuery query = session.createSQLQuery("select p.* from Page p where lower(p.name) = lower(:subject) ");
                 query.setString("subject", toptitle.getWikiStyleTitle());    
@@ -171,6 +172,7 @@ public class WikipediaAPI implements WikiConstants {
                 allPages.put(page.getName(), page);
                 session.close();
             }else{
+                System.out.println("Looking in memory");
                 boolean found=false;
                 for(String title:allPages.keySet()){
                     if(title.contains(topic)){
@@ -181,6 +183,7 @@ public class WikipediaAPI implements WikiConstants {
 
                 }
                 if(!found){
+                    System.out.println("Not found in memory ...");
                     Session session = HibernateUtil.beginTransaction();
                     SQLQuery query = session.createSQLQuery("select p.* from Page p where lower(p.name) = lower(:subject) ");
                     query.setString("subject", toptitle.getWikiStyleTitle());    

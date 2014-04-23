@@ -36,6 +36,10 @@ public class Margin {
         stanfordModel = model;
     }    
     
+    public void setWeights(double[][] weightss){
+        this.weights=weightss;
+    }
+    
     public double[][] getWeights(){
         return this.weights;
     }
@@ -91,6 +95,13 @@ public class Margin {
         return sumWeightsOf1Features;
     }
 
+    public double[] getScoreForAllInstancesLabel0(List<List<Integer>> features,double[] scores){
+        for(int i=0; i< features.size();i++){
+            scores[i]=getScore(features.get(i),0);
+        }
+        return scores;
+    }
+    
     public int classify(int[] feats) {
         int bestlab=-1;
         float labscore = -Float.MAX_VALUE;
