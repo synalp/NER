@@ -725,10 +725,11 @@ public class AnalyzeClassifier {
         float risk=0f;
         
         MonteCarloIntegration mcInt = new MonteCarloIntegration();
-        mcInt.computeEstimatedGaussian(gmm, nLabels);
+        //double[] mvIntegral= mcInt.integrate(gmm, CNConstants.UNIFORM, true);
+        double[] mvIntegral= mcInt.integrate(gmm, CNConstants.GAUSSIAN, true);
         for(int y=0;y<nLabels;y++){
             //arguments gmm, distribution of the proposal, metropolis
-            risk+=py[y]*mcInt.integrate(gmm, y,CNConstants.UNIFORM, true);
+            risk+=py[y]*mvIntegral[y];
         }
         
         return risk;
