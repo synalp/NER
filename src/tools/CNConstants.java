@@ -29,6 +29,7 @@ package tools;
     public static String LOC="loc"; 
     public static String PROD="prod";
     public static String NOCLASS="NO";
+    public static String ALL="all"; 
     
     public static String GAUSSIAN="G";
     public static String BETA="B";

@@ -63,6 +63,7 @@ public class AnalyzeClassifier {
     public static String PROPERTIES_FILE="slinearclassifier.props";
     public static String NUMFEATSINTRAINFILE="2-";
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
+    public static String ONLYONEMULTICLASS=CNConstants.ALL;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
     public static int    TRAINSIZE=20;  //Integer.MAX_VALUE;
     
@@ -100,10 +101,14 @@ public class AnalyzeClassifier {
         
    }     
         
-   public  void saveGroups(boolean ispn,boolean bltrain, boolean iswiki){
+   public  void saveGroups(String sclass,boolean bltrain, boolean iswiki){
        //only one proper noun classifier
        String[] classStr={ONLYONEPNOUNCLASS};
-       if(!ispn)
+       
+       if(sclass.equals(ONLYONEMULTICLASS)){
+           classStr[0]=ONLYONEMULTICLASS;
+       }
+       if(!sclass.equals(ONLYONEPNOUNCLASS) && !sclass.equals(ONLYONEMULTICLASS))
            classStr=groupsOfNE;
        
        for(String str:classStr)
@@ -113,6 +118,7 @@ public class AnalyzeClassifier {
         
     public void saveFilesForLClassifier(String en, boolean bltrain, boolean iswiki) {
             try {
+                //if(bltrain&iswiki)
                 //WikipediaAPI.loadWiki();
                 GraphIO gio = new GraphIO(null);
                 OutputStreamWriter outFile =null;
@@ -124,7 +130,7 @@ public class AnalyzeClassifier {
                     outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),UTF8_ENCODING);
                 }
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
-                int uttCounter=0;
+                int uttCounter=0,wordcount=0;
                 for (;;) {
                     String s = inFile.readLine();
                     if (s==null) break;
@@ -151,12 +157,28 @@ public class AnalyzeClassifier {
                                                     }
                                                 }
                                             }else{
-                                                if (group.groupnoms.get(gr).startsWith(en)) {
+                                                 if (group.groupnoms.get(gr).startsWith(en)) {
                                                     //int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
                                                     //if (debdugroupe==j) lab = en+"B";    
                                                     //else lab = en+"I";
                                                     lab=en;
                                                     break;
+                                                }else{
+                                                    if (en.equals(ONLYONEMULTICLASS)) {
+                                                        String groupName=group.groupnoms.get(gr);
+                                                        groupName=groupName.substring(0, groupName.indexOf("."));
+                                                        //if(!Arrays.asList(groupsOfNE).toString().contains(groupName))
+                                                        //    continue;
+                                                        if(!Arrays.asList(CNConstants.PERS).toString().contains(groupName))
+                                                            continue;                                                        
+                                                        int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
+                                                        int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
+                                                        if (debdugroupe==endgroupe) lab = groupName+"U"; //Unit
+                                                        else if (debdugroupe==j) lab = groupName+"B"; //Begin
+                                                        else if (endgroupe==j) lab = groupName+"L"; //Last
+                                                        else lab = groupName+"I";//Inside
+                                                        break;
+                                                    }                                                    
                                                 }
                                             }
                                         }
@@ -164,9 +186,12 @@ public class AnalyzeClassifier {
                                     if(iswiki){
                                         if(!isStopWord(group.getMot(j).getPOS())){
                                             String inWiki ="F";
-                                            if(!group.getMot(j).getPOS().startsWith("PRO") && !group.getMot(j).getPOS().startsWith("ADJ"))
+                                            if(!group.getMot(j).getPOS().startsWith("PRO") && !group.getMot(j).getPOS().startsWith("ADJ")&&
+                                                    !group.getMot(j).getPOS().startsWith("VER") && !group.getMot(j).getPOS().startsWith("ADV"))
                                                 inWiki =(WikipediaAPI.processPage(group.getMot(j).getForme()).equals(CNConstants.CHAR_NULL))?"F":"T";
                                             outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+ inWiki +"\n");
+                                            wordcount++;
+                                            System.out.println("processed word number " + wordcount);
                                         } 
                                     }else if(!isStopWord(group.getMot(j).getPOS()))
                                         outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\n");
@@ -227,8 +252,8 @@ public class AnalyzeClassifier {
 
         }
         if(model!=null){
-            List<List<Integer>> featsperInst = new ArrayList<>(); 
-            List<Integer> labelperInst = new ArrayList<>(); 
+            /*List<List<Integer>> featsperInst = new ArrayList<>(); 
+            List<Integer> labelperInst = new ArrayList<>(); */
             //train data
             modelMap.put(sclassifier,model);
             Margin margin = new Margin(model);
@@ -248,29 +273,46 @@ public class AnalyzeClassifier {
      * @param labeled
      * @return 
      */    
-    public void trainAllLinearClassifier(boolean ispn,boolean blsavegroups, boolean iswiki) {
+    public void trainAllLinearClassifier(String model,boolean blsavegroups, boolean iswiki) {
         //TreeMap<String,Double> lcfeatsDict = new TreeMap<>();
         //TreeMap<String,Double> featsDict = new TreeMap<>();
         //save the trainset
         if(blsavegroups)
-            saveGroups(ispn,true,iswiki);
+            saveGroups(model,true,iswiki);
         //only one proper noun classifier
         String[] classStr={ONLYONEPNOUNCLASS};
-        if(!ispn)
-            classStr=groupsOfNE ;
+       if(model.equals(ONLYONEMULTICLASS)){
+           classStr[0]=ONLYONEMULTICLASS;
+       }
+       if(!model.equals(ONLYONEPNOUNCLASS) && !model.equals(ONLYONEMULTICLASS))
+           classStr=groupsOfNE;
         //call the classifier
         modelMap.clear();
         marginMAP.clear();
         for(String str:classStr){
-            /*
-             if(!str.equals("pers"))
-                continue;
-            //*/
+
             trainOneClassifier(str, iswiki);
             
         }
         
     }   
+    
+    public void trainMulticlassNER(boolean savegroups, boolean iswiki){
+        //ONLYONEMULTICLASS
+        if(savegroups)
+            saveGroups(ONLYONEMULTICLASS,true,iswiki);
+              
+       
+        //call the classifier
+        modelMap.clear();
+        marginMAP.clear();
+        
+
+       trainOneClassifier(ONLYONEMULTICLASS, iswiki);
+            
+                
+        
+    }
     
     public boolean isStopWord(String pos){
         if(pos.startsWith("PUN") || pos.startsWith("DET")|| pos.startsWith("PRP")||pos.startsWith("INT")||pos.startsWith("SENT"))
@@ -486,12 +528,10 @@ public class AnalyzeClassifier {
     /**
      * Test the classifier
      */
-    public void testingClassifier(boolean ispn,boolean isSavingGroups, String smodel, boolean iswiki){
+    public void testingClassifier(boolean isSavingGroups, String smodel, boolean iswiki){
        if(isSavingGroups)
-            saveGroups(ispn,false, iswiki);
+            saveGroups(smodel,false, iswiki);
        
-       if(ispn)
-           smodel=ONLYONEPNOUNCLASS;
        
        updatingPropFile(smodel,iswiki);
         try {
@@ -590,19 +630,25 @@ public class AnalyzeClassifier {
         
         float[] priors = new float[model.labels().size()];
         float prob=0f, alpha=0.1f;
-
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>();         
+        getValues(TRAINFILE.replace("%S", sclassifier),model,featsperInst,labelperInst);
+        featInstMap.put(sclassifier,featsperInst);
+        lblInstMap.put(sclassifier, labelperInst);          
         List<Integer> vals=lblInstMap.get(sclassifier);
-        int nTargetClass=0;
-
+        int[] nTargetClass= new int[model.labels().size()];
+        Arrays.fill(nTargetClass, 0);
+        
         for(int i=0;i<vals.size();i++){
-            String label = (String) new ArrayList(model.labels()).get(vals.get(i));
-            if(label.equals(sclassifier))
-                nTargetClass++;
+            int lblIdx=vals.get(i);
+            nTargetClass[lblIdx]++;
         }
-       prob = (float) nTargetClass/vals.size();        
-       priors[0]=prob;
-       priors[1]=1-prob;
-               
+        for(int l=0; l<priors.length;l++){
+            prob = (float) nTargetClass[l]/ (float) vals.size();        
+            priors[l]=prob;
+            //priors[1]=1-prob;
+        }     
+                
       return priors;
          
     }
@@ -631,21 +677,41 @@ public class AnalyzeClassifier {
     /**
      * Le GMM modélise les scores de la class 0, i.e: (mu_0,0 ; sigma_0,0) et (mu_1,0 ; sigma_1,0)
      */
-    static float computeR(GMMDiag gmm, final float[] py) {
+    static float computeR(GMMDiag gmm, final float[] py, boolean isconstrained) {
         final float sqrtpi = (float)Math.sqrt(Math.PI);
         final float pi = (float)Math.PI;
         final float sigma00 = (float)Math.sqrt(gmm.getVar(0, 0, 0));
+        
         final float sigma10 = (float)Math.sqrt(gmm.getVar(1, 0, 0));
+        
         final float var00 = (float)gmm.getVar(0, 0, 0);
         final float var10 = (float)gmm.getVar(1, 0, 0);
         final float mean00  = (float)gmm.getMean(0, 0);
+        final float mean01  = (float)gmm.getMean(0, 1);
         final float mean10  = (float)gmm.getMean(1, 0);
-        float t1 = py[0]*(1f-2f*mean00)/(4f*sigma00*sqrtpi) * (1f+(float)erf( (0.5-mean00)/sigma00 ));
-        float t2 = py[0]/(2f*pi) * (float)Math.exp( -(0.5f-mean00)*(0.5f-mean00)/var00 );
-        float t3 = py[1]*(1f+2f*mean10)/(4f*sigma10*sqrtpi) * (1f-(float)erf( (-0.5-mean10)/sigma10 ));
-        float t4 = py[1]/(2f*pi) * (float)Math.exp( -(-0.5f-mean10)*(-0.5f-mean10)/var10 );
-        return t1+t2+t3+t4;
+        final float mean11  = (float)gmm.getMean(1, 1);
+        if(isconstrained){
+            float t1 = py[0]*(1f-2f*mean00)/(4f*sigma00*sqrtpi) * (1f+(float)erf( (0.5-mean00)/sigma00 ));
+            float t2 = py[0]/(2f*pi) * (float)Math.exp( -(0.5f-mean00)*(0.5f-mean00)/var00 );
+            float t3 = py[1]*(1f+2f*mean10)/(4f*sigma10*sqrtpi) * (1f-(float)erf( (-0.5-mean10)/sigma10 ));
+            float t4 = py[1]/(2f*pi) * (float)Math.exp( -(-0.5f-mean10)*(-0.5f-mean10)/var10 );
+            return t1+t2+t3+t4;
+        }
+        
+        float t1= 0.5f + (py[1]*mean11)/2f + (py[0]*mean00)/2f + (py[0]*mean01)/2f + (py[1]*mean10)/2f;
+        float newsigma=  ((float) gmm.getVar(0, 0, 0) + (float)gmm.getVar(0, 1, 1));
+        float t2 = py[0]*((float)gmm.getVar(0, 1, 1))* (float) gmm.getProbability(mean00, mean01+1, newsigma);
+        newsigma=  ((float) gmm.getVar(1, 1, 1) + (float)gmm.getVar(1, 0, 0));
+        float t3 = py[1]*((float)gmm.getVar(1, 0, 0))* (float) gmm.getProbability(mean11, mean10+1, newsigma);
+        newsigma=  ((float) gmm.getVar(0, 1, 1) + (float)gmm.getVar(0, 0, 0));
+        float t4= py[0]*(mean00 - (mean01/2f) - 1)*(float)erf((mean00-mean01-1)/Math.sqrt(2*newsigma));
+        newsigma=  ((float) gmm.getVar(1, 0, 0) + (float)gmm.getVar(1, 1, 1));
+        float t5= py[1]*(mean11 - (mean10/2f) - 1)*(float)erf((mean11-mean10-1)/Math.sqrt(2*newsigma));
+        
+        return t1+t2+t3+t4+t5;
     }    
+    
+      
     
     /**
      * From the solved equation of R_{theta}
@@ -717,7 +783,7 @@ public class AnalyzeClassifier {
         System.out.println("GMM trained");
         
         //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
-        return computeR(gmm, priors); //xtof
+        return computeR(gmm, priors,true); //xtof
         
     }
     
@@ -726,10 +792,10 @@ public class AnalyzeClassifier {
         
         MonteCarloIntegration mcInt = new MonteCarloIntegration();
         //double[] mvIntegral= mcInt.integrate(gmm, CNConstants.UNIFORM, true);
-        double[] mvIntegral= mcInt.integrate(gmm, CNConstants.GAUSSIAN, true);
+        mcInt.errorAnalysis(gmm,py,nLabels);
         for(int y=0;y<nLabels;y++){
-            //arguments gmm, distribution of the proposal, metropolis
-            risk+=py[y]*mvIntegral[y];
+            //arguments gmm, distribution of the proposal, metropolis, is plot
+            risk+=py[y]*mcInt.integrate(gmm,y,CNConstants.UNIFORM, true,false);
         }
         
         return risk;
@@ -748,7 +814,7 @@ public class AnalyzeClassifier {
         return computeRNumInt(gmm, priors,marginMAP.get(sclassifier).getNlabs() ); //xtof
         
     }  
-    public void testingRForCorpus(String sclass, boolean iswiki){
+    public float testingRForCorpus(String sclass, boolean iswiki){
                 //train the classifier with a small set of train files
         trainOneClassifier(sclass, iswiki);  
         LinearClassifier model = modelMap.get(sclass);
@@ -763,6 +829,7 @@ public class AnalyzeClassifier {
         System.out.println("Working with classifier "+sclass);
         float estimr0 = computeROfTheta(sclass);
         System.out.println("init R "+estimr0);
+        return estimr0;
         
     }
    /**
@@ -925,7 +992,7 @@ public class AnalyzeClassifier {
     public static void main(String args[]) {
         AnalyzeClassifier analyzing = new AnalyzeClassifier();
         
-        /*
+        ///*
         AnalyzeClassifier.TRAINSIZE=20;
         for(int i=0; i<20;i++){
             System.out.println("********** Corpus size (#utts)"+AnalyzeClassifier.TRAINSIZE);
@@ -936,35 +1003,51 @@ public class AnalyzeClassifier {
             mfile.delete();
             mfile = new File(TESTFILE.replace("%S", sclass));
             mfile.delete();
-            analyzing.trainAllLinearClassifier(true,true,false);
-            analyzing.testingClassifier(true,true, "",false);
+            analyzing.trainAllLinearClassifier(sclass,true,false);
+            analyzing.testingClassifier(true,sclass,false);
+            LinearClassifier model = analyzing.getModel(sclass);
+            double f1=analyzing.testingClassifier(model,TESTFILE.replace("%S", sclass));
             analyzing.testingRForCorpus(sclass,false);
             AnalyzeClassifier.TRAINSIZE+=50;
             
         }
         //*/
         //trainLinearclassifier(ispn,blsavegroups)
-        //analyzing.trainAllLinearClassifier(true,true,false);
+        /*//analyzing.trainAllLinearClassifier(true,true,false);
+        analyzing.trainMulticlassNER(false, false);
+        String sclass=CNConstants.ALL;
+        analyzing.testingClassifier(true,sclass,false);
+        //float[] priors = analyzing.computePriors(sclass,analyzing.getModel(sclass));
+        //*/
         /*
-        analyzing.trainAllLinearClassifier(true,false);
+        String sclass=CNConstants.PERS;
+        analyzing.trainAllLinearClassifier(sclass,true,false);
+        analyzing.testingClassifier(true,sclass,false);
+        */
+        /*
+        analyzing.trainAllLinearClassifier(CNConstants.PRNOUN,true,false);
         String sclass="pn";
         LinearClassifier model = analyzing.getModel(sclass);
         analyzing.testingClassifier(model, TESTFILE.replace("%S", sclass));
-        */
+        //*/
         //analyzing.computeFThetaOfX();
         //analyzing.computeROfTheta("pn");
         //testingClassifier(ispn,blsavegroups,smodel,iswiki)
        
-        //analyzing.testingClassifier(true,true, "",false);
+        //analyzing.testingClassifier(true, "pn",false);
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
-        //analyzing.unsupervisedClassifier("pn");
-				/*
-				//Training without wiki
-				analyzing.trainAllLinearClassifier(true,true,false);
-				analyzing.testingClassifier(true,true, "",false);
-				*/
+        ///*
+        File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
+        mfile.delete();
+        analyzing.unsupervisedClassifier(CNConstants.PRNOUN);
+        //*/
+        /*
+        //Training without wiki
+        analyzing.trainAllLinearClassifier(true,true,false);
+        analyzing.testingClassifier(true,true, "",false);
+        */
 
         /* 
 				//Debuggin the Stanford Classifier
@@ -974,7 +1057,7 @@ public class AnalyzeClassifier {
          
          //*/
         //analyzing.evaluationPOSTAGGER();
-        ///*Testing numerical integration
+        /*Testing numerical integration
         String sclass="pn";
         analyzing.trainOneClassifier(sclass,false);  
         List<List<Integer>> featsperInst = new ArrayList<>(); 

@@ -62,13 +62,27 @@ public class GMMDiag extends GMM {
         double loglikeYt = - gconst[y] - o;
         return loglikeYt;
     }
-    
+    /**
+     * 
+     * @param y first dimension of  mu
+     * @param l second dimension of mu
+     * @param alphal x
+     * @return 
+     */
     public double getLike(int y, int l, float alphal){
-        double inexp= 0.0;
-        inexp=((alphal-means[y][l])*(alphal-means[y][l]))/(2*diagvar[y][l]);
+        double inexp= ((alphal-means[y][l])*(alphal-means[y][l]))/(2*diagvar[y][l]);
         double loglike=- gconst[y] - inexp;
         double like = logMath.logToLinear((float)loglike);
         return like;
+    }
+    
+    public double getProbability(float x, float mu, float sigma){
+        double inexp = ((x-mu)*(x-mu))/(2*sigma*sigma);
+        double consts = logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(sigma);
+        double loglike= - consts - inexp;
+        return logMath.logToLinear((float)loglike);
+        
+        
     }
     
     public double getLoglike(AnalyzeClassifier analyzer, Margin margin) {
