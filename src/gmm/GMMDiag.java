@@ -76,10 +76,10 @@ public class GMMDiag extends GMM {
         return like;
     }
     
-    public double getProbability(float x, float mu, float sigma){
-        double inexp = ((x-mu)*(x-mu))/(2*sigma*sigma);
-        double consts = logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(sigma);
-        double loglike= - consts - inexp;
+    public double getProbability(float x, float mu, float var){
+        double inexp = ((x-mu)*(x-mu))/(2*var);
+        double consts = logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(var);
+        double loglike= 0.5*(- consts - inexp);
         return logMath.logToLinear((float)loglike);
         
         
