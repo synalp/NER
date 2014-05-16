@@ -52,6 +52,8 @@ echo "create training files for CRF"
 ls train/*_mate.xml > tmp.xmll
 echo "no syntax"
 ls train/*.xml > tmp.xmll
+echo "training on only 179 sentences"
+ls train/*.xml | head -1 > tmp.xmll
 for i in pers fonc org loc prod time amount
 do
   echo $i
@@ -73,7 +75,7 @@ done
 fi
 
 ###############################################################
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "create the graphs.xml files from the gold test TRS"
 rm -rf test
 mkdir test
@@ -109,7 +111,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 for en in $allens
 do
   echo "test the CRF for $en"
@@ -117,10 +119,11 @@ do
   java -Xmx1g -cp ../../softs/stanfordNER/stanford-ner-2013-11-12/classes edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab > test.$en.log
 done
 fi
-exit
 
 # eval chaque EN individuellement
+# warning: cette eval ne marche pas avec le gold test, car on a perdu les groupes de reference pendant le UttSegmenter
 if [ "1" == "0" ]; then
+touch res.log
 echo "evals individuelles baseline" >> res.log
 for en in $allens
 do
@@ -146,7 +149,8 @@ done
 fi
 
 # eval selon protocole ESTER2
-if [ "0" == "0" ]; then
+# missing executable ?
+if [ "1" == "0" ]; then
 score-ne -rd $dest2/../../EN/test/ -cfg $dest2/example/ref/NE-ESTER2.cfg -dic $dest2/tools/ESTER1-dictionnary-v1.9.1.dic test/*.stm-ne
 fi
 

@@ -24,6 +24,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import jsafran.DetGraph;
 import jsafran.GraphIO;
+import jsafran.JSafran;
 import jsafran.Mot;
 
 import org.w3c.dom.Document;
@@ -927,6 +928,7 @@ public class ESTER2EN {
 					}
 					DetGraph g = graphsOneTrs.get(gmd[0]);
 					g.addgroup(gmd[1], gme[1], segs.getTypesForSegment(j)[0]);
+                    System.out.println("debugsegstypes "+tdeb+" "+tfin+" "+j+" "+gmd[1]+" "+gme[1]+" "+segs.getTypesForSegment(j)[0]);
 				}
 			}
 		}
