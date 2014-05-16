@@ -1,9 +1,11 @@
 package ester2;
 
+import linearclassifier.AnalyzeClassifier;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -45,32 +47,42 @@ import com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl;
 
 import corpus.text.TextSegments;
 import corpus.text.TextSegments.segtypes;
+import java.util.HashMap;
+import java.util.Stack;
+
 
 /**
- * 
- * classe utilisee pour la reco des EN sur ESTER
- * 
+ * Static class
+ * Used for NER in ESTER
+ *  
  * 
  * 
  * @author xtof
- *
+ * <!--
+ * Modifications History
+ * Date             Author   	Description
+ * Jan 23, 2014     rojasbar  	Changing some classes and adjusting spans. Testing with linear classifier to analyze p(y)
+ * -->
  */
 public class ESTER2EN {
-	ArrayList<TypedSegments> segsPerTRS = new ArrayList<TypedSegments>();
+
+    
+	ArrayList<TypedSegments> segsPerTRS = new ArrayList<>();
 	// contient la racine du nom du fichier TRS
-	ArrayList<String> TRSfile = new ArrayList<String>();
+	ArrayList<String> TRSfile = new ArrayList<>();
 
 	// liste des ENs actives pour le prochain segment avec leur token de debut
-	ArrayList<String> curens = new ArrayList<String>();
-	ArrayList<Integer> endebs = new ArrayList<Integer>();
+	ArrayList<String> curens = new ArrayList<>();
+	ArrayList<Integer> endebs = new ArrayList<>();
 
 	// contient le seg time du prochain texte
 	float prevdeb=-1, prevend=-1;
 
 	// vars utilisees pour les listes de wikipedia:
-	ArrayList<String[]> motsseqs = new ArrayList<String[]>();
-	ArrayList<Integer> seqcat = new ArrayList<Integer>();
-	ArrayList<String> cats = new ArrayList<String>();
+	ArrayList<String[]> motsseqs = new ArrayList<>();
+	ArrayList<Integer> seqcat = new ArrayList<>();
+	ArrayList<String> cats = new ArrayList<>();
+        
 	
 	public int getNbTRSfichs() {
 		return TRSfile.size();
@@ -682,8 +694,18 @@ public class ESTER2EN {
 						for (int gr : groups) {
 							if (g.groupnoms.get(gr).equals(en)) {
 								int debdugroupe = g.groups.get(gr).get(0).getIndexInUtt()-1;
-								if (debdugroupe==j) lab = en+"B";
-								else lab = en+"I";
+                                                                /*
+                                                                int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
+                                                                if(debdugroupe==endgroupe){ 
+                                                                    lab=en+"E";
+                                                                }else{
+                                                                    if (debdugroupe==j) lab = en+"B";
+                                                                    else if(endgroupe==j) lab=en+"E";
+                                                                    //else lab = en+"I";
+                                                                }*/
+                                                                    if (debdugroupe==j) lab = en+"B";    
+                                                                    else lab = en+"I";                                                                
+								
 								break;
 							}
 						}
@@ -720,9 +742,19 @@ public class ESTER2EN {
 							for (int gr : groups) {
 								if (g.groupnoms.get(gr).startsWith(en)) {
 									int debdugroupe = g.groups.get(gr).get(0).getIndexInUtt()-1;
-									if (debdugroupe==j) lab = en+"B";
-									else lab = en+"I";
-									break;
+                                                                    /*
+                                                                    int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
+                                                                        
+                                                                    if(debdugroupe==endgroupe){ 
+                                                                        lab=en+"E";
+                                                                    }else{
+                                                                        if (debdugroupe==j) lab = en+"B";
+                                                                        else if(endgroupe==j) lab=en+"E";
+                                                                        //else lab = en+"I";
+                                                                    }//*/                                                                        
+                                                                    if (debdugroupe==j) lab = en+"B";    
+                                                                    else lab = en+"I";
+								    break;
 								}
 							}
 						fout.println(g.getMot(j).getForme()+"\t"+g.getMot(j).getPOS()+"\t"+"NOCL\t"+lab);
@@ -739,6 +771,7 @@ public class ESTER2EN {
 		}
 	}
 
+       
 	private static void mergeENs(String xmllist, String[] ens) {
 		final int recol=2;
 		try {
@@ -749,8 +782,12 @@ public class ESTER2EN {
 			int[] curline = new int[ens.length];
 			
 			for (int i=0;i<ens.length;i++) fens[i]=new BufferedReader(new FileReader("test."+ens[i]+".log"));
-			int debin[] = new int[ens.length];
-			Arrays.fill(debin, -1);
+   
+                        //MAP: group stack
+                        HashMap<String,Stack<String>> stackbyGroup = new HashMap<>();
+                        
+			//int debin[] = new int[ens.length];
+			//Arrays.fill(debin, -1);
 			int nfiles=0, ngraphs=0, nwords=0;
 			for (;;) {
 				String gsfilename = fl.readLine();
@@ -758,11 +795,13 @@ public class ESTER2EN {
 				nfiles++;
 				List<DetGraph> gs = gio.loadAllGraphs(gsfilename);
 				ngraphs+=gs.size();
+                                Stack<String> interWords = new Stack<>();
 				for (int i=0;i<gs.size();i++) {
-					DetGraph g = gs.get(i);
-					g.clearGroups();
-					nwords+=g.getNbMots();
-					for (int j=0;j<g.getNbMots();j++) {
+					DetGraph group = gs.get(i);
+                                        group.clearGroups();
+					nwords+=group.getNbMots();
+                                        DetGraph tmpgroup= group.clone();
+					for (int j=0;j<group.getNbMots();j++) {
 						for (int k=0;k<ens.length;k++) {
 							// saute les lignes vides
 							String sen;
@@ -772,32 +811,121 @@ public class ESTER2EN {
 								sen=sen.trim();
 								if (sen.length()>0) break;
 							}
+                                                        
 							String[] ss = sen.split("\t");
-							if (ss[recol].equals(ens[k]+'B')) {
-								if (debin[k]>=0) {
-									g.addgroup(debin[k], j-1, ens[k]);
-								}
-								debin[k]=j;
-							} else if (ss[recol].equals(ens[k]+'I')) {
-								if (debin[k]<0) {
-									System.err.println("warning: enIn without Begin "+ens[k]);
-									debin[k]=j;
-								}
-							} else {
-								if (debin[k]>=0) {
-									g.addgroup(debin[k], j-1, ens[k]);
-								}
-								debin[k]=-1;
-							}
+                                                        if(ss[0].equalsIgnoreCase("Roussin"))
+                                                            System.out.println("found");
+                                                        //adds a group with only one word
+                                                        if(ss[recol].startsWith(ens[k])){
+                                                            /*
+                                                             //only B and E
+                                                             Stack<String> stack = new Stack<>();
+                                                              if(stackbyGroup.containsKey(ens[k])){
+                                                                   stack= stackbyGroup.get(ens[k]);
+                                                              }  
+                                                              stack.push((j)+"_"+ss[recol]);
+                                                              stackbyGroup.put(ens[k], stack);
+                                                             
+                                                             */
+                                                            
+                                                            if(ss[recol].equals(ens[k]+"B")){
+                                                                Stack<String> stack = new Stack<>();
+                                                                if(stackbyGroup.containsKey(ens[k])){
+                                                                    stack= stackbyGroup.get(ens[k]);
+                                                                }
+                                                                if(!interWords.isEmpty()){
+                                                                    //looks for end group id
+                                                                    String[] vals= interWords.pop().split("_");
+                                                                    stack.push(vals[0]+"_"+vals[1]);
+                                                                    stackbyGroup.put(ens[k], stack);
+                                                                    interWords.clear();
+                                                                }
+                                                                
+                                                                stack.push((j)+"_"+ss[recol]);
+                                                                stackbyGroup.put(ens[k], stack);
+                                                            } 
+                                                            //put all the intermediate words in a temporary stack
+                                                            if(ss[recol].equals(ens[k]+"I"))
+                                                                interWords.push((j)+"_"+ss[recol]);
+
+                                                            
+							} 
 						}
 					}
+                                        //check the stack for each group
 					for (int k=0;k<ens.length;k++) {
-						if (debin[k]>=0) {
-							g.addgroup(debin[k], g.getNbMots()-1, ens[k]);
-							debin[k]=-1;
-						}
+                                           
+                                            Stack<String> stack = new Stack<>();
+                                            if(stackbyGroup.containsKey(ens[k]))
+                                                stack= stackbyGroup.get(ens[k]);
+                                            
+                                            ///*
+                                            if(!interWords.isEmpty()){
+                                                //looks for end group id
+                                                String[] vals= interWords.pop().split("_");
+                                                stack.push(vals[0]+"_"+vals[1]);
+                                                stackbyGroup.put(ens[k], stack);
+                                                interWords.clear();
+                                            } 
+                                            //*/
+                                            Stack<String> endLabels=new Stack<>();
+                                            String lastSolvedBegin="";
+                                            String lastSolvedEnd="";
+                                            while(!stack.isEmpty()){
+                                                String[] vals = stack.pop().split("_");
+                                                
+                                                if(vals[1].equals(ens[k]+"I")){
+                                                    ///*
+                                                    if(!lastSolvedBegin.equals("")){
+                                                        int pos=Integer.parseInt(lastSolvedBegin);
+                                                        if(!stack.isEmpty()&&Integer.parseInt(vals[0])-Integer.parseInt(stack.peek().split("_")[0])>1){
+                                                            //joining neighbors
+                                                            if(pos-Integer.parseInt(vals[0])>1)
+                                                                endLabels.push(vals[0]);
+                                                        }else
+                                                          endLabels.push(vals[0]);  
+                                                        
+                                                    }else//*/
+                                                        endLabels.push(vals[0]);
+                                                }
+                                                if(vals[1].equals(ens[k]+"B")){
+                                                    if(endLabels.isEmpty()){
+                                                        //System.out.println("Begining without end");
+                                                        //creates a group of one word 
+                                                        if(lastSolvedEnd.equals(""))
+                                                            tmpgroup.addgroup(Integer.parseInt(vals[0]), Integer.parseInt(vals[0]), ens[k]);
+                                                        else{
+                                                            tmpgroup.addgroup(Integer.parseInt(vals[0]), Integer.parseInt(lastSolvedEnd), ens[k]);
+                                                            lastSolvedBegin=vals[0];
+                                                        }    
+                                                    }else{
+                                                        String endPos=endLabels.pop();
+                                                        tmpgroup.addgroup(Integer.parseInt(vals[0]), Integer.parseInt(endPos), ens[k]);
+                                                        lastSolvedBegin=vals[0];
+                                                        lastSolvedEnd=endPos;
+                                                    }     
+                                                }
+                                            }
+                                            //solve the pending ends with the last span begin found
+                                            while(!endLabels.isEmpty()){
+                                                String endPos=endLabels.pop();
+                                                
+                                                //if(lastSolvedBegin.equals("")){
+                                                    //System.out.println("End without begining");
+                                                    //create one word span
+                                                    tmpgroup.addgroup(Integer.parseInt(endPos), Integer.parseInt(endPos), ens[k]);
+                                                /*}else
+                                                   tmpgroup.addgroup(Integer.parseInt(lastSolvedBegin), Integer.parseInt(endPos), ens[k]);*/
+                                            }
 					}
+                                        //reverse the order
+                                       if(tmpgroup.groups!=null){
+                                           for(int idx=(tmpgroup.groups.size()-1);idx>=0;idx--){
+                                               group.addgroup(tmpgroup.groups.get(idx).get(0).getIndexInUtt()-1, tmpgroup.groups.get(idx).get(tmpgroup.groups.get(idx).size()-1).getIndexInUtt()-1, tmpgroup.groupnoms.get(idx));
+                                           }  
+                                       }
 				}
+                                
 				gio.save(gs, gsfilename+".merged.xml");
 			}
 			for (int i=0;i<ens.length;i++) fens[i].close();
@@ -934,40 +1062,49 @@ public class ESTER2EN {
 		}
 		return res;
 	}
-	
-	public static void main(String args[]) {
-		ESTER2EN m =new ESTER2EN();
-		if (args[0].equals("-train")) {
-			m.loadTrain();
-			m.loadListes();
-			m.allFeats();
-		} else if (args[0].equals("-trs2stmne")) {
-			String trslist = args[1];
-			m.loadTRS(trslist);
-			m.saveSTMNE("yy.stm-ne");
-		} else if (args[0].equals("-mergeens")) {
-			String xmllist = args[1];
-			mergeENs(xmllist,Arrays.copyOfRange(args, 2, args.length));
-		} else if (args[0].equals("-saveNER")) {
-			System.out.println("saveNER");
-			String xmllist = args[1];
-			String en = args[2];
-			saveGroups(xmllist, en);
-		} else if (args[0].equals("-test")) {
-			System.out.println("test0: save feats for all test");
-			m.loadTRS("dev.trsl");
-			m.loadListes();
-			System.out.println("test1: infer types and save stm-ne");
-			m.inferNE();
-			m.saveSTMNE("yy.stm-ne");
-		} else if (args[0].equals("-trs2xml")) {
-			m.loadTRS(args[1]);
-			List<DetGraph> gs = m.toGraphs();
-			GraphIO gio = new GraphIO(null);
-			gio.save(gs, "output.xml");
-		} else if (args[0].equals("-load")) {
-			m.loadTRS(args[1]);
-			m.print();
-		}
-	}
+
+
+    
+     
+        
+public static void main(String args[]) {
+        ESTER2EN esterTools =new ESTER2EN();
+        if(args.length<1){
+            //esterTools.trainLinearClassifier(false);
+            return;
+        }
+        if (args[0].equals("-train")) {
+                esterTools.loadTrain();
+                esterTools.loadListes();
+                esterTools.allFeats();
+        } else if (args[0].equals("-trs2stmne")) {
+                String trslist = args[1];
+                esterTools.loadTRS(trslist);
+                esterTools.saveSTMNE("yy.stm-ne");
+        } else if (args[0].equals("-mergeens")) {
+                String xmllist = args[1];
+                mergeENs(xmllist,Arrays.copyOfRange(args, 2, args.length));
+        } else if (args[0].equals("-saveNER")) {
+                System.out.println("saveNER");
+                String xmllist = args[1];
+                String en = args[2];
+                saveGroups(xmllist, en);
+        } else if (args[0].equals("-test")) {
+                System.out.println("test0: save feats for all test");
+                //m.loadTRS("dev.trsl");
+                esterTools.loadTRS("tmp.trsl");
+                esterTools.loadListes();
+                System.out.println("test1: infer types and save stm-ne");
+                esterTools.inferNE();
+                esterTools.saveSTMNE("yy.stm-ne");
+        } else if (args[0].equals("-trs2xml")) {
+                esterTools.loadTRS(args[1]);
+                List<DetGraph> gs = esterTools.toGraphs();
+                GraphIO gio = new GraphIO(null);
+                gio.save(gs, "output.xml");
+        } else if (args[0].equals("-load")) {
+                esterTools.loadTRS(args[1]);
+                esterTools.print();
+        }
+}
 }
