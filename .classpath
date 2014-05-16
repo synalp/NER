@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/jsafran"/>
+	<classpathentry kind="lib" path="/home/xtof/softs/mallet/class"/>
+	<classpathentry kind="lib" path="/home/xtof/git/NER2013/stanford-ner-2012-11-11/stanford-ner.jar"/>
+	<classpathentry kind="lib" path="lib/StanfordClassifier.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.2.jar"/>
+	<classpathentry kind="lib" path="lib/activation.jar"/>
+	<classpathentry kind="lib" path="lib/anna.jar"/>
+	<classpathentry kind="lib" path="lib/antlr-2.7.5.jar"/>
+	<classpathentry kind="lib" path="lib/backport-util-concurrent.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
+	<classpathentry kind="lib" path="lib/de.tudarmstadt.ukp.wikipedia.api.jar"/>
+	<classpathentry kind="lib" path="lib/Jama-1.0.3.jar"/>
+	<classpathentry kind="lib" path="lib/jasypt-1.7.jar"/>
+	<classpathentry kind="lib" path="lib/jcommon-1.0.21.jar"/>
+	<classpathentry kind="lib" path="lib/jfreechart-1.0.17.jar"/>
+	<classpathentry kind="lib" path="lib/jline.jar"/>
+	<classpathentry kind="lib" path="lib/jquantlib-0.2.4.jar"/>
+	<classpathentry kind="lib" path="lib/jsafran.jar"/>
+	<classpathentry kind="lib" path="lib/log4j.jar"/>
+	<classpathentry kind="lib" path="lib/mallet-deps.jar"/>
+	<classpathentry kind="lib" path="lib/mallet.jar"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.6.jar"/>
+	<classpathentry kind="lib" path="lib/org.annolab.tt4j-1.0.12.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.6.2.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.6.2.jar"/>
+	<classpathentry kind="lib" path="lib/stanford-ner-2014-01-04.jar"/>
+	<classpathentry kind="lib" path="lib/trove.jar"/>
+	<classpathentry kind="lib" path="lib/hibernate-core-4.3.5.Final.jar"/>
+	<classpathentry kind="lib" path="lib/com.springsource.javax.persistence-2.0.0.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
