@@ -30,6 +30,7 @@ import org.hibernate.SQLQuery;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
+
 import tools.CNConstants;
 import tools.hibernate.HibernateUtil;
 
