@@ -698,15 +698,15 @@ public class AnalyzeClassifier {
             return t1+t2+t3+t4;
         }
         
-        float t1= 0.5f + (py[1]*mean11)/2f + (py[0]*mean00)/2f + (py[0]*mean01)/2f + (py[1]*mean10)/2f;
+        float t1= 0.5f + (py[0]*mean01)/2f + (py[1]*mean10)/2f;
         float newsigma=  ((float) gmm.getVar(0, 0, 0) + (float)gmm.getVar(0, 1, 1));
         float t2 = py[0]*((float)gmm.getVar(0, 1, 1))* (float) gmm.getProbability(mean00, mean01+1, newsigma);
         newsigma=  ((float) gmm.getVar(1, 1, 1) + (float)gmm.getVar(1, 0, 0));
         float t3 = py[1]*((float)gmm.getVar(1, 0, 0))* (float) gmm.getProbability(mean11, mean10+1, newsigma);
         newsigma=  ((float) gmm.getVar(0, 1, 1) + (float)gmm.getVar(0, 0, 0));
-        float t4= py[0]*(mean00 - (mean01/2f) - 1)*(float)erf((mean00-mean01-1)/Math.sqrt(2*newsigma));
+        float t4= (py[0]/2f)*(mean00 - mean01 - 1)*(float)erf((mean00-mean01-1)/Math.sqrt(2*newsigma));
         newsigma=  ((float) gmm.getVar(1, 0, 0) + (float)gmm.getVar(1, 1, 1));
-        float t5= py[1]*(mean11 - (mean10/2f) - 1)*(float)erf((mean11-mean10-1)/Math.sqrt(2*newsigma));
+        float t5= (py[1]/2f)*(mean11 - mean10 - 1)*(float)erf((mean11-mean10-1)/Math.sqrt(2*newsigma));
         
         return t1+t2+t3+t4+t5;
     }    
