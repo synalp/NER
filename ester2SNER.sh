@@ -9,7 +9,7 @@ allens="pers fonc org loc prod time amount"
 dest2="/home/rojasbar/development/contnomina/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "conversion du train en .xml"
 mkdir train
 #for i in /home/rojasbar/development/contnomina/corpus/ESTER2ftp/EN/train/trs_train_EN_v1.1/*.trs
@@ -49,7 +49,7 @@ fi
 #done
 #fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create training files for CRF"
 #ls parser/*_mate.xml > train.xmll
 #echo "no syntax"
@@ -100,7 +100,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "conversion du test en .xml, similar to train"
 rm -rf test
 mkdir test
@@ -122,7 +122,7 @@ do
   echo $i" test/"$j >> test/trs2xml.list
 done
 fi
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
 ls test/*.xml | grep -v -e merged > train.xmll
 for i in $allens
@@ -134,7 +134,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 for en in $allens
 do
   echo "test the CRF for $en"
@@ -155,7 +155,7 @@ done
 fi
 
 # merge les res dans un seul stmne
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "put all CRF outputs into a single xml file"
 ls test/*.xml | grep -v -e merged > train.xmll
 java -cp "$JCP" ester2.ESTER2EN -mergeens train.xmll $allens
@@ -173,7 +173,7 @@ done
 fi
 
 # eval selon protocole ESTER2
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 score-ne -rd $dest2/../../EN/test/ -cfg $dest2/example/ref/NE-ESTER2.cfg -dic $dest2/tools/ESTER1-dictionnary-v1.9.1.dic test/*.stm-ne
 fi
 

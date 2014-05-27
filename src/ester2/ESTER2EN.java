@@ -500,7 +500,7 @@ public class ESTER2EN {
 					parse(doc);
 					if (tok>=0 && segs.getTokenEndTime(tok)<0) segs.setTokenEndTime(tok, prevend);
 					// just for check: 5 premiers EN lues
-					for (int i=0;i<5;i++) {
+					for (int i=0;i<20;i++) {
 						System.out.println("SEG TYPE: "+segs.getTypesForSegment(i)[0]+" : "+segs.getSegment(i));
 					}
 				}
@@ -703,8 +703,8 @@ public class ESTER2EN {
                                                                     else if(endgroupe==j) lab=en+"E";
                                                                     //else lab = en+"I";
                                                                 }*/
-                                                                    if (debdugroupe==j) lab = en+"B";    
-                                                                    else lab = en+"I";                                                                
+                                                                    if (debdugroupe==j) lab = en;//+"B";    
+                                                                    else lab = en;//+"I";                                                                
 								
 								break;
 							}
@@ -752,8 +752,8 @@ public class ESTER2EN {
                                                                         else if(endgroupe==j) lab=en+"E";
                                                                         //else lab = en+"I";
                                                                     }//*/                                                                        
-                                                                    if (debdugroupe==j) lab = en+"B";    
-                                                                    else lab = en+"I";
+                                                                    if (debdugroupe==j) lab = en; //+"B";    
+                                                                    else lab = en; //+"I";
 								    break;
 								}
 							}

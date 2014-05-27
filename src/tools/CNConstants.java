@@ -38,4 +38,5 @@ package tools;
     public static String POSTAGNAM="NAM";
     
     public static   String HIBERNATE_CONFIG_FILE="hibernate.cfg.xml";
+    public static String XMLPERS="pers.hum";
 }

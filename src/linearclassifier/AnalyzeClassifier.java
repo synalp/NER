@@ -39,6 +39,8 @@ import java.util.Properties;
 import java.util.Stack;
 import java.util.TreeMap;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import jsafran.DetGraph;
 import jsafran.GraphIO;
 import resources.WikipediaAPI;
@@ -582,7 +584,50 @@ public class AnalyzeClassifier {
         columnDataClass.testClassifier(model, testfile);
         return columnDataClass.f1;
         
-    }   
+    }
+    public void testingClassifier(String smodel, String testfile){
+      
+       
+      
+        try {
+            //command
+            //String cmd="java -Xmx1g -cp  \"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\" edu.stanford.nlp.classify.ColumnDataClassifier -prop slinearclassifier.props groups.pers.tab.lc.train -testFile groups.pers.tab.lc.test > out.txt";
+
+            //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
+            //Process process = Runtime.getRuntime().exec(call);
+            String cmd="java -Xmx1g -cp  /home/rojasbar/development/contnomina/stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar edu.stanford.nlp.classify.ColumnDataClassifier -prop slinearclassifier.props  -loadClassifier  "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
+            Process process = Runtime.getRuntime().exec(cmd);
+            InputStream stdout = process.getInputStream();
+            
+            BufferedReader input = new BufferedReader (new InputStreamReader(stdout)); 
+            while(true){
+                String line=input.readLine();
+                if(line == null)
+                    break;
+                
+                
+                System.out.println(line);
+                 
+            }
+        
+            InputStream stderr = process.getErrorStream();
+            input = new BufferedReader (new InputStreamReader(stderr)); 
+            while(true){
+                String line=input.readLine();
+                if(line == null)
+                    break;
+                
+                System.out.println("EVAL: "+line);
+                 
+            }          
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+       System.out.println("ok");
+       
+    }    
     public String printVector(double[] matrix){
 	
 		StringBuffer buf = new StringBuffer();
@@ -792,10 +837,11 @@ public class AnalyzeClassifier {
         
         MonteCarloIntegration mcInt = new MonteCarloIntegration();
         //double[] mvIntegral= mcInt.integrate(gmm, CNConstants.UNIFORM, true);
-        mcInt.errorAnalysis(gmm,py,nLabels);
+        mcInt.errorAnalysisBinInt(gmm,py,nLabels);
         for(int y=0;y<nLabels;y++){
             //arguments gmm, distribution of the proposal, metropolis, is plot
-            risk+=py[y]*mcInt.integrate(gmm,y,CNConstants.UNIFORM, true,false);
+            //risk+=py[y]*mcInt.integrate(gmm,y,CNConstants.UNIFORM, true,false);
+            risk+=py[y]*mcInt.integrateBinaryCase(gmm,y,CNConstants.UNIFORM, true,false);
         }
         
         return risk;
@@ -863,9 +909,9 @@ public class AnalyzeClassifier {
         System.out.println("Working with classifier "+sclass);
         float estimr0 = computeROfThetaNumInt(sclass);
         System.out.println("init R "+estimr0);
-        plotR.addPoint(counter, estimr0);
+        //plotR.addPoint(counter, estimr0);
         double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
-        plotF1.addPoint(counter,f1);
+        //plotF1.addPoint(counter,f1);
         
         System.out.println("Number of features" + margin.getNfeats());
         for (int iter=0;iter<niters;iter++) {
@@ -876,6 +922,8 @@ public class AnalyzeClassifier {
                 int featIdx = selectedFeats[i];
                 for(int w=0;w < weightsForFeat[featIdx].length;w++){
                     float w0 = (float) weightsForFeat[featIdx][w];
+                    if(iter==0)
+                        w0 = (float) Math.random(); //set initial weights randomly                   
                     if (emptyfeats.contains("["+i+","+w+"]")) continue;
                     float delta = 0.5f;
                     /*for (int j=0;;j++) {
@@ -911,18 +959,26 @@ public class AnalyzeClassifier {
                     weightsForFeat[0][w]= Math.random();
                     weightsForFeat[1][w]= Math.random();
                 }*/
-            counter++;
-            estimr0 = computeROfThetaNumInt(sclass);
-            System.out.println("*******************************"); 
-            System.out.println("R estim ["+iter+"] = "+estimr0);     
-            plotR.addPoint(counter, estimr0);
-            System.out.println("*******************************");
-            model.setWeights(weightsForFeat);
-            f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
-            plotF1.addPoint(counter, f1);
-            System.out.println("*******************************"); 
-                
-            Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
+                counter++;
+                estimr0 = computeROfThetaNumInt(sclass);
+                System.out.println("*******************************"); 
+                System.out.println("R estim ["+iter+"] = "+estimr0);     
+                plotR.addPoint(counter, estimr0);
+                System.out.println("*******************************");
+                model.setWeights(weightsForFeat);
+                f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
+                plotF1.addPoint(counter, f1);
+                System.out.println("*******************************"); 
+
+                Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
+                if(iter%30==0){
+                    File mfile = new File(MODELFILE.replace("%S", sclass));
+                    try {
+                        IOUtils.writeObjectToFile(model, mfile);
+                    } catch (IOException ex) {
+
+                    }
+               }            
             }
             
         }
@@ -989,10 +1045,52 @@ public class AnalyzeClassifier {
        this.lblInstMap=lMap;
    }
    
-    public static void main(String args[]) {
+   public void analyzingEvalFile(){
+        try {
+            PrintWriter fout = FileUtils.writeFileUTF("analysis/EMNLPExps/ErrorAnalysis500Iters.txt");
+            BufferedReader fin = new BufferedReader(new FileReader("analysis/EMNLPExps/ResultsProposedClassifier500Iters.txt"));
+            String outline="";
+            for (;;) {
+                    String line = fin.readLine();
+                    if (line==null) break; 
+                    Pattern p = Pattern.compile("pn\t.*\tNOM\t");
+                    Matcher m = p.matcher(line);
+                    
+                    if(m.find())
+                        outline=line;
+                    
+                    if(line.contains("Total:")){
+                        String vals = line.substring(line.indexOf("Total:")+6);
+                        vals=vals.trim().replaceAll("[\\s]+"," ");
+                        String[] probs= vals.split("\\s");
+                        
+                        double probNO= Double.parseDouble(probs[0]);
+                        double probPN= Double.parseDouble(probs[1]);  
+                        if(outline.isEmpty())
+                            continue;
+                        if(probPN>probNO)
+                            outline+=" pn ";
+                        else
+                            outline+=" NO ";
+                        
+                        fout.println(outline);
+                        outline="";
+                        
+                    }
+                    
+                    
+            }   
+            fout.close();
+            fin.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+   }
+   
+   public static void main(String args[]) {
         AnalyzeClassifier analyzing = new AnalyzeClassifier();
         
-        ///*
+        /*
         AnalyzeClassifier.TRAINSIZE=20;
         for(int i=0; i<20;i++){
             System.out.println("********** Corpus size (#utts)"+AnalyzeClassifier.TRAINSIZE);
@@ -1018,17 +1116,31 @@ public class AnalyzeClassifier {
         String sclass=CNConstants.ALL;
         analyzing.testingClassifier(true,sclass,false);
         //float[] priors = analyzing.computePriors(sclass,analyzing.getModel(sclass));
+        ///*/
+        /*
+        String sclass=CNConstants.PRNOUN;
+        //analyzing.trainAllLinearClassifier(sclass,true,false);
+        analyzing.testingClassifier(false,sclass,false);
         //*/
         /*
-        String sclass=CNConstants.PERS;
-        analyzing.trainAllLinearClassifier(sclass,true,false);
-        analyzing.testingClassifier(true,sclass,false);
-        */
-        /*
-        analyzing.trainAllLinearClassifier(CNConstants.PRNOUN,true,false);
-        String sclass="pn";
-        LinearClassifier model = analyzing.getModel(sclass);
-        analyzing.testingClassifier(model, TESTFILE.replace("%S", sclass));
+        //analyzing.trainAllLinearClassifier(CNConstants.PRNOUN,true,false);
+        String sclass=CNConstants.PRNOUN;
+        //LinearClassifier model = analyzing.getModel(sclass);
+        Object  object;
+        try {
+            object = IOUtils.readObjectFromFile("bin.pn.lc.mods");
+            LinearClassifier  model=(LinearClassifier)object;  
+            analyzing.testingClassifier(model, TESTFILE.replace("%S", sclass));
+            //analyzing.testingClassifier(sclass, TESTFILE.replace("%S", sclass));
+            
+            
+          
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
+        }
+        
         //*/
         //analyzing.computeFThetaOfX();
         //analyzing.computeROfTheta("pn");
@@ -1073,6 +1185,7 @@ public class AnalyzeClassifier {
         System.out.println("MCIntegration: "+risk);
 
         //*/
+        //analyzing.analyzingEvalFile();
     }
   
 }

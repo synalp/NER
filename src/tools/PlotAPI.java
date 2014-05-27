@@ -8,6 +8,7 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -34,8 +35,8 @@ public class PlotAPI {
                 false             // include URLs?
                 );
 
-        //        NumberAxis x = new NumberAxis();
-        //        x.setTickUnit(new NumberTickUnit(1));
+                NumberAxis x = new NumberAxis();
+                x.setTickUnit(new NumberTickUnit(1));
 
         objChart.getXYPlot().getDomainAxis().setTickLabelsVisible(false);
 
