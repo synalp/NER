@@ -5,6 +5,7 @@
 package linearclassifier;
 
 
+import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.stanford.nlp.stats.Distribution;
 import gmm.GMMDiag;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 import tools.CNConstants;
 import tools.PlotAPI;
 import tools.ScatterPlotAPI;
+import tools.Histoplot;
 
 
 
@@ -136,18 +138,21 @@ public class MonteCarloIntegration {
         
         return points;
     }
+    /*//changed with xtof
      public float[] metropolis(float[] points,float lo, float hi, float delta, int dim){
         
         int naccept=0;
         
-        UniformRealDistribution uniformDist= new UniformRealDistribution(lo,hi);
+        //UniformRealDistribution uniformDist= new UniformRealDistribution(lo,hi);
+        
         
         for(int i=0; i<dim; i++){
   
             //random walk
             float xtrial=  points[i] + (2*randomVar.nextFloat() - 1f)*delta;
-            double ratiopxtrial= uniformDist.density(xtrial)/uniformDist.density(points[i]);
-            //double ratiopxtrial=1.0;
+            //double ratiopxtrial= uniformDist.density(xtrial)/uniformDist.density(points[i]);
+            //double ratiopxtrial= uniformDist.density(xtrial)/uniformDist.density(points[i]);
+            double ratiopxtrial=1.0;
             if(randomVar.nextDouble() <= ratiopxtrial){
                 points[i]=xtrial;
                 naccept++;
@@ -157,7 +162,32 @@ public class MonteCarloIntegration {
         }
         
         return points;
-    }   
+    }  
+     */ 
+      public float[] metropolis(float lo, float hi, float delta, int dim){
+        
+        int naccept=0;
+        float[] points = new float[dim];
+        UniformRealDistribution uniformDist= new UniformRealDistribution();
+        
+        for(int i=0; i<dim; i++){
+            Random randomVar = new Random();  
+            double x = lo + randomVar.nextDouble() * (hi-lo);
+            
+            //random walk
+            double xtrial=  x + (2*randomVar.nextDouble() - 1.0)*delta;
+            double ratiopxtrial= uniformDist.density(xtrial)/uniformDist.density(x);
+            //double ratiopxtrial=1.0;
+            if(randomVar.nextDouble() <= ratiopxtrial){
+                x=xtrial;
+                naccept++;
+            }
+            
+            points[i]= (float) x;
+        }
+        
+        return points;
+    }      
     /**
      * 
      * @param gmm
@@ -204,13 +234,14 @@ public class MonteCarloIntegration {
             normDist = computeEstimatedGaussian(gmm,dim);
         //random walk
         double sumFx=0.0;
-        
+        /*//changed with xtof
         float[] points = new float[dim];
         for(int i=0; i<dim; i++){
             points[i] =  lo +  randomVar.nextFloat() * (hi-lo); 
         }
+         */
         for(int i=0; i<ntrials;i++){
-           
+           float[] points = new float[dim];
             
             if(proposal.equals(CNConstants.GAUSSIAN)){
                 //normDist = new NormalDistribution(normDist.getMean(), normDist.getStandardDeviation());
@@ -223,7 +254,7 @@ public class MonteCarloIntegration {
                     
             }else {   
                 if(metropolis)
-                    points = metropolis(points,lo,hi,0.5f,dim);
+                    points = metropolis(lo,hi,0.5f,dim);
                 else
                    points = samplingPoints(normDist,dim);  
             }    
@@ -295,8 +326,11 @@ public class MonteCarloIntegration {
     }
 
     public double integrateBinaryCase(GMMDiag gmm, int k, String proposal, boolean metropolis, boolean isplot){
-         //ScatterPlotAPI plotPoints = new ScatterPlotAPI("Sampled Points");
-        
+         
+        ScatterPlotAPI plotPoints = null;
+        /*if(isplot)
+            plotPoints = new ScatterPlotAPI("Sampled Points");
+        */
         int dim = gmm.getDimension();
         int ntrials=50000;
         float minMean=Float.MAX_VALUE;
@@ -333,11 +367,18 @@ public class MonteCarloIntegration {
         NormalDistribution normDist = new NormalDistribution();
         if(proposal.equals(CNConstants.GAUSSIAN))
             normDist = computeEstimatedGaussian(gmm,dim);
+        /*//changed with xtof
+        float[] points = new float[dim];
+        for(int i=0; i<dim; i++){
+            points[i] =  lo +  randomVar.nextFloat() * (hi-lo); 
+        }*/        
         //random walk
-        double sumFx=0.0;
+        double sumFx=0.0;        
+        double[] histopoints = new double[100];
+        Arrays.fill(histopoints, 0.0);
         for(int i=0; i<ntrials;i++){
-            float[] points = new float[dim];
             
+            float[] points = new float[dim];
             if(proposal.equals(CNConstants.GAUSSIAN)){
                 //normDist = new NormalDistribution(normDist.getMean(), normDist.getStandardDeviation());
                 //normDist = new NormalDistribution(normDist.getMean(),maxSigma);
@@ -349,18 +390,20 @@ public class MonteCarloIntegration {
                     
             }else {   
                 if(metropolis)
-                    points = metropolis(points,lo,hi,0.5f,dim);
+                    points = metropolis(lo,hi,0.5f,dim);
                 else
                    points = samplingPoints(normDist,dim);  
             }    
             //float[] points = samplingPoints(normDist,dim);
-            //plotPoints.addPoint(points,i);
+            //if(isplot)
+                //plotPoints.addPoint(points,i);
             //System.out.println( points[0]+","+points[1]+"\n");
             
                 
-                float alphazero=points[0];
-                points[1]=-alphazero;
-                
+                //alpha1=-alpha0points[1]=-points[0];
+                points[1]=-points[0];
+
+
                 double prodOfGauss=1.0;
 
                 for(int l=0;l< dim; l++){
@@ -369,17 +412,16 @@ public class MonteCarloIntegration {
 
                 
                 double lossTerm=0.0;
-            
-                for(int m=0; m<dim; m++){
-                    double val=0.0;
-                    if(m==0){
-                        val=(points[m]<0.5)?points[m]:0.5;
-                        lossTerm=1.0-2*val;
-                    }else{
-                        val=(points[m]>-0.5)?points[m]:-0.5;
-                        lossTerm=1.0+2*val;
-                    }     
-                }
+                double val=0.0;
+                if(k==0){
+                    val=(points[0]<0.5)?points[0]:0.5;
+                    lossTerm=1.0-2*val;
+                }else{
+                    val=(points[0]>-0.5)?points[0]:-0.5;
+                    lossTerm=1.0+2*val;
+                }    
+                        
+                
                 
                 double f=prodOfGauss*lossTerm;
 
@@ -411,7 +453,7 @@ public class MonteCarloIntegration {
             System.out.println("sum: "+ sumFx);
             System.out.println("region: "+ Math.pow((hi-lo),dim-1));
             System.out.println("****value of estimated integral for [k="+k+"] = "+ integral );
-            */
+            //*/
         
        return integral; 
     } 

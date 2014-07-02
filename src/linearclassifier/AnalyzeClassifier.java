@@ -4,9 +4,9 @@
  */
 package linearclassifier;
 
-import java.io.FileNotFoundException;
+
 import java.util.ArrayList;
-import java.util.HashMap;
+
 import java.util.List;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 
@@ -26,18 +26,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.io.PrintStream;
+
 import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
-import java.util.Stack;
-import java.util.TreeMap;
+import java.lang.Integer;
+
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,15 +57,16 @@ public class AnalyzeClassifier {
     public static String MODELFILE="bin.%S.lc.mods";
     public static String TRAINFILE="groups.%S.tab.lc.train";
     public static String TESTFILE="groups.%S.tab.lc.test";
-    public static String LISTTRAINFILES="esterTrain.xmll";
-    public static String LISTTESTFILES="esterTest.xmll";
+    public static String LISTTRAINFILES="esterTrainALL.xmll";
+    public static String LISTTESTFILES="esterTestALL.xmll";
     public static String UTF8_ENCODING="UTF8";
     public static String PROPERTIES_FILE="slinearclassifier.props";
     public static String NUMFEATSINTRAINFILE="2-";
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
     public static String ONLYONEMULTICLASS=CNConstants.ALL;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
-    public static int    TRAINSIZE=20;  //Integer.MAX_VALUE;
+    public static int TRAINSIZE=Integer.MAX_VALUE; 
+    //TRAINSIZE=20;  
     
     
     private HashMap<String, LinearClassifier> modelMap = new HashMap<>();
@@ -260,6 +259,7 @@ public class AnalyzeClassifier {
             modelMap.put(sclassifier,model);
             Margin margin = new Margin(model);
             marginMAP.put(sclassifier,margin);  
+            
             //compute the values for instances in the trainset
             /*getValues(TRAINFILE.replace("%S", sclassifier),model,featsperInst,labelperInst);
             System.out.println("Total number of features: "+ model.features().size());
@@ -552,8 +552,8 @@ public class AnalyzeClassifier {
                 if(line == null)
                     break;
                 
-                if(!line.startsWith("Cls"))
-                    continue;
+                //if(!line.startsWith("Cls"))
+                //    continue;
                 System.out.println(line);
                  
             }
@@ -564,8 +564,8 @@ public class AnalyzeClassifier {
                 String line=input.readLine();
                 if(line == null)
                     break;
-                if(!line.startsWith("Cls"))
-                    continue;
+                //if(!line.startsWith("Cls"))
+                //    continue;
                 
                 System.out.println("EVAL: "+line);
                  
@@ -837,7 +837,7 @@ public class AnalyzeClassifier {
         
         MonteCarloIntegration mcInt = new MonteCarloIntegration();
         //double[] mvIntegral= mcInt.integrate(gmm, CNConstants.UNIFORM, true);
-        mcInt.errorAnalysisBinInt(gmm,py,nLabels);
+        //mcInt.errorAnalysisBinInt(gmm,py,nLabels);
         for(int y=0;y<nLabels;y++){
             //arguments gmm, distribution of the proposal, metropolis, is plot
             //risk+=py[y]*mcInt.integrate(gmm,y,CNConstants.UNIFORM, true,false);
@@ -888,7 +888,7 @@ public class AnalyzeClassifier {
         PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
         
       
-        final int niters = 10000;
+        final int niters = 100;
         final float eps = 0.1f;   
         int counter=0;
         //train the classifier with a small set of train files
@@ -922,8 +922,8 @@ public class AnalyzeClassifier {
                 int featIdx = selectedFeats[i];
                 for(int w=0;w < weightsForFeat[featIdx].length;w++){
                     float w0 = (float) weightsForFeat[featIdx][w];
-                    if(iter==0)
-                        w0 = (float) Math.random(); //set initial weights randomly                   
+//                    if(iter==0)
+//                        w0 = (float) Math.random(); //set initial weights randomly                   
                     if (emptyfeats.contains("["+i+","+w+"]")) continue;
                     float delta = 0.5f;
                     /*for (int j=0;;j++) {
@@ -1010,10 +1010,10 @@ public class AnalyzeClassifier {
                 if(pos.equals(CNConstants.POSTAGNAM)&& label.equals(CNConstants.NOCLASS))
                     fp++;
                 
-                if(label.equals(CNConstants.PRNOUN)&&!pos.equals(CNConstants.POSTAGNAM))
+                if(!pos.equals(CNConstants.POSTAGNAM) &&label.equals(CNConstants.PRNOUN))
                     fn++;
-                if(label.equals(CNConstants.NOCLASS)&& pos.equals(CNConstants.POSTAGNAM))
-                    fn++;
+                if(!pos.equals(CNConstants.POSTAGNAM) && label.equals(CNConstants.NOCLASS))
+                    tn++;
 
             }
             double precision= (double) tp/(tp+fp);
@@ -1036,6 +1036,55 @@ public class AnalyzeClassifier {
        
        
    }
+ 
+    public void evaluationCLASSRESULTS(){
+        BufferedReader testFile = null;
+        try {
+            testFile = new BufferedReader(new InputStreamReader(new FileInputStream("analysis/CRFS/lcResults.txt"), UTF8_ENCODING));
+            int tp=0, tn=0, fp=0, fn=0;
+            for(;;){
+
+                String line = testFile.readLine();   
+                
+                if(line== null)
+                    break;                
+                
+                String values[] = line.split("\\t");
+                String label = values[1];
+                String recognizedLabel = values[2];
+                
+                if(recognizedLabel.equals(CNConstants.PRNOUN) && label.equals(CNConstants.PRNOUN))
+                    tp++;
+                
+                if(recognizedLabel.equals(CNConstants.PRNOUN)&& label.equals(CNConstants.NOCLASS))
+                    fp++;
+                
+                if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.PRNOUN))
+                    fn++;
+                if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.NOCLASS))
+                    tn++;
+
+            }
+            double precision= (double) tp/(tp+fp);
+            double recall= (double) tp/(tp+fn);
+            double f1=(2*precision*recall)/(precision+recall);
+            
+            System.out.println("  PN precision: "+precision);
+            System.out.println("  PN recall: "+recall);
+            System.out.println("  PN f1: "+f1);
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                testFile.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+       
+       
+   }  
    
    public void setFeaturesPerInst(HashMap<String, List<List<Integer>>>  fMap){
        this.featInstMap=fMap;
@@ -1119,8 +1168,8 @@ public class AnalyzeClassifier {
         ///*/
         /*
         String sclass=CNConstants.PRNOUN;
-        //analyzing.trainAllLinearClassifier(sclass,true,false);
-        analyzing.testingClassifier(false,sclass,false);
+        analyzing.trainAllLinearClassifier(sclass,true,false);
+        analyzing.testingClassifier(true,sclass,false);
         //*/
         /*
         //analyzing.trainAllLinearClassifier(CNConstants.PRNOUN,true,false);
@@ -1128,7 +1177,7 @@ public class AnalyzeClassifier {
         //LinearClassifier model = analyzing.getModel(sclass);
         Object  object;
         try {
-            object = IOUtils.readObjectFromFile("bin.pn.lc.mods");
+            object = IOUtils.readObjectFromFile("bin.pn.lc.mods.anal888iters");
             LinearClassifier  model=(LinearClassifier)object;  
             analyzing.testingClassifier(model, TESTFILE.replace("%S", sclass));
             //analyzing.testingClassifier(sclass, TESTFILE.replace("%S", sclass));
@@ -1150,10 +1199,13 @@ public class AnalyzeClassifier {
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
-        ///*
+        /*
         File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
         mfile.delete();
+        Long beforeUnsup=System.currentTimeMillis();
         analyzing.unsupervisedClassifier(CNConstants.PRNOUN);
+        Long afterUnsup=System.currentTimeMillis();
+        System.out.println("Time spent while computing R:" + (afterUnsup-beforeUnsup));
         //*/
         /*
         //Training without wiki
@@ -1169,6 +1221,7 @@ public class AnalyzeClassifier {
          
          //*/
         //analyzing.evaluationPOSTAGGER();
+        analyzing.evaluationCLASSRESULTS();
         /*Testing numerical integration
         String sclass="pn";
         analyzing.trainOneClassifier(sclass,false);  

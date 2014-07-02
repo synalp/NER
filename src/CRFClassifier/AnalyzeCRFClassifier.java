@@ -4,21 +4,19 @@
  */
 package CRFClassifier;
 
+import edu.stanford.nlp.ie.NERFeatureFactory;
 import linearclassifier.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+
 import java.util.List;
-import edu.stanford.nlp.classify.GeneralDataset;
 import edu.stanford.nlp.ie.crf.CRFClassifier;
 
-import edu.stanford.nlp.ie.crf.CRFClassifierNonlinear;
-import edu.stanford.nlp.io.IOUtils;
-import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.ling.Datum;
 
-import edu.stanford.nlp.sequences.SeqClassifierFlags;
+import edu.stanford.nlp.io.IOUtils;
+
+
+import edu.stanford.nlp.objectbank.ObjectBank;
 import edu.stanford.nlp.util.StringUtils;
-import gmm.GMMDiag;
+import edu.stanford.nlp.util.Triple;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,18 +27,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Properties;
 
 
 import jsafran.DetGraph;
 import jsafran.GraphIO;
-import resources.WikipediaAPI;
 import tools.CNConstants;
-import tools.PlotAPI;
+
+import tools.Histoplot;
 import utils.ErrorsReporting;
-import utils.FileUtils;
+
 
 /**
  * This class process the instances and features by instance in the Stanford linear classifier 
@@ -48,11 +48,11 @@ import utils.FileUtils;
  */
 public class AnalyzeCRFClassifier {
     
-    public static String MODELFILE="en.%S.lc.mods";
+    public static String MODELFILE="en.%S.crf.mods";
     public static String TRAINFILE="groups.%S.tab.crf.train";
     public static String TESTFILE="groups.%S.tab.crf.test";
     public static String LISTTRAINFILES="esterTrainALL.xmll";
-    public static String LISTTESTFILES="esterTest.xmll";
+    public static String LISTTESTFILES="esterTestALL.xmll";
     public static String UTF8_ENCODING="UTF8";
     public static String PROPERTIES_FILE="scrf.props";
     public static String NUMFEATSINTRAINFILE="2-";
@@ -62,15 +62,120 @@ public class AnalyzeCRFClassifier {
     
     
     private HashMap<String, CRFClassifier> modelMap = new HashMap<>();
-    private HashMap<String,Margin> marginMAP = new HashMap<>();
+    private HashMap<String,MarginCRF> marginMAP = new HashMap<>();
     private int numInstances=0;
     
-
+    private HashMap<String, List<List<Integer>>> featInstMap = new HashMap<>();
+    
+    private HashMap<String, List<Integer>> lblInstMap = new HashMap<>();
     
     public AnalyzeCRFClassifier(){
 
     }
+
+    /**
+     * Return the features per instance associated at one classifier
+     * @param classifier
+     * @param instance
+     * @return 
+     */
+    public List<Integer> getFeaturesPerInstance(String classifier, int instance){
+        if(featInstMap.containsKey(classifier)){
+            return featInstMap.get(classifier).get(instance);
+        }else
+            return new ArrayList<>();
+        
+    }
     
+    public Integer getLabelsPerInstance(String classifier, int instance){
+        if(lblInstMap.containsKey(classifier)){
+            return lblInstMap.get(classifier).get(instance);
+        }else
+            return -1;
+        
+    }    
+    
+    
+       /**
+     * Get the instances, the features and class by instance
+     * @param fileName
+     * @param model 
+     */
+    public void getValues(String fileName, CRFClassifier model, List<List<Integer>> featsperInst,List<Integer> labelperInst){
+        
+        //BufferedReader inFile = null;
+        try {
+//            inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), UTF8_ENCODING));
+            
+            Properties props = new Properties();
+            props.load(new BufferedReader(new FileReader(PROPERTIES_FILE)));
+
+            CRFClassifier crfClass = new CRFClassifier(props);
+
+            ObjectBank<List> objblank = crfClass.makeObjectBankFromFile(fileName);
+            ArrayList<List> docs = new ArrayList(objblank);
+            List insts = docs.get(0);
+            Triple<int[][][], int[], double[][][]> vals = model.documentToDataAndLabels(insts);
+
+            numInstances=0;
+            int[][][] data = vals.first();
+            int[] labels= vals.second();
+           
+            
+           
+            for(int i=0; i< labels.length; i++){
+                List<Integer> feats = new ArrayList<>();
+                //chanin either the features of the input data at a given position
+                // or the features of the label given the previous one -- linear chain
+                for(int chain=0; chain<data[i].length;chain++){
+                    
+                   int[] features = data[i][chain];
+                    
+                    //take the id (index) of the features
+                    for(int f=0;f<features.length;f++){
+                        feats.add(features[f]);
+                    }
+                   
+                    
+                    
+                }
+                labelperInst.add(labels[i]);
+                featsperInst.add(feats);
+                numInstances++;                 
+            }
+//            for (;;) {
+//                String line = inFile.readLine();
+//                if (line==null) break;
+//
+//                CRFDatum<String, String> datum = crfClass.makeDatum(docs, numInstances, crfClass.featureFactory);            
+//                Collection<String> features = datum.asFeatures();
+//                List<Integer> feats = new ArrayList<>();
+//                //take the id (index) of the features
+//                for(String f:features){
+//                    if(model.featureIndex.indexOf(f)>-1)
+//                        feats.add(model.featureIndex().indexOf(f));
+//                }
+//                //System.out.println("feats[:"+numInstances+"]="+feats);
+//                featsperInst.add(feats);
+//                //take the id (index) of the labels
+//                String label = line.substring(0, line.indexOf("\t"));
+//                int labelId = model.labelIndex().indexOf(label);
+//                labelperInst.add(labelId);
+//                numInstances++;    
+//                
+//            }
+//           inFile.close();
+//           
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } //finally {
+//            try {
+//                inFile.close();
+//            } catch (IOException ex) {
+//                ex.printStackTrace();
+//            }
+//        }
+    } 
     
     public void updatingPropFile(String nameEntity){
        
@@ -171,7 +276,7 @@ public class AnalyzeCRFClassifier {
                 outFile.flush();
                 outFile.close();
                 inFile.close();
-                ErrorsReporting.report("groups saved in groups.*.tab"+uttCounter);
+                ErrorsReporting.report("groups saved in groups.*ErrorsR.tab"+uttCounter);
             } catch (IOException e) {
                     e.printStackTrace();
             }
@@ -216,7 +321,8 @@ public class AnalyzeCRFClassifier {
           
             //train data
             modelMap.put(sclassifier,model);
-            
+            MarginCRF margin = new MarginCRF(model);
+            marginMAP.put(sclassifier,margin); 
    
     
         }        
@@ -361,7 +467,7 @@ public class AnalyzeCRFClassifier {
                     break;
                 
 
-                //System.out.println(line);
+                System.out.println(line);
                  
             }
         
@@ -371,8 +477,8 @@ public class AnalyzeCRFClassifier {
                 String line=input.readLine();
                 if(line == null)
                     break;
-//                if(!line.startsWith("Cls"))
-//                    continue;
+                if(!line.startsWith("Cls"))
+                    continue;
                 
                 System.out.println("EVAL: "+line);
                  
@@ -430,7 +536,22 @@ public class AnalyzeCRFClassifier {
     }
     
 
-    
+    public void drawingPNScores(){
+
+        trainAllCRFClassifier(true,true);
+        //Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
+        //analyzing.testingClassifier(true,true, "");
+        String sclass = CNConstants.PRNOUN;
+        CRFClassifier model = getModel(sclass);
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+         
+        List<Integer> labelperInst = new ArrayList<>();
+        getValues(TRAINFILE.replace("%S", sclass), model, featsperInst, labelperInst);
+        double[] scores= new double[featsperInst.size()];
+        Arrays.fill(scores, 0.0);       
+        MarginCRF margin= marginMAP.get(sclass);
+        Histoplot.showit(margin.getScoreForAllInstancesGivenLabel(featsperInst,scores,0), featsperInst.size());
+    }
     
     
 
@@ -464,7 +585,9 @@ public class AnalyzeCRFClassifier {
         //*/
         //trainLinearclassifier(ispn,blsavegroups)
         analyzing.trainAllCRFClassifier(true,true);
+        //Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
         analyzing.testingClassifier(true,true, "");
+        //analyzing.drawingPNScores();
 
         
 

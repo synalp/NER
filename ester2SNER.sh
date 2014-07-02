@@ -9,11 +9,11 @@ allens="pers fonc org loc prod time amount"
 dest2="/home/rojasbar/development/contnomina/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "conversion du train en .xml"
 mkdir train
-#for i in /home/rojasbar/development/contnomina/corpus/ESTER2ftp/EN/train/trs_train_EN_v1.1/*.trs
-for i in /home/rojasbar/development/contnomina/corpus/ESTER2ftp/EN/test/*.trs
+for i in /home/rojasbar/development/contnomina/corpus/ESTER2ftp/EN/train/trs_train_EN_v1.1/*.trs
+#for i in /home/rojasbar/development/contnomina/corpus/ESTER2ftp/EN/test/*.trs
 do
   j=`echo $i | sed 's,/, ,g;s,trs$,,g' | awk '{print $NF}'`"xml"
   echo "convert train to xml "$i" "$j
@@ -23,7 +23,6 @@ do
   java -cp "$JCP" jsafran.ponctuation.UttSegmenter oo2.xml
   mv -f output.xml /tmp/
   pushd .
-  cd ../jsafran
   java -cp "$JCP" jsafran.JSafran -retag /tmp/output.xml
   mv -f output_treetagged.xml /tmp/
   popd
@@ -32,22 +31,22 @@ done
 fi
 
 #NO PARSING
-#if [ "1" == "0" ]; then
-#echo "parsing du train et du test"
-#cp -f ../jsafran/mate.mods.FTBfull ./mate.mods
-#mkdir train 
-#for i in train/*.xml
-#do
-#  java -Xmx20g -cp "$JCP" jsafran.MateParser -parse $i
-#  mv output.xml $i
-#done
+if [ "0" == "0" ]; then
+echo "parsing du train et du test"
+cp -f ../jsafran/mate.mods.FTBfull ./mate.mods
+mkdir train 
+for i in train/*.xml
+do
+  java -Xmx20g -cp "$JCP" jsafran.MateParser -parse $i
+  mv output.xml $i
+done
 #ls test/*.xml | grep -v -e merged > test.xmll
 #for i in `cat test.xmll`
 #do
 #  java -Xmx20g -cp "$JCP" jsafran.MateParser -parse $i
 #  mv output.xml $i
 #done
-#fi
+fi
 
 if [ "1" == "0" ]; then
 echo "create training files for CRF"
