@@ -56,15 +56,16 @@ public class LexicalUnit implements Cloneable{
     private void setPattern(){
         String wordshape="";
         char[] chars = new char[name.length()];
+        name.getChars(0, name.length(), chars, 0);
         for(int i=0; i<chars.length;i++){
             if(Character.isDigit(chars[i]))
-                wordshape="d";
+                wordshape+="d";
             if(Character.isUpperCase(chars[i]))
-                wordshape="X";
+                wordshape+="X";
             if(Character.isLowerCase(chars[i]))
-                wordshape="x";
+                wordshape+="x";
             else //probably symbol or punctuation
-                wordshape="S";
+                wordshape+="S";
             
            
        }

@@ -35,17 +35,16 @@ if [ "0" == "0" ]; then
 echo "parsing du train et du test"
 cp -f ../jsafran/mate.mods.FTBfull ./mate.mods
 mkdir train 
-for i in train/*.xml
-do
-  java -Xmx20g -cp "$JCP" jsafran.MateParser -parse $i
-  mv output.xml $i
-done
-#ls test/*.xml | grep -v -e merged > test.xmll
-#for i in `cat test.xmll`
+#for i in train/*.xml
 #do
 #  java -Xmx20g -cp "$JCP" jsafran.MateParser -parse $i
 #  mv output.xml $i
 #done
+for i in `cat esterTestALL.xmll`
+do
+  java -Xmx20g -cp "$JCP" jsafran.MateParser -parse $i
+  mv output.xml $i
+done
 fi
 
 if [ "1" == "0" ]; then

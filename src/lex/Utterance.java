@@ -35,11 +35,10 @@ public class Utterance  implements Cloneable{
 
 
     private List<Word> words;
-    //stores frequencies in the utterance
-    private HashMap<String, Integer> lucounterMap=new HashMap<>();
-    private HashMap<String, Integer> poscounterMap=new HashMap<>();
-    private HashMap<String, Integer> wscounterMap=new HashMap<>();
 
+
+    //stores gold ner spans
+    private HashMap<Segment, String> goldEntities= new HashMap<>();
    
     public Utterance(){
        words = new ArrayList<>();
@@ -81,32 +80,14 @@ public class Utterance  implements Cloneable{
         
     }
     
-    public void computingWordFrequencies(){
-        for(Word word:words){
-            int freq=0;
-            if(lucounterMap.containsKey(word.getContent()))
-                freq = lucounterMap.get(word.getContent());
-            lucounterMap.put(word.getContent(), freq+1);
-            freq=0;
-            if(poscounterMap.containsKey(word.getPosTag().getName()))
-                freq = poscounterMap.get(word.getPosTag().getName());
-            poscounterMap.put(word.getPosTag().getName(), freq+1);  
-            freq=0;
-            if(wscounterMap.containsKey(word.getLexicalUnit().getPattern()))
-                freq = wscounterMap.get(word.getLexicalUnit().getPattern());
-            wscounterMap.put(word.getLexicalUnit().getPattern(), freq+1);              
-        }    
-    }
+
 
     //constructor form jaxb
     public Utterance(Segment segment, HashMap<Integer, Object> utteredOrder){
         this.depTree = new DependencyTree(); 
         words= new ArrayList<>();
         this.words = segment.getWords();
-        
-       
-
-       
+  
     }
 
 
@@ -212,26 +193,25 @@ public class Utterance  implements Cloneable{
         this.depTree.addDependency(dependency.getHead(), dependency);
     }
     
-    public int getWordFrequency(String content){
-        if(this.lucounterMap.isEmpty())
-            return 0;
-        
-        return lucounterMap.get(content);
-    }
   
-     public int getPOSFrequency(String pos){
-        if(this.poscounterMap.isEmpty())
-            return 0;
+    
+    public void addEntitySpan(String entity, Segment segment){
         
-        return poscounterMap.get(pos);
-    }   
-     
-    public int getWordShapeFrequency(String shape){
-        if(this.wscounterMap.isEmpty())
-            return 0;
+        goldEntities.put(segment,entity);
+    }
+    
+    public boolean isEntitySpan(Segment segment){
+
+        if(goldEntities.containsKey(segment))
+            return true;
         
-        return wscounterMap.get(shape);
-    }     
+        
+        return false;
+    }
+    
+    public HashMap<Segment,String> getGoldEntities(){
+        return this.goldEntities;
+    }
     
     @Override
     public int hashCode() {

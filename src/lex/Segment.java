@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
+import java.util.Objects;
 import tools.CNConstants;
 import utils.ErrorsReporting;
 
@@ -27,7 +28,10 @@ public class Segment implements Cloneable{
     private Integer start;
     private Integer end;
     private HashMap<Integer, Word> words;
-    
+    //stores frequencies in the utterance
+    private HashMap<String, Integer> lucounterMap=new HashMap<>();
+    private HashMap<String, Integer> poscounterMap=new HashMap<>();
+    private HashMap<String, Integer> wscounterMap=new HashMap<>();    
 
     /**
      * Creates a segment, a segment is a list of words
@@ -40,7 +44,7 @@ public class Segment implements Cloneable{
      */
     public Segment(List<Word> words){
 
-        this.words = new HashMap<Integer,Word>();
+        this.words = new HashMap<>();
 
         if(words == null || words.size() == 0){
             this.start = CNConstants.INT_NULL;
@@ -109,6 +113,56 @@ public class Segment implements Cloneable{
         return text.trim();
     }  
 
+    public void computingWordFrequencies(){
+        for(Word word:words.values()){
+            int freq=0;
+            if(lucounterMap.containsKey(word.getContent()))
+                freq = lucounterMap.get(word.getContent());
+            lucounterMap.put(word.getContent(), freq+1);
+            freq=0;
+            if(poscounterMap.containsKey(word.getPosTag().getName()))
+                freq = poscounterMap.get(word.getPosTag().getName());
+            poscounterMap.put(word.getPosTag().getName(), freq+1);  
+            freq=0;
+            if(wscounterMap.containsKey(word.getLexicalUnit().getPattern()))
+                freq = wscounterMap.get(word.getLexicalUnit().getPattern());
+            wscounterMap.put(word.getLexicalUnit().getPattern(), freq+1);              
+        }    
+    }    
+    
+    public HashMap<String, Integer> getWordFrequencies(){
+        return this.lucounterMap;
+    }
+    
+    public int getWordFrequency(String content){
+        if(this.lucounterMap.isEmpty())
+            return 0;
+        
+        return lucounterMap.get(content);
+    }
+
+    public HashMap<String, Integer> getPOSFrequencies(){
+        return this.poscounterMap;
+    }    
+    
+    public int getPOSFrequency(String pos){
+        if(this.poscounterMap.isEmpty())
+            return 0;
+        
+        return poscounterMap.get(pos);
+    }   
+     
+    public HashMap<String, Integer> getWordShapeFrequency(){
+        return this.wscounterMap;
+    }      
+    
+    public int getWordShapeFrequency(String shape){
+        if(this.wscounterMap.isEmpty())
+            return 0;
+        
+        return wscounterMap.get(shape);
+    }     
+    
     /**
      * It returns the list of words included in the segment given the start and the end parameters.
      * If the start and end are not included in the segment it returns a PMException
@@ -118,7 +172,7 @@ public class Segment implements Cloneable{
      */
     public Segment subSegment(Integer start, Integer end, String elementId){
 
-        List<Word> wordsInInterval = new ArrayList<Word>();
+        List<Word> wordsInInterval = new ArrayList<>();
         if(start == this.start && end == this.end)
             return new Segment(this.getWords());
 
@@ -150,7 +204,7 @@ public class Segment implements Cloneable{
 
     public Segment subSegment(Integer start, Integer end){
 
-        List<Word> wordsInInterval = new ArrayList<Word>();
+        List<Word> wordsInInterval = new ArrayList<>();
         if(start == this.start && end == this.end)
             return new Segment(this.getWords());
 
@@ -201,7 +255,7 @@ public class Segment implements Cloneable{
     }
         
     public List<Word> getWords(){
-        List<Word> listOfWords = new ArrayList<Word>();
+        List<Word> listOfWords = new ArrayList<>();
        //It returns the ordered list of words according to the keys
         for(int i=start; i<=end; i++){
             Word word = this.words.get(i);
@@ -246,10 +300,29 @@ public class Segment implements Cloneable{
    }
 
     @Override
+    public int hashCode() {
+        int firstHash  = (start == null ? CNConstants.INT_NULL : start.hashCode());
+        int secondHash = (end == null ? CNConstants.INT_NULL : end.hashCode());
+
+        return firstHash*31 + secondHash;
+    }
+
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Segment other = (Segment) obj;
+        return this.equals(other);
+    }
+   
+    @Override
     public Object clone() {
         
             //Segment s = (Segment)super.clone();
-            List<Word> clonedWords = new ArrayList<Word>();
+            List<Word> clonedWords = new ArrayList<>();
             for(int i=start; i<=end; i++){
                 Word w = getWord(i);
                 clonedWords.add((Word)w.clone());
@@ -259,11 +332,72 @@ public class Segment implements Cloneable{
         
         
 
-    }     
+    }   
+    
+    public List<Segment> difference(Segment otherSegment){
+        List<Segment> segs= new ArrayList<>();
+        if(!this.contains(otherSegment))
+            return segs;
+        
+        if(this.equals(otherSegment))
+            return segs;
+        
+        if(otherSegment.getStart() == start){
+            if(otherSegment.getEnd() < end){
+                Segment seg=this.subSegment(otherSegment.getEnd()+1,end);
+                segs.add(seg);
+                return segs;
+                     
+            }
+        }
+        if(otherSegment.getEnd() == end){
+            if(otherSegment.getStart() > start){
+                Segment seg=this.subSegment(start,otherSegment.getStart()-1);
+                segs.add(seg);
+                return segs;              
+            }
+        }
+        
+        segs.add(this.subSegment(start,otherSegment.getStart()-1)); 
+        segs.add(this.subSegment(otherSegment.getEnd()+1,end));
+        
+        return segs;
+    }
    
+    public List<Segment> difference(List<Segment> otherSegments){
+        List<Segment> subsegs= new ArrayList<>();
+        if(otherSegments.isEmpty()){
+            subsegs.add(this);
+            return subsegs;
+        } 
+        //order the subsegments
+        Collections.sort(otherSegments, new Comparator<Segment>() {
+        @Override
+        public int compare(Segment s1, Segment s2)
+        {
+                return s1.getStart()-s2.getStart();
+        }}); 
+        
+        Segment seg = otherSegments.get(0);
+        subsegs=  difference(seg);
+        if(subsegs.size()>0){
+            Segment last=subsegs.get(subsegs.size()-1);
+            otherSegments.remove(seg);
+            if(otherSegments.isEmpty())
+                return subsegs;
+            
+            subsegs.remove(last);
+            subsegs.addAll(last.difference(otherSegments));
+            
+        }
+        
+        
+        return subsegs;
+    }
+    
    public static void main(String[] args) {
         
-        List<Word> words = new ArrayList<Word>();
+        List<Word> words = new ArrayList<>();
         words.add(new Word(4, "réservation"));
         words.add(new Word(0, "j'"));
         words.add(new Word(2, "voulu"));
@@ -274,6 +408,14 @@ public class Segment implements Cloneable{
         Segment segment = new Segment(words);
         System.out.println("Segment :" + segment.toString());
         Segment subSeg = segment.subSegment(3, 5);
+        List<Segment> segs= new ArrayList<>();
+        segs.add(subSeg);
+        segs.add(segment.subSegment(0, 1));
+        System.out.println(segs.toString());
+        List<Segment> disjointSegs= segment.difference(segs);
+        for(Segment s:disjointSegs)
+            System.out.println(s+" ");
+        
         System.out.println("Sub Segment: " + subSeg.toString());
         
    }

@@ -444,5 +444,47 @@ public class DependencyTree implements Serializable{
         
         return tree;
     }   
-    
+    /**
+      * Returns the segments yielded by all the dependencies governed by the given head
+      * @param head
+      * @param uttSegment
+      * @return 
+      */
+    public HashMap<Segment,String> getHeadDepSpans(Word head, Segment uttSegment){
+          HashMap<Segment,String> spans = new HashMap<>();
+          
+         Dependency dep = getDependency(head);
+        if(dep==null)
+            return spans;
+        
+        
+        for(Integer depid:dep.getDependents().keySet()){  
+            Integer left= getLeftMostDep(dep.getDependent(depid));
+            Integer right= getRightMostDep(dep.getDependent(depid));
+            if(head.getPosition()<left)
+                left=head.getPosition();
+            if(head.getPosition()>right)
+                right=head.getPosition();
+            
+            spans.put(uttSegment.subSegment(left, right),head.getContent());
+        }         
+          
+          
+          return spans;
+          
+      }
+      
+      public List<Word> getLeaves(){
+          List<Word> leaves= new ArrayList<>();
+          
+          for(Integer key:allDeps.keySet()){
+              Word dep= allDeps.get(key);
+              if(!this.depTree.containsKey(dep))
+                  leaves.add(dep);
+          }
+          
+          
+          return leaves;
+      }
+     
 }
