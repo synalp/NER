@@ -60,9 +60,9 @@ public class LexicalUnit implements Cloneable{
         for(int i=0; i<chars.length;i++){
             if(Character.isDigit(chars[i]))
                 wordshape+="d";
-            if(Character.isUpperCase(chars[i]))
+            else if(Character.isUpperCase(chars[i]))
                 wordshape+="X";
-            if(Character.isLowerCase(chars[i]))
+            else if(Character.isLowerCase(chars[i]))
                 wordshape+="x";
             else //probably symbol or punctuation
                 wordshape+="S";

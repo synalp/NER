@@ -246,12 +246,16 @@ public class Segment implements Cloneable{
 
     public boolean contains(Word word){
 
-        if(this.start <= word.getPosition() &&
-           this.end >= word.getPosition())
+        return contains(word.getPosition());
+
+    }
+    
+    public boolean contains(Integer key){
+        if(this.start <= key &&
+           this.end >= key)
             return true;
 
-        return false;
-
+        return false;        
     }
         
     public List<Word> getWords(){
@@ -265,6 +269,9 @@ public class Segment implements Cloneable{
         return listOfWords;
     }
 
+    public HashMap<Integer, Word>getWordMap(){
+        return this.words;
+    }
    
     public Word getWord(Integer key){
         return this.words.get(key);
@@ -298,6 +305,8 @@ public class Segment implements Cloneable{
        }
        return false;
    }
+   
+
 
     @Override
     public int hashCode() {
@@ -408,16 +417,23 @@ public class Segment implements Cloneable{
         Segment segment = new Segment(words);
         System.out.println("Segment :" + segment.toString());
         Segment subSeg = segment.subSegment(3, 5);
+        System.out.println("Sub Segment: " + subSeg.toString());
+        
         List<Segment> segs= new ArrayList<>();
         segs.add(subSeg);
         segs.add(segment.subSegment(0, 1));
-        System.out.println(segs.toString());
+        segs.add(segment.subSegment(1, 3));
+        /*List<Segment> jointSegs=segment.union(segs);
+        
+        for(Segment s:jointSegs)
+            System.out.println(s+" ");           
+        System.out.println(segs.toString());*/
+        
         List<Segment> disjointSegs= segment.difference(segs);
         for(Segment s:disjointSegs)
             System.out.println(s+" ");
         
-        System.out.println("Sub Segment: " + subSeg.toString());
-        
+    
    }
 
 }

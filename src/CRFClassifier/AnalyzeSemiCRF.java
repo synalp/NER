@@ -4,8 +4,7 @@
  */
 package CRFClassifier;
 
-import iitb.CRF.CRF;
-import iitb.Model.FeatureGenImpl;
+
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.FileReader;

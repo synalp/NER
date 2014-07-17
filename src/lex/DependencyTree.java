@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 import tools.CNConstants;
 
@@ -404,7 +405,11 @@ public class DependencyTree implements Serializable{
 
     }
     
-
+    /**
+     * Obtain the top-down tree rooted by the given head
+     * @param head
+     * @return 
+     */
     public String getTreeTopDownFeatureForHead(Word head){
         String tree="";
         
@@ -424,8 +429,15 @@ public class DependencyTree implements Serializable{
         tree+=") ";
         return tree;
     }
- 
-     public String getTreeBottomUpFeatureForHead(Word dependent, String tree){
+    
+    
+    /**
+     * Obtain the bottom up tree that has the given word as dependent
+     * @param dependent
+     * @param tree
+     * @return 
+     */
+    public String getTreeBottomUpFeatureForHead(Word dependent, String tree){
         if(tree.isEmpty()) 
             tree="%S";
         
@@ -443,7 +455,41 @@ public class DependencyTree implements Serializable{
             
         
         return tree;
-    }   
+    }
+    /**
+     * Obtain the bottom up tree for the given segment
+     * @param segment
+     * @return 
+     */
+    public String getTreeTopDownFeatureForSegment(Segment segment){
+        String tree="";
+        
+        Word head= getDTRoot(segment);
+        Dependency dep = getDependency(head);
+        if(dep==null)
+            return head.getPosTag().getName();
+        
+        List<Integer> wordsintree=new ArrayList(dep.getDependents().keySet());
+        wordsintree.add(head.getPosition());
+        wordsintree.retainAll(segment.getWordMap().keySet());
+        if(wordsintree.size()==1 && wordsintree.contains(head.getPosition()))
+            return tree;
+        
+        tree+="("+head.getPosTag().getName();
+        for(Integer depid:dep.getDependents().keySet()){
+            String relName = dep.getRelations().get(depid);
+            Word dependent=dep.getDependents().get(depid);
+            if(!segment.contains(dependent))
+                continue;
+            //String subtree=getTreeTopDownFeatureForHead(dependent);
+            //subtree= (subtree.contains("("))?"("+subtree+")":subtree;
+            tree+=" ("+relName+" "+getTreeTopDownFeatureForHead(dependent)+")";
+        }
+        
+        tree+=") ";
+        return tree;
+    }
+    
     /**
       * Returns the segments yielded by all the dependencies governed by the given head
       * @param head
@@ -451,13 +497,18 @@ public class DependencyTree implements Serializable{
       * @return 
       */
     public HashMap<Segment,String> getHeadDepSpans(Word head, Segment uttSegment){
-          HashMap<Segment,String> spans = new HashMap<>();
-          
-         Dependency dep = getDependency(head);
+        HashMap<Segment,String> spans = new HashMap<>();
+        
+        /*
+        //put all the span yielded by the head
+        Integer left= getLeftMostDep(head);
+        Integer right= getRightMostDep(head); 
+        spans.put(uttSegment.subSegment(left, right),head.getContent());
+        */
+        Dependency dep = getDependency(head);
         if(dep==null)
-            return spans;
-        
-        
+             return spans;
+                //sub spans yielded by its dependents
         for(Integer depid:dep.getDependents().keySet()){  
             Integer left= getLeftMostDep(dep.getDependent(depid));
             Integer right= getRightMostDep(dep.getDependent(depid));
@@ -469,10 +520,43 @@ public class DependencyTree implements Serializable{
             spans.put(uttSegment.subSegment(left, right),head.getContent());
         }         
           
-          
+          spans.putAll(unionOfChildSpans(spans));
+          spans.put(uttSegment.subSegment(head.getPosition(), head.getPosition()),head.getContent());
           return spans;
           
       }
+    
+   public HashMap<Segment,String> unionOfChildSpans(HashMap<Segment,String> subsegments){
+       
+       HashMap<Segment,String> concatenatedSegs=new HashMap<>();
+       List<Segment>forwardSegs = new ArrayList<>(subsegments.keySet());
+       List<Segment> segs = new ArrayList<>(subsegments.keySet());
+       Collections.sort(segs, new Comparator<Segment>() {
+       @Override
+       public int compare(Segment s1, Segment s2)
+       {
+                return s1.getStart()-s2.getStart();
+       }});
+       for(int i=0;i<segs.size();i++){
+           if(i+1 > segs.size()-1)
+               break;
+           if(segs.get(i).getEnd()==segs.get(i+1).getStart() || 
+                   segs.get(i).contains(segs.get(i+1).getStart())){
+               List<Word> wordsInSeg = new ArrayList<>(segs.get(i).getWords());
+               wordsInSeg.addAll(segs.get(i+1).getWords());
+               concatenatedSegs.put(new Segment(wordsInSeg),subsegments.get(segs.get(0)));
+               forwardSegs.remove(segs.get(i));
+           }
+       } 
+       
+       if(concatenatedSegs.isEmpty())
+           return concatenatedSegs;
+       
+       //segs.addAll(concatenatedSegs);
+       concatenatedSegs.putAll(unionOfChildSpans(concatenatedSegs));
+       return concatenatedSegs;
+        
+   }    
       
       public List<Word> getLeaves(){
           List<Word> leaves= new ArrayList<>();

@@ -13,7 +13,10 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -39,10 +42,13 @@ import tools.IntegerValueComparator;
  *
  * @author rojasbar
  */
-public class AnalyzeSVMClassifier {
+public class AnalyzeSVMClassifier implements Serializable{
+    private static final long serialVersionUID = 1L; 
     public static String MODELFILE="en.%S.treek.mods";
     public static String TRAINFILE="groups.%S.tab.treek.train";
     public static String TESTFILE="groups.%S.tab.treek.test";
+    public static String INCHUNKER="chunk/%S.in.chunker";
+    public static String OUTCHUNKER="chunk/%S.out.chunker";
     public static String LISTTRAINFILES="esterParseTrainALL.xmll";
     public static String LISTTESTFILES="esterParseTestALL.xmll";
     public static String UTF8_ENCODING="UTF8";
@@ -70,6 +76,8 @@ public class AnalyzeSVMClassifier {
                     xmllist=LISTTESTFILES;
                      String fname=(onlyVector)?TESTFILE.replace("%S", en).replace("treek", "vector"):TESTFILE.replace("%S", en);
                     outFile = new OutputStreamWriter(new FileOutputStream(fname),UTF8_ENCODING);
+                    if(dictFeatures.isEmpty())
+                        deserializingFeatures();
                 }
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
                 int uttCounter=0;
@@ -206,6 +214,8 @@ public class AnalyzeSVMClassifier {
                 outFile.flush();
                 outFile.close();
                 inFile.close();
+                if(istrain)
+                    serializingFeatures();
                 ErrorsReporting.report("groups saved in groups.*.tab"+uttCounter);
             } catch (IOException e) {
                     e.printStackTrace();
@@ -216,9 +226,7 @@ public class AnalyzeSVMClassifier {
      */
     public void saveFilesForLClassifierSpans(String en, boolean onlyVector) {
             try {
-                
-                
-
+    
                 int totalOfspans=0;
                 
                 GraphIO gio = new GraphIO(null);
@@ -407,6 +415,8 @@ public class AnalyzeSVMClassifier {
                                 String bow="";
                                 HashMap<Integer,Integer> vals= new HashMap<>();
                                 for(Word w:seg.getWords()){
+                                    int wid=dictFeatures.get(w.getContent());
+                                    vals.put(wid,seg.getWordFrequency(w.getContent())); 
                                     bow+=w.getContent()+" ";
                                 }
 
@@ -428,7 +438,7 @@ public class AnalyzeSVMClassifier {
                                 if(onlyVector)
                                     outFile.append(label+"\t"+vector.trim()+"\n");
                                 else{
-                                    String tree= utt.getDepTree().getTreeTopDownFeatureForHead(utt.getDepTree().getDTRoot(seg));
+                                    String tree= utt.getDepTree().getTreeTopDownFeatureForSegment(seg);
                                     tree=(tree.contains("("))?"|BT| "+ tree+ " |ET|":"|BT| |ET|";
                                     //String treeBUp=utt.getDepTree().getTreeBottomUpFeatureForHead(word,"");
                                     //treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"";
@@ -449,6 +459,7 @@ public class AnalyzeSVMClassifier {
                 outFile.flush();
                 outFile.close();
                 inFile.close();
+                serializingFeatures();
                 ErrorsReporting.report("groups saved in groups.*.tab || utterances:"+uttCounter+" spans: "+totalOfspans);
             } catch (IOException e) {
                     e.printStackTrace();
@@ -469,6 +480,8 @@ public class AnalyzeSVMClassifier {
                 else{
                     xmllist=LISTTESTFILES;
                     fname=(onlyVector)?TESTFILE.replace("%S", en).replace("treek", "spvector"):TESTFILE.replace("%S", en).replace("treek", "asptk"); 
+                    if(dictFeatures.isEmpty())
+                        deserializingFeatures();
                 }
                 outFile = new OutputStreamWriter(new FileOutputStream(fname),UTF8_ENCODING);
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
@@ -480,7 +493,7 @@ public class AnalyzeSVMClassifier {
                     List<Utterance> utts= new ArrayList<>();
                     for (int i=0;i<gs.size();i++) {
                             DetGraph group = gs.get(i);
-                            int nexinutt=0;
+                            
                             //outFile.append("NO\tBS\tBS\n");
                             
                             Utterance utt= new Utterance();
@@ -488,8 +501,7 @@ public class AnalyzeSVMClassifier {
                             List<Word> words= new ArrayList<>();
                             HashMap<Pair,String> entitySpans = new HashMap<>();
                             for (int j=0;j<group.getNbMots();j++) {
-                                    nexinutt++;
-
+                                    
                                     // calcul du label
                                     int lab = CNConstants.INT_NULL;
                                     int[] groups = group.getGroups(j);
@@ -584,22 +596,28 @@ public class AnalyzeSVMClassifier {
                              */
                             System.out.println("processing utterance:"+utt);
                             //find all possible spans according to dependency trees                        
-                            
+                            if(utt.toString().contains("rue Rodier à Paris"))
+                                System.out.println("Entro");                            
                             List<Word> heads = utt.getDepTree().getHeadsInSegment(utt.getSegment().getStart(), utt.getSegment().getEnd());
                             
-                            int numbHeadsegsNotEnt=0;
+                            HashMap<Segment,String> neSegs = utt.getGoldEntities();
+                            List<Segment> neSegList = new ArrayList<>(neSegs.keySet());
+                            List<Segment> neSegList2 = new ArrayList<>(neSegs.keySet());
+ 
+                             List<Segment> headSegList = new ArrayList<>();
                             for(Word head:heads){
+
                                 HashMap<Segment,String> headSegs = utt.getDepTree().getHeadDepSpans(head,utt.getSegment());
-                                
-                                int numbSpansNotEnt=0;
+          
+                                headSegList.addAll(headSegs.keySet());
+                               
                                 for(Segment headSegment:headSegs.keySet()){ 
                                     headSegment.computingWordFrequencies();
                                     int label=-1;
                                     if(utt.isEntitySpan(headSegment))
                                         label=utt.getSegment().getWord(headSegment.getEnd()).getLabel();
-                                    else
-                                        numbSpansNotEnt++;
-                                        
+                                    
+                                                                            
                                     //compute frequencies per span
 
                                     //Feature extraction
@@ -640,14 +658,15 @@ public class AnalyzeSVMClassifier {
                                     totalOfspans++;
                                     
                                 }  
-                                if(numbHeadsegsNotEnt==headSegs.size()&& !utt.getGoldEntities().isEmpty()){
-                                    ErrorsReporting.report("not entity span covers a head segment in head: + "+ head.getContent());
-                                    numbHeadsegsNotEnt++;
-                                }    
+
                             }
                             //all leaves
                             List<Word> leaves = utt.getDepTree().getLeaves();
+                            List<Segment> leafSegs = new ArrayList<>();
                             for(Word leaf:leaves){
+                                List<Word> unique= new ArrayList<>();
+                                unique.add(leaf);
+                                leafSegs.add(new Segment(unique));
                                 //Segment leafSeg=utt.getSegment().subSegment(leaf.getPosition(), leaf.getPosition());
                                                                
                                 //if(istrain && !utt.isEntitySpan(leafSeg))
@@ -664,10 +683,13 @@ public class AnalyzeSVMClassifier {
                                 outFile.append(leaf.getLabel()+"\t"+ tree.trim()+" "+vector.trim()+"\n");
                                     
                             }
-                            
-                            if(numbHeadsegsNotEnt==heads.size() && !utt.getGoldEntities().isEmpty()){
-                                ErrorsReporting.report("not entity span covers a head segment in utt: + "+ utt.getId());
-                            }
+                            neSegList2.retainAll(headSegList);
+                            neSegList.removeAll(neSegList2); 
+                            neSegList.removeAll(leafSegs);
+                            if(!neSegList.isEmpty()){
+                                ErrorsReporting.report("the following annotated entity-spans are not covered by any head "+neSegList.toString());
+                            }     
+
                     }
                      if(istrain && uttCounter> TRAINSIZE){
                         break;
@@ -676,11 +698,53 @@ public class AnalyzeSVMClassifier {
                 outFile.flush();
                 outFile.close();
                 inFile.close();
+                if(istrain)
+                    serializingFeatures();
                 ErrorsReporting.report("groups saved in groups.*.tab || utterances:"+uttCounter+" spans: "+totalOfspans);
             } catch (IOException e) {
                     e.printStackTrace();
             }
     }   
+    
+    public void chunking(boolean istrain){
+            try {
+
+                GraphIO gio = new GraphIO(null);
+                OutputStreamWriter outFile =null;
+                
+                String xmllist=LISTTRAINFILES;
+                String fname=INCHUNKER.replace("%S", "train");    
+                if(!istrain){
+                    xmllist=LISTTESTFILES;
+                    fname=INCHUNKER.replace("%S", "train");    
+                     
+                }
+                outFile = new OutputStreamWriter(new FileOutputStream(fname),UTF8_ENCODING);
+                BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
+                
+                for (;;) {
+                    String filename = inFile.readLine();
+                    if (filename==null) break;
+                    List<DetGraph> gs = gio.loadAllGraphs(filename);
+                   
+                    for (int i=0;i<gs.size();i++) {
+                        DetGraph group = gs.get(i);
+
+                        for (int j=0;j<group.getNbMots();j++) {
+                            String outStr=group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\n";
+                            outFile.append(outStr);
+                        }
+                        outFile.append("\n");
+                    }        
+                }
+                outFile.flush();
+                outFile.close();
+                inFile.close();                
+            }catch(Exception ex){
+                
+            }      
+        
+    }
     
      public void parsing(boolean bltrain){
             try {
@@ -784,6 +848,54 @@ public class AnalyzeSVMClassifier {
        
        
    } 
+    
+    private void serializingFeatures(){
+    try{
+            FileOutputStream fileOut =
+            new FileOutputStream("svmfeaturesDict.ser");
+            ObjectOutputStream out =
+                            new ObjectOutputStream(fileOut);
+            out.writeObject(dictFeatures);
+            out.close();
+            fileOut.close();
+        }catch(Exception i)
+        {
+            i.printStackTrace();
+        }
+    }
+    
+    public void deserializingFeatures(){
+      try
+      {
+        FileInputStream fileIn =  new FileInputStream("svmfeaturesDict.ser");
+        ObjectInputStream in = new ObjectInputStream(fileIn);
+        dictFeatures = (HashMap<String,Integer>) in.readObject();
+        System.out.println("vocabulary of features: "+dictFeatures.size());
+        
+        
+        IntegerValueComparator bvc = new IntegerValueComparator(dictFeatures);
+        TreeMap<String, Integer> sortedSyn = new TreeMap<>(bvc);
+        sortedSyn.putAll(dictFeatures);
+        
+        for(String key:sortedSyn.keySet()){
+            System.out.println("feature id "+ sortedSyn.get(key)+" value : "+ key);
+
+        }
+              
+         in.close();
+         fileIn.close();
+      }catch(IOException i)
+      {
+         i.printStackTrace();
+         return;
+      }catch(ClassNotFoundException c)
+      {
+         System.out.println("class not found");
+         c.printStackTrace();
+         return;
+      } 
+   
+    }    
  
     public void savingAllSpansFiles(String strclass, boolean isvector){
         saveFilesForClassifierAllSpans(strclass, true, isvector);
@@ -813,6 +925,8 @@ public class AnalyzeSVMClassifier {
          //svmclass.evaluationSVMLightRESULTS("analysis/SVM/groups.pn.tab.sptk.test", "analysis/SVM/output_spans_jul82014.txt");
          //svmclass.savingSpansFiles(CNConstants.PRNOUN, false);
          svmclass.savingAllSpansFiles(CNConstants.PRNOUN, false);
+         //Chunking
+         //svmclass.chunking(true);
      }
       
 }
