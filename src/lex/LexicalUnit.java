@@ -69,7 +69,7 @@ public class LexicalUnit implements Cloneable{
             
            
        }
-       this.pattern=wordshape;
+       this.pattern="|"+wordshape+"|";
     }
     
     public void setId(Long id){

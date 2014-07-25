@@ -45,5 +45,6 @@ package tools;
     public static String PARSEDIR="parse";
     public static String CONLLPARSEDIR="parse/train/conll";
     public static String CONLLEXT=".out.conll";
+    public static String CURRWORD="CW_";
     
 }

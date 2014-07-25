@@ -60,6 +60,8 @@ public class AnalyzeSVMClassifier implements Serializable{
 
     private HashMap<String,Integer> dictFeatures=new HashMap<>();
 
+    
+    
     public AnalyzeSVMClassifier(){
 
     }
@@ -139,8 +141,8 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     if(!dictFeatures.containsKey(word.getContent()))
                                         dictFeatures.put(word.getContent(), dictFeatures.size()+1);
                                     
-                                    if(!dictFeatures.containsKey(word.getPosTag().getName()))
-                                        dictFeatures.put(word.getPosTag().getName(), dictFeatures.size()+1);
+                                    if(!dictFeatures.containsKey(word.getPosTag().getFName()))
+                                        dictFeatures.put(word.getPosTag().getFName(), dictFeatures.size()+1);
                                     
                                     if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
                                         dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);                                    
@@ -174,6 +176,8 @@ public class AnalyzeSVMClassifier implements Serializable{
                             utts.add(utt);
 
                     }
+                  
+                    
                     for(Utterance utt:utts){
                             /** 
                              * built the tree and vector features here
@@ -184,13 +188,18 @@ public class AnalyzeSVMClassifier implements Serializable{
                     
                             
                             for(Word word:utt.getWords()){
-                                
-                                int posid=dictFeatures.get(word.getPosTag().getName());
+                                List<Integer> vals= new ArrayList<>();
+                                int wordid= dictFeatures.get(word.getContent());
+                                int posid=dictFeatures.get(word.getPosTag().getFName());
                                 int wsid= dictFeatures.get(word.getLexicalUnit().getPattern());
-                                String vector=posid+":1 "+wsid+":1";
-                                if(posid>wsid)
-                                    vector=wsid+":1 "+posid+":1";
-
+                                vals.add(wordid);vals.add(posid);vals.add(wsid);        
+                                Collections.sort(vals);
+                                String vector="";
+                                for(int i=0; i<vals.size();i++)                                
+                                    vector+=vals.get(i)+":1 ";
+                                
+                                vector=vector.trim();
+                                //vector = word.getContent()+" "+vector;
                                 //Print the word form just to make the debug easy*/
                                 //outFile.append(word.getLabel()+"\t"+word.getContent()+" "+tree.trim()+" "+vector+"\n");
                                 //outFile.append(word.getLabel()+"\t"+tree.trim()+" "+vector+"\n");
@@ -198,10 +207,10 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     outFile.append(word.getLabel()+"\t"+vector+"\n");
                                 else{
                                     String tree= utt.getDepTree().getTreeTopDownFeatureForHead(word);
-                                    tree=(tree.contains("("))?"|BT| "+ tree+ " |ET|":"|BT| |ET|";
-                                    String treeBUp=utt.getDepTree().getTreeBottomUpFeatureForHead(word,"");
-                                    treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"|BT| |ET|";
-                                    tree=tree.trim()+ treeBUp.trim();    
+                                    tree=(tree.contains("("))?"|BT| "+ tree+ "|ET|":"|BT| |ET|";
+                                    //String treeBUp=utt.getDepTree().getTreeBottomUpFeatureForHead(word,"");
+                                    //treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"|BT| |ET|";
+                                    //tree=tree.trim()+ treeBUp.trim();    
                                     outFile.append(word.getLabel()+"\t"+tree.trim()+" "+vector+"\n");
                                 }
                             }   
@@ -924,9 +933,10 @@ public class AnalyzeSVMClassifier implements Serializable{
          //svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
          //svmclass.evaluationSVMLightRESULTS("analysis/SVM/groups.pn.tab.sptk.test", "analysis/SVM/output_spans_jul82014.txt");
          //svmclass.savingSpansFiles(CNConstants.PRNOUN, false);
-         svmclass.savingAllSpansFiles(CNConstants.PRNOUN, false);
+         //svmclass.savingAllSpansFiles(CNConstants.PRNOUN, false);
          //Chunking
          //svmclass.chunking(true);
+         svmclass.deserializingFeatures();
      }
       
 }

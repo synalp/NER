@@ -417,7 +417,8 @@ public class DependencyTree implements Serializable{
         if(dep==null)
             return head.getPosTag().getName();
         
-        tree+="("+head.getPosTag().getName();
+        tree+="("+CNConstants.CURRWORD+head.getPosTag().getName();
+        //tree+="("+head.getPosTag().getName();
         for(Integer depid:dep.getDependents().keySet()){           
             String relName = dep.getRelations().get(depid);
             Word dependent=dep.getDependents().get(depid);
@@ -446,7 +447,8 @@ public class DependencyTree implements Serializable{
             Word head= depsHead.get(dependent.getPosition());
             String rel = depRels.get(dependent.getPosition());
             if(tree.equals("%S"))
-                tree=tree.replace("%S", " ("+rel+" "+dependent.getPosTag().getName())+")";
+                //tree=tree.replace("%S", " ("+rel+" "+dependent.getPosTag().getName())+")";
+                tree=tree.replace("%S", " ("+rel+" "+CNConstants.CURRWORD+dependent.getPosTag().getName())+")";
             else
                 tree=tree.replace("%S", " ("+rel+" ("+dependent.getPosTag().getName())+"))";
             tree=getTreeBottomUpFeatureForHead(head, "%S"+tree);

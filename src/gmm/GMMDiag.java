@@ -25,7 +25,7 @@ import linearclassifier.Margin;
  */
 public class GMMDiag extends GMM {
     final double minvar = 0.01;
-    private GMM oracleGMM=null;
+    private GMM oracleGMM;
     
     // this is diagonal variance (not inverse !)
     double[][] diagvar;

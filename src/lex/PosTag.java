@@ -50,6 +50,10 @@ public class PosTag implements Cloneable{
         return this.name;
     }
 
+    public String getFName(){
+        return "|"+this.name+"|";
+    }    
+    
     @Override
     public Object clone() {
         try {
