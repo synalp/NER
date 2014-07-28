@@ -45,6 +45,9 @@ package tools;
     public static String PARSEDIR="parse";
     public static String CONLLPARSEDIR="parse/train/conll";
     public static String CONLLEXT=".out.conll";
+    
+    //features
     public static String CURRWORD="CW_";
+    public static int    tree_level_threshold=8;
     
 }

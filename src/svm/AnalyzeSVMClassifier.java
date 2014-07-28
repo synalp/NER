@@ -29,6 +29,7 @@ import jsafran.MateParser;
 import jsafran.POStagger;
 
 import lex.Dependency;
+import lex.DependencyTree;
 import lex.Lemma;
 import lex.Segment;
 import lex.Utterance;
@@ -137,10 +138,10 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     word.setLabel(lab);
                                     word.setUtterance(utt);
                                     words.add(word);
-                                    
+                                    /*
                                     if(!dictFeatures.containsKey(word.getContent()))
                                         dictFeatures.put(word.getContent(), dictFeatures.size()+1);
-                                    
+                                    */
                                     if(!dictFeatures.containsKey(word.getPosTag().getFName()))
                                         dictFeatures.put(word.getPosTag().getFName(), dictFeatures.size()+1);
                                     
@@ -189,10 +190,11 @@ public class AnalyzeSVMClassifier implements Serializable{
                             
                             for(Word word:utt.getWords()){
                                 List<Integer> vals= new ArrayList<>();
-                                int wordid= dictFeatures.get(word.getContent());
+                                //int wordid= dictFeatures.get(word.getContent());
                                 int posid=dictFeatures.get(word.getPosTag().getFName());
                                 int wsid= dictFeatures.get(word.getLexicalUnit().getPattern());
-                                vals.add(wordid);vals.add(posid);vals.add(wsid);        
+                                //vals.add(wordid);
+                                vals.add(posid);vals.add(wsid);        
                                 Collections.sort(vals);
                                 String vector="";
                                 for(int i=0; i<vals.size();i++)                                
@@ -206,7 +208,7 @@ public class AnalyzeSVMClassifier implements Serializable{
                                 if(onlyVector)
                                     outFile.append(word.getLabel()+"\t"+vector+"\n");
                                 else{
-                                    String tree= utt.getDepTree().getTreeTopDownFeatureForHead(word);
+                                    String tree= utt.getDepTree().getTreeTopDownFeatureForHeadCW(word,0);
                                     tree=(tree.contains("("))?"|BT| "+ tree+ "|ET|":"|BT| |ET|";
                                     //String treeBUp=utt.getDepTree().getTreeBottomUpFeatureForHead(word,"");
                                     //treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"|BT| |ET|";
@@ -230,9 +232,355 @@ public class AnalyzeSVMClassifier implements Serializable{
                     e.printStackTrace();
             }
     }   
-    /*
+    
+    public void saveFilesForLClassifierWordsPruningTrees(String en, boolean istrain, boolean onlyVector) {
+            try {
+
+                GraphIO gio = new GraphIO(null);
+                OutputStreamWriter outFile =null;
+                String xmllist=LISTTRAINFILES;
+                if(istrain){
+                    String fname=(onlyVector)?TRAINFILE.replace("%S", en).replace("treek", "vector"):TRAINFILE.replace("%S", en);
+                    outFile = new OutputStreamWriter(new FileOutputStream(fname),UTF8_ENCODING);
+                }else{
+                    xmllist=LISTTESTFILES;
+                     String fname=(onlyVector)?TESTFILE.replace("%S", en).replace("treek", "vector"):TESTFILE.replace("%S", en);
+                    outFile = new OutputStreamWriter(new FileOutputStream(fname),UTF8_ENCODING);
+                    if(dictFeatures.isEmpty())
+                        deserializingFeatures();
+                }
+                BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
+                int uttCounter=0;
+                for (;;) {
+                    String filename = inFile.readLine();
+                    if (filename==null) break;
+                    List<DetGraph> gs = gio.loadAllGraphs(filename);
+                    List<Utterance> utts= new ArrayList<>();
+                    for (int i=0;i<gs.size();i++) {
+                            DetGraph group = gs.get(i);
+                            //outFile.append("NO\tBS\tBS\n");
+                            
+                            Utterance utt= new Utterance();
+                            utt.setId(new Long(uttCounter+1));                            
+                            List<Word> words= new ArrayList<>();
+                            for (int j=0;j<group.getNbMots();j++) {
+                                    
+
+                                    // calcul du label
+                                    int lab = CNConstants.INT_NULL;
+                                    int[] groups = group.getGroups(j);
+                                    if (groups!=null)
+                                        for (int gr : groups) {
+                                            
+                                            if(en.equals(ONLYONEPNOUNCLASS)){
+                                                //all the groups are proper nouns pn
+                                                for(String str:groupsOfNE){
+                                                    if (group.groupnoms.get(gr).startsWith(str)) {
+                                                        lab=1;
+                                                        break;
+                                                    }
+                                                }
+                                            }else{
+                                                if (group.groupnoms.get(gr).startsWith(en)) {
+                                                    //int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
+                                                    //if (debdugroupe==j) lab = en+"B";    
+                                                    //else lab = en+"I";
+                                                    lab=1;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    /*        
+                      
+                                    if(!isStopWord(group.getMot(j).getPOS())){
+					String inWiki ="F";
+                                        if(!group.getMot(j).getPOS().startsWith("PRO") && !group.getMot(j).getPOS().startsWith("ADJ"))
+                                            inWiki =(WikipediaAPI.processPage(group.getMot(j).getForme()).equals(CNConstants.CHAR_NULL))?"F":"T";
+                                        outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+ inWiki +"\n");
+                                    } 
+                                     */                                  
+                                    Word word = new Word(j,group.getMot(j).getForme());
+                                    word.setPOSTag(group.getMot(j).getPOS(), group.getMot(j).getLemme());
+                                    word.setLabel(lab);
+                                    word.setUtterance(utt);
+                                    words.add(word);
+                                    /*
+                                    if(!dictFeatures.containsKey(word.getContent()))
+                                        dictFeatures.put(word.getContent(), dictFeatures.size()+1);
+                                    */
+                                    if(!dictFeatures.containsKey(word.getPosTag().getFName()))
+                                        dictFeatures.put(word.getPosTag().getFName(), dictFeatures.size()+1);
+                                    
+                                    if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
+                                        dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);                                    
+                                    
+                                    
+                                        
+                            }
+                            uttCounter++;
+                            utt.setWords(words);
+                            utt.getSegment().computingWordFrequencies();
+                            
+                            //extracting the dependency tree from jsafran to our own format
+                            for(int d=0;d<group.deps.size();d++){
+                                Dep dep = group.deps.get(d);
+                                int headidx=dep.head.getIndexInUtt()-1;
+                                Word       head = words.get(headidx);
+                                int depidx=dep.gov.getIndexInUtt()-1;
+                                Word       governor = words.get(depidx);
+                                //Assign the dependencies
+                                Dependency dependency;
+                                if(!utt.getDepTree().containsHead(head)){
+                                    dependency = new Dependency(head);
+                                }else{
+                                    dependency = utt.getDepTree().getDependency(head);
+                                }
+                                dependency.addDependent(governor, dep.toString());
+                                utt.addDependency(dependency);                            
+                            }
+                            //sets the roots
+                            utt.getDepTree().getDTRoot();
+                            utts.add(utt);
+
+                    }
+                  
+                    
+                    for(Utterance utt:utts){
+                            /** 
+                             * built the tree and vector features here
+                             */
+                            System.out.println("processing utterance:"+utt);
+                            //iterate again through words
+                            
+                    
+                            
+                            for(Word word:utt.getWords()){
+                                List<Integer> vals= new ArrayList<>();
+                                //int wordid= dictFeatures.get(word.getContent());
+                                int posid=dictFeatures.get(word.getPosTag().getFName());
+                                int wsid= dictFeatures.get(word.getLexicalUnit().getPattern());
+                                //vals.add(wordid);
+                                vals.add(posid);vals.add(wsid);        
+                                Collections.sort(vals);
+                                String vector="";
+                                for(int i=0; i<vals.size();i++)                                
+                                    vector+=vals.get(i)+":1 ";
+                                
+                                vector=vector.trim();
+                                //vector = word.getContent()+" "+vector;
+                                //Print the word form just to make the debug easy*/
+                                //outFile.append(word.getLabel()+"\t"+word.getContent()+" "+tree.trim()+" "+vector+"\n");
+                                //outFile.append(word.getLabel()+"\t"+tree.trim()+" "+vector+"\n");
+                                if(onlyVector)
+                                    outFile.append(word.getLabel()+"\t"+vector+"\n");
+                                    //outFile.append(word.getLabel()+"\t"+vector+"\n");
+                                else{
+                                    
+                                    DependencyTree subTree= new DependencyTree();
+                                    if(word.getContent().equals("que"))
+                                        System.out.println("found");
+                                    String tree= utt.getDepTree().getPruningTreeTopDownFeatureForHead(word,subTree);
+                                    //tree=(tree.contains("("))?"|BT| "+ tree+ "|ET|":"|BT| |ET|";
+                                    tree=(tree.contains("("))?"|BT| "+ tree+ " ":"|BT| ";
+                                    subTree= new DependencyTree();
+                                    String treeBUp=utt.getDepTree().getPrunningTreeBottomUpFeatureForHead(word,"",subTree);
+                                    treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"|BT| |ET|";
+                                    
+                                    tree=tree.trim()+ treeBUp.trim();
+                                    //outFile.append(word.getLabel()+"\t"+ word.getContent() +" "+tree.trim()+" nnodes= "+ subTree.getNumberOfNodes() + " level= "+subTree.getLevel() +" "+vector+"\n");
+                                    outFile.append(word.getLabel()+"\t"+tree.trim() +" "+vector+"\n");
+                                }
+                            }   
+                        
+                    }
+                    if(istrain && uttCounter> TRAINSIZE){
+                        break;
+                    }                    
+                }
+                outFile.flush();
+                outFile.close();
+                inFile.close();
+                if(istrain)
+                    serializingFeatures();
+                ErrorsReporting.report("groups saved in groups.*.tab"+uttCounter);
+            } catch (IOException e) {
+                    e.printStackTrace();
+            }
+    } 
+
+    public void saveFilesForPolyClassifierWords(String en, boolean istrain) {
+            try {
+
+                GraphIO gio = new GraphIO(null);
+                OutputStreamWriter outFile =null;
+                String xmllist=LISTTRAINFILES;
+                if(istrain){
+                    String fname=TRAINFILE.replace("%S", en).replace("treek", "poly");
+                    outFile = new OutputStreamWriter(new FileOutputStream(fname),UTF8_ENCODING);
+                }else{
+                    xmllist=LISTTESTFILES;
+                     String fname=TESTFILE.replace("%S", en).replace("treek", "poly");
+                    outFile = new OutputStreamWriter(new FileOutputStream(fname),UTF8_ENCODING);
+                    if(dictFeatures.isEmpty())
+                        deserializingFeatures();
+                }
+                BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
+                int uttCounter=0;
+                for (;;) {
+                    String filename = inFile.readLine();
+                    if (filename==null) break;
+                    List<DetGraph> gs = gio.loadAllGraphs(filename);
+                    List<Utterance> utts= new ArrayList<>();
+                    for (int i=0;i<gs.size();i++) {
+                            DetGraph group = gs.get(i);
+                            //outFile.append("NO\tBS\tBS\n");
+                            
+                            Utterance utt= new Utterance();
+                            utt.setId(new Long(uttCounter+1));                            
+                            List<Word> words= new ArrayList<>();
+                            for (int j=0;j<group.getNbMots();j++) {
+                                    
+
+                                    // calcul du label
+                                    int lab = CNConstants.INT_NULL;
+                                    int[] groups = group.getGroups(j);
+                                    if (groups!=null)
+                                        for (int gr : groups) {
+                                            
+                                            if(en.equals(ONLYONEPNOUNCLASS)){
+                                                //all the groups are proper nouns pn
+                                                for(String str:groupsOfNE){
+                                                    if (group.groupnoms.get(gr).startsWith(str)) {
+                                                        lab=1;
+                                                        break;
+                                                    }
+                                                }
+                                            }else{
+                                                if (group.groupnoms.get(gr).startsWith(en)) {
+                                                    //int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
+                                                    //if (debdugroupe==j) lab = en+"B";    
+                                                    //else lab = en+"I";
+                                                    lab=1;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    /*        
+                      
+                                    if(!isStopWord(group.getMot(j).getPOS())){
+					String inWiki ="F";
+                                        if(!group.getMot(j).getPOS().startsWith("PRO") && !group.getMot(j).getPOS().startsWith("ADJ"))
+                                            inWiki =(WikipediaAPI.processPage(group.getMot(j).getForme()).equals(CNConstants.CHAR_NULL))?"F":"T";
+                                        outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+ inWiki +"\n");
+                                    } 
+                                     */                                  
+                                    Word word = new Word(j,group.getMot(j).getForme());
+                                    word.setPOSTag(group.getMot(j).getPOS(), group.getMot(j).getLemme());
+                                    word.setLabel(lab);
+                                    word.setUtterance(utt);
+                                    words.add(word);
+                                    /*
+                                    if(!dictFeatures.containsKey(word.getContent()))
+                                        dictFeatures.put(word.getContent(), dictFeatures.size()+1);
+                                    */
+                                    if(!dictFeatures.containsKey(word.getPosTag().getFName()))
+                                        dictFeatures.put(word.getPosTag().getFName(), dictFeatures.size()+1);
+                                    
+                                    if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
+                                        dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);                                    
+                                    
+                                    
+                                        
+                            }
+                            uttCounter++;
+                            utt.setWords(words);
+                            utt.getSegment().computingWordFrequencies();
+                            
+                            //extracting the dependency tree from jsafran to our own format
+                            for(int d=0;d<group.deps.size();d++){
+                                Dep dep = group.deps.get(d);
+                                int headidx=dep.head.getIndexInUtt()-1;
+                                Word       head = words.get(headidx);
+                                int depidx=dep.gov.getIndexInUtt()-1;
+                                Word       governor = words.get(depidx);
+                                //Assign the dependencies
+                                Dependency dependency;
+                                if(!utt.getDepTree().containsHead(head)){
+                                    dependency = new Dependency(head);
+                                }else{
+                                    dependency = utt.getDepTree().getDependency(head);
+                                }
+                                dependency.addDependent(governor, dep.toString());
+                                utt.addDependency(dependency);                            
+                            }
+                            //sets the roots
+                            utt.getDepTree().getDTRoot();
+                            utts.add(utt);
+                            
+                           for(Word word:utt.getWords()){
+                              String tree= utt.getDepTree().getTreeTopDownFeatureForHead(word);
+                              tree=(tree.contains("("))?"|BT| "+ tree+ "|ET|":"|BT| |ET|"; 
+                              dictFeatures.put(tree,dictFeatures.size()+1);
+                           } 
+
+                    }
+                  
+                    
+                    for(Utterance utt:utts){
+                            /** 
+                             * built the tree and vector features here
+                             */
+                            System.out.println("processing utterance:"+utt);
+                            //iterate again through words
+                            
+                    
+                            
+                            for(Word word:utt.getWords()){
+                                List<Integer> vals= new ArrayList<>();
+                                //int wordid= dictFeatures.get(word.getContent());
+                                int posid=dictFeatures.get(word.getPosTag().getFName());
+                                int wsid= dictFeatures.get(word.getLexicalUnit().getPattern());
+                               
+                                String tree= utt.getDepTree().getTreeTopDownFeatureForHead(word);
+                                tree=(tree.contains("("))?"|BT| "+ tree+ "|ET|":"|BT| |ET|";
+                                int treeid=dictFeatures.get(tree);
+                                //String treeBUp=utt.getDepTree().getTreeBottomUpFeatureForHead(word,"");
+                                //treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"|BT| |ET|";
+                                //tree=tree.trim()+ treeBUp.trim();    
+                                //vals.add(wordid);
+                                vals.add(posid);vals.add(wsid); vals.add(treeid);
+                                Collections.sort(vals);
+                                String vector="";
+                                for(int i=0; i<vals.size();i++)                                
+                                    vector+=vals.get(i)+":1 ";
+                                
+                                vector=vector.trim();                                
+                                outFile.append(word.getLabel()+"\t"+vector+"\n");
+                                
+                            }   
+                        
+                    }
+                    if(istrain && uttCounter> TRAINSIZE){
+                        break;
+                    }                    
+                }
+                outFile.flush();
+                outFile.close();
+                inFile.close();
+                if(istrain)
+                    serializingFeatures();
+                ErrorsReporting.report("groups saved in groups.*.tab"+uttCounter);
+            } catch (IOException e) {
+                    e.printStackTrace();
+            }
+    }       
+    
+    /**
      * Syntactic driven spans
+     * @param en
+     * @param onlyVector 
      */
+    
     public void saveFilesForLClassifierSpans(String en, boolean onlyVector) {
             try {
     
@@ -920,7 +1268,15 @@ public class AnalyzeSVMClassifier implements Serializable{
         saveFilesForLClassifierWords(strclass,true, isvector);
         saveFilesForLClassifierWords(strclass,false, isvector);
     }    
-     public static void main(String args[]){
+    public void savingWordsPrTrFiles(String strclass, boolean isvector){
+        saveFilesForLClassifierWordsPruningTrees(strclass,true, isvector);
+        saveFilesForLClassifierWordsPruningTrees(strclass,false, isvector);
+    }
+    public void savingWordsPolyFiles(String strclass){
+        saveFilesForPolyClassifierWords(strclass,true);
+        saveFilesForPolyClassifierWords(strclass,false);
+    }
+    public static void main(String args[]){
          AnalyzeSVMClassifier svmclass= new AnalyzeSVMClassifier();
          //svmclass.parsing(true);
          //svmclass.saveFilesForLClassifierWords(CNConstants.PRNOUN, true,false);
@@ -936,7 +1292,13 @@ public class AnalyzeSVMClassifier implements Serializable{
          //svmclass.savingAllSpansFiles(CNConstants.PRNOUN, false);
          //Chunking
          //svmclass.chunking(true);
-         svmclass.deserializingFeatures();
+         //svmclass.deserializingFeatures();
+         //svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
+         //Pruned trees
+         //svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, true);
+         //trees as string features for polynomial kernels
+         svmclass.savingWordsPolyFiles(CNConstants.PRNOUN);
+         
      }
       
 }
