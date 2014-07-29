@@ -1,0 +1,25 @@
+#
+#Tue Jun 24 10:46:08 CEST 2014
+usePrevSequences=true
+gazette=gazette.txt
+backgroundSymbol=NO
+useClassFeature=true
+useTypeSeqs2=true
+useSequences=true
+cleanGazette=true
+wordShape=chris2useLC
+useTypeySequences=true
+useDisjunctive=true
+noMidNGrams=true
+serializeTo=kiki.mods
+maxNGramLeng=6
+useTags=true
+useNGrams=true
+usePrev=true
+maxLeft=1
+tolerance=0.01
+useNext=true
+trainFile=groups.pn.tab.crf.train
+map=word\=0,tag\=1,answer\=3
+useTypeSeqs=true
+useWord=true
