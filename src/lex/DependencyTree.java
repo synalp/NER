@@ -413,22 +413,24 @@ public class DependencyTree implements Serializable{
      * @param head
      * @return 
      */
-    public String getTreeTopDownFeatureForHead(Word head){
+    public String getTreeTopDownFeatureForHead(Word head, boolean isPOS){
         String tree="";
         
         
         Dependency dep = getDependency(head);
+        String value=(isPOS)?head.getPosTag().getName():head.getContent();
         if(dep==null)
-           return head.getPosTag().getName();
+            return value;
+          
         
-        tree+="("+head.getPosTag().getName();
+        tree+="("+value;
         //tree+="("+head.getPosTag().getName();
         for(Integer depid:dep.getDependents().keySet()){           
             String relName = dep.getRelations().get(depid);
             Word dependent=dep.getDependents().get(depid);
             //String subtree=getTreeTopDownFeatureForHead(dependent);
             //subtree= (subtree.contains("("))?"("+subtree+")":subtree;
-            tree+=" ("+relName+" "+getTreeTopDownFeatureForHead(dependent)+")";
+            tree+=" ("+relName+" "+getTreeTopDownFeatureForHead(dependent,isPOS)+")";
 
         }
         
@@ -632,7 +634,7 @@ public class DependencyTree implements Serializable{
                 continue;
             //String subtree=getTreeTopDownFeatureForHead(dependent);
             //subtree= (subtree.contains("("))?"("+subtree+")":subtree;
-            tree+=" ("+relName+" "+getTreeTopDownFeatureForHead(dependent)+")";
+            tree+=" ("+relName+" "+getTreeTopDownFeatureForHead(dependent,true)+")";
         }
         
         tree+=") ";

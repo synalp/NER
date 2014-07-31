@@ -25,6 +25,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 
 import java.io.PrintWriter;
@@ -35,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
 import java.lang.Integer;
+import java.util.TreeMap;
 
 
 import java.util.regex.Matcher;
@@ -44,6 +47,7 @@ import jsafran.GraphIO;
 import resources.WikipediaAPI;
 import tools.CNConstants;
 import tools.Histoplot;
+import tools.IntegerValueComparator;
 import tools.PlotAPI;
 import utils.ErrorsReporting;
 import utils.FileUtils;
@@ -53,7 +57,7 @@ import utils.FileUtils;
  * @author rojasbar
  */
 public class AnalyzeClassifier {
-    
+    private static final long serialVersionUID = 1L; 
     public static String MODELFILE="bin.%S.lc.mods";
     public static String TRAINFILE="groups.%S.tab.lc.train";
     public static String TESTFILE="groups.%S.tab.lc.test";
@@ -75,6 +79,8 @@ public class AnalyzeClassifier {
 
     private HashMap<String, List<List<Integer>>> featInstMap = new HashMap<>();
     private HashMap<String, List<Integer>> lblInstMap = new HashMap<>();
+    private HashMap<Integer,List<String>> stLCDictTrainFeatures=new HashMap<>();
+    private HashMap<Integer,List<String>> stLCDictTestFeatures=new HashMap<>();
     
     public AnalyzeClassifier(){
 
@@ -316,7 +322,7 @@ public class AnalyzeClassifier {
         
     }
     
-    public boolean isStopWord(String pos){
+    public static boolean isStopWord(String pos){
         if(pos.startsWith("PUN") || pos.startsWith("DET")|| pos.startsWith("PRP")||pos.startsWith("INT")||pos.startsWith("SENT"))
             return true;
         
@@ -342,9 +348,11 @@ public class AnalyzeClassifier {
                 ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
                 Datum<String, String> datum = columnDataClass.makeDatumFromLine(line, 0);
                 Collection<String> features = datum.asFeatures();
+                
                 List<Integer> feats = new ArrayList<>();
                 //take the id (index) of the features
                 for(String f:features){
+
                     if(model.featureIndex().indexOf(f)>-1)
                         feats.add(model.featureIndex().indexOf(f));
                 }
@@ -355,8 +363,16 @@ public class AnalyzeClassifier {
                 int labelId = model.labelIndex().indexOf(label);
                 labelperInst.add(labelId);
                 numInstances++;    
-                
+                if(fileName.contains("train"))
+                    stLCDictTrainFeatures.put(numInstances, new ArrayList<>(features));
+                else
+                     stLCDictTestFeatures.put(numInstances, new ArrayList<>(features));                       
+                               
             }
+            if(fileName.contains("train"))
+                serializingFeatures(stLCDictTrainFeatures,true);
+            else
+                serializingFeatures(stLCDictTestFeatures,false);
            inFile.close();
            
         } catch (Exception ex) {
@@ -1136,6 +1152,61 @@ public class AnalyzeClassifier {
         }
    }
    
+    private void serializingFeatures(HashMap vocFeats, boolean isTrain){
+    try{
+            String fileName="";
+            if(isTrain)
+                fileName="StanfordLCTrainfeaturesDict.ser";
+            else
+                fileName="StanfordLCTestfeaturesDict.ser";
+            FileOutputStream fileOut =
+            new FileOutputStream(fileName);
+            ObjectOutputStream out =
+                            new ObjectOutputStream(fileOut);
+            out.writeObject(vocFeats);
+            out.close();
+            fileOut.close();
+        }catch(Exception i)
+        {
+            i.printStackTrace();
+        }
+    }
+    
+    public HashMap<Integer,List<String>> deserializingFeatures(boolean isTrain){
+      try
+      {
+        HashMap<Integer,List<String>> vocFeats = new HashMap<>();
+        String fileName="";
+        if(isTrain)
+            fileName="StanfordLCTrainfeaturesDict.ser";
+        else
+            fileName="StanfordLCTestfeaturesDict.ser";          
+        FileInputStream fileIn =  new FileInputStream(fileName);
+        ObjectInputStream in = new ObjectInputStream(fileIn);
+        vocFeats = (HashMap<Integer,List<String>>) in.readObject();
+        System.out.println("vocabulary of features: "+vocFeats.size());
+        /*
+        for(Integer key:vocFeats.keySet()){
+            System.out.println("feature id "+ vocFeats.get(key)+" value : "+ key);
+
+        }*/
+              
+         in.close();
+         fileIn.close();
+         return vocFeats;
+      }catch(IOException i)
+      {
+         i.printStackTrace();
+         return new HashMap<>();
+      }catch(ClassNotFoundException c)
+      {
+         System.out.println("class not found");
+         c.printStackTrace();
+         return new HashMap<>();
+      } 
+   
+    }   
+   
    public static void main(String args[]) {
         AnalyzeClassifier analyzing = new AnalyzeClassifier();
         
@@ -1221,22 +1292,28 @@ public class AnalyzeClassifier {
          
          //*/
         //analyzing.evaluationPOSTAGGER();
-        analyzing.evaluationCLASSRESULTS();
-        /*Testing numerical integration
+        //analyzing.evaluationCLASSRESULTS();
+        ///*Testing numerical integration
         String sclass="pn";
-        analyzing.trainOneClassifier(sclass,false);  
+        
+        analyzing.saveFilesForLClassifier(sclass,true,false);
+        analyzing.trainOneClassifier(sclass, false);
+        analyzing.saveFilesForLClassifier(sclass,false,false);
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>();     
         LinearClassifier model = analyzing.getModel(sclass);
+        analyzing.getValues(TRAINFILE.replace("%S", sclass),model,featsperInst,labelperInst);
         analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
+        /*
         analyzing.featInstMap.put(sclass,featsperInst);
         analyzing.lblInstMap.put(sclass, labelperInst);   
+        
         float  risk = analyzing.computeROfTheta(sclass);
         System.out.println("Analitical sol: "+risk);
                 
         risk = analyzing.computeROfThetaNumInt(sclass);
         System.out.println("MCIntegration: "+risk);
-
+        
         //*/
         //analyzing.analyzingEvalFile();
     }
