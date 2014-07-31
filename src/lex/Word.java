@@ -4,6 +4,7 @@ package lex;
 
 
 import java.io.Serializable;
+import java.util.List;
 import tools.CNConstants;
 
 
@@ -33,6 +34,8 @@ public class Word  implements Cloneable, Serializable{
     private Utterance utterance;
     
     private int label;
+    
+    private List<String> additionalFeats;
     
 
     public Word(){
@@ -127,6 +130,14 @@ public class Word  implements Cloneable, Serializable{
       this.postag = category;
 
       
+  }
+  
+  public void setAdditionalFeats(List<String> feats){
+      this.additionalFeats=feats;
+  }
+  
+  public List<String> getAdditionalFeats(){
+      return this.additionalFeats;
   }
 
    //toString
