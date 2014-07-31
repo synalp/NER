@@ -395,36 +395,10 @@ public class MonteCarloIntegration {
                 else
                    points = samplingPoints(lo,hi,dim);
             }    
-            //float[] points = samplingPoints(normDist,dim);
-            //if(isplot)
-                //plotPoints.addPoint(points,i);
-            //System.out.println( points[0]+","+points[1]+"\n");
-            
-                
-                //alpha1=-alpha0points[1]=-points[0];
-                points[1]=-points[0];
 
+                //double f=getBinaryConstrFunction(gmm,points[0],k);
+                double f= easyFunction(points[0]);
 
-                double prodOfGauss=1.0;
-
-                for(int l=0;l< dim; l++){
-                   prodOfGauss*=gmm.getLike(k,l, points[l]);
-                }
-
-                
-                double lossTerm=0.0;
-                double val=0.0;
-                if(k==0){
-                    val=(points[0]<0.5)?points[0]:0.5;
-                    lossTerm=1.0-2*val;
-                }else{
-                    val=(points[0]>-0.5)?points[0]:-0.5;
-                    lossTerm=1.0+2*val;
-                }    
-                        
-                
-                
-                double f=prodOfGauss*lossTerm;
 
                 //System.out.println("TRIAL ..."+i+ " Function "+ f);
                 sumFx+=f;
@@ -461,19 +435,16 @@ public class MonteCarloIntegration {
     public double trapezoidIntegration(final GMMDiag gmm, final int k, int numTrials){
             
             int dim = gmm.getDimension();
+            
             float minMean=Float.MAX_VALUE;
             float maxMean=Float.MIN_VALUE;
             float maxSigma=Float.MIN_VALUE;            
             
             for(int i=0; i<dim;i++){
-
                 for(int j=0; j<dim;j++){
                  double mean= gmm.getMean(i, j);
                  double sigma= Math.sqrt(gmm.getVar(i, j, j));
-                 /*System.out.println("minmean: "+ minMean);
-                 System.out.println("maxmean: "+ maxMean);
-                 System.out.println("minsigma: "+ minSigma);
-                 System.out.println("maxsigma: "+ maxSigma);*/
+
                  if(mean < minMean)
                      minMean=(float)mean;
                  if(mean > maxMean)
@@ -486,7 +457,7 @@ public class MonteCarloIntegration {
 
             float lo=minMean-(maxSigma*6);
             float hi=maxMean+(maxSigma*6);
-
+            System.out.println("["+lo+","+hi+"]");
                 //Trapezoidal integration
                 //integrate(UnivariateRealFunction f, double min, double max) 
                 TrapezoidIntegrator tIntegr= new TrapezoidIntegrator();
@@ -494,32 +465,35 @@ public class MonteCarloIntegration {
                 UnivariateFunction funct =
                     new UnivariateFunction() {
                     public double value(double x)  {
-                        
-                        double prodOfGauss=1.0;
-
-                        for(int l=0;l< 2; l++){
-                           prodOfGauss*=gmm.getLike(k,l, (float) -x);
-                        }
-
-
-                        double lossTerm=0.0;
-                        double val=0.0;
-                        if(k==0){
-                            val=(x<0.5)?x:0.5;
-                            lossTerm=1.0-2*val;
-                        }else{
-                            val=(x>-0.5)?x:-0.5;
-                            lossTerm=1.0+2*val;
-                        }    
-
-
-                        double f=prodOfGauss*lossTerm;                        
-                        return f;
+                        return easyFunction(x);
+                        //return getBinaryConstrFunction(gmm,(float) x,k);
                     }
                 };
                 
                 double integral = tIntegr.integrate(numTrials, funct, lo, hi);
                 
        return integral; 
-    }     
+    }
+    
+    public double getBinaryConstrFunction(GMMDiag gmm, float x, int k){
+            
+        double prodOfGauss=gmm.getLike(k,0, x)*gmm.getLike(k,1, -x);
+        double lossTerm=0.0;
+        double val=0.0;
+        if(k==0){
+            val=(x<0.5)?x:0.5;
+            lossTerm=1.0-2*val;
+        }else{
+            val=(x>-0.5)?x:-0.5;
+            lossTerm=1.0+2*val;
+        }    
+
+
+
+        double f=prodOfGauss*lossTerm;
+        return f;
+    }
+    public double easyFunction(double x){
+        return x*x;
+    }
 }
