@@ -6,13 +6,13 @@ package linearclassifier;
 
 
 import edu.emory.mathcs.backport.java.util.Arrays;
-import edu.stanford.nlp.stats.Distribution;
 import gmm.GMMDiag;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
+import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.analysis.integration.TrapezoidIntegrator;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
+
 
 import tools.CNConstants;
 import tools.PlotAPI;
@@ -57,7 +57,7 @@ public class MonteCarloIntegration {
         for(int r=1;r<=numRuns;r++){
             float risk=0f;
             for(int k=0; k< dim; k++){
-                    risk+=py[k]*integrateBinaryCase(gmm,k,CNConstants.UNIFORM, true,false);
+                    risk+=py[k]*integrateBinaryCase(gmm,k,CNConstants.UNIFORM, true,false,50000);
             }
             sumRisk+=risk;
             sumRiskSq+=risk*risk;
@@ -98,7 +98,7 @@ public class MonteCarloIntegration {
     }
       public float[] samplingPoints(float lo, float hi,int dim){
         float[] points = new float[dim];
-        Random randomVar = new Random();  
+        
         for(int i=0; i<dim; i++){
             double x =lo + randomVar.nextDouble() * (hi-lo);
             points[i]= (float) x;
@@ -171,7 +171,7 @@ public class MonteCarloIntegration {
         UniformRealDistribution uniformDist= new UniformRealDistribution();
         
         for(int i=0; i<dim; i++){
-            Random randomVar = new Random();  
+            
             double x = lo + randomVar.nextDouble() * (hi-lo);
             
             //random walk
@@ -325,18 +325,19 @@ public class MonteCarloIntegration {
     
     }
 
-    public double integrateBinaryCase(GMMDiag gmm, int k, String proposal, boolean metropolis, boolean isplot){
+    public double integrateBinaryCase(GMMDiag gmm, int k, String proposal, boolean metropolis, boolean isplot, int numTrials){
          
         ScatterPlotAPI plotPoints = null;
         /*if(isplot)
             plotPoints = new ScatterPlotAPI("Sampled Points");
         */
         int dim = gmm.getDimension();
-        int ntrials=50000;
+        //int ntrials=50000;
+        int ntrials=(numTrials==-1)?50000:numTrials;
         float minMean=Float.MAX_VALUE;
         float maxMean=Float.MIN_VALUE;
         float maxSigma=Float.MIN_VALUE;
-        float minSigma=Float.MAX_VALUE;
+        
         double integral=0.0;
         PlotAPI plotIntegral = null;
         if(isplot)
@@ -360,8 +361,8 @@ public class MonteCarloIntegration {
             }
         }
         
-        float lo=minMean-(maxSigma);
-        float hi=maxMean+(maxSigma);
+        float lo=minMean-(maxSigma*6);
+        float hi=maxMean+(maxSigma*6);
         //System.out.println("lower bounded= "+lo);
         //System.out.println("upper bounded= "+hi);
         NormalDistribution normDist = new NormalDistribution();
@@ -392,7 +393,7 @@ public class MonteCarloIntegration {
                 if(metropolis)
                     points = metropolis(lo,hi,0.5f,dim);
                 else
-                   points = samplingPoints(normDist,dim);  
+                   points = samplingPoints(lo,hi,dim);
             }    
             //float[] points = samplingPoints(normDist,dim);
             //if(isplot)
@@ -457,4 +458,68 @@ public class MonteCarloIntegration {
         
        return integral; 
     } 
+    public double trapezoidIntegration(final GMMDiag gmm, final int k, int numTrials){
+            
+            int dim = gmm.getDimension();
+            float minMean=Float.MAX_VALUE;
+            float maxMean=Float.MIN_VALUE;
+            float maxSigma=Float.MIN_VALUE;            
+            
+            for(int i=0; i<dim;i++){
+
+                for(int j=0; j<dim;j++){
+                 double mean= gmm.getMean(i, j);
+                 double sigma= Math.sqrt(gmm.getVar(i, j, j));
+                 /*System.out.println("minmean: "+ minMean);
+                 System.out.println("maxmean: "+ maxMean);
+                 System.out.println("minsigma: "+ minSigma);
+                 System.out.println("maxsigma: "+ maxSigma);*/
+                 if(mean < minMean)
+                     minMean=(float)mean;
+                 if(mean > maxMean)
+                     maxMean=(float)mean;
+                 if(sigma > maxSigma)
+                     maxSigma=(float)sigma;
+
+                }
+            }
+
+            float lo=minMean-(maxSigma*6);
+            float hi=maxMean+(maxSigma*6);
+
+                //Trapezoidal integration
+                //integrate(UnivariateRealFunction f, double min, double max) 
+                TrapezoidIntegrator tIntegr= new TrapezoidIntegrator();
+                
+                UnivariateFunction funct =
+                    new UnivariateFunction() {
+                    public double value(double x)  {
+                        
+                        double prodOfGauss=1.0;
+
+                        for(int l=0;l< 2; l++){
+                           prodOfGauss*=gmm.getLike(k,l, (float) -x);
+                        }
+
+
+                        double lossTerm=0.0;
+                        double val=0.0;
+                        if(k==0){
+                            val=(x<0.5)?x:0.5;
+                            lossTerm=1.0-2*val;
+                        }else{
+                            val=(x>-0.5)?x:-0.5;
+                            lossTerm=1.0+2*val;
+                        }    
+
+
+                        double f=prodOfGauss*lossTerm;                        
+                        return f;
+                    }
+                };
+                
+                double integral = tIntegr.integrate(numTrials, funct, lo, hi);
+                
+       return integral; 
+    }     
 }
