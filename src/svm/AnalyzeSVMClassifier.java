@@ -51,8 +51,8 @@ public class AnalyzeSVMClassifier implements Serializable{
     public static String TESTFILE="groups.%S.tab.treek.test";
     public static String INCHUNKER="chunk/%S.in.chunker";
     public static String OUTCHUNKER="chunk/%S.out.chunker";
-    public static String LISTTRAINFILES="esterParseTrainALL.xmll";
-    public static String LISTTESTFILES="esterParseTestALL.xmll";
+    public static String LISTTRAINFILES="esterParseTrainETB.xmll";//"esterParseTrainALL.xmll";
+    public static String LISTTESTFILES="esterParseTestETB.xmll"; //"esterParseTestALL.xmll";
     public static String UTF8_ENCODING="UTF8";
     public static String PROPERTIES_FILE="streek.props";
     public static String NUMFEATSINTRAINFILE="2-";
@@ -67,7 +67,7 @@ public class AnalyzeSVMClassifier implements Serializable{
     public AnalyzeSVMClassifier(){
 
     }
-    public void saveFilesForLClassifierWords(String en, boolean istrain, boolean onlyVector) {
+    public void saveFilesForLClassifierWords(String en, boolean istrain, boolean onlyVector, boolean isPOS) {
             try {
 
                 GraphIO gio = new GraphIO(null);
@@ -209,7 +209,7 @@ public class AnalyzeSVMClassifier implements Serializable{
                                 if(onlyVector)
                                     outFile.append(word.getLabel()+"\t"+vector+"\n");
                                 else{
-                                    String tree= utt.getDepTree().getTreeTopDownFeatureForHeadCW(word,0);
+                                    String tree= utt.getDepTree().getTreeTopDownFeatureForHeadCW(word,0,isPOS);
                                     tree=(tree.contains("("))?"|BT| "+ tree+ "|ET|":"|BT| |ET|";
                                     //String treeBUp=utt.getDepTree().getTreeBottomUpFeatureForHead(word,"");
                                     //treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"|BT| |ET|";
@@ -234,7 +234,7 @@ public class AnalyzeSVMClassifier implements Serializable{
             }
     }   
     
-    public void saveFilesForLClassifierWordsPruningTrees(String en, boolean istrain, boolean onlyVector, boolean isCW, boolean isTopDown, boolean isBottomUp) {
+    public void saveFilesForLClassifierWordsPruningTrees(String en, boolean istrain, boolean onlyVector, boolean isCW, boolean isTopDown, boolean isBottomUp, boolean isPOS) {
             try {
 
                 GraphIO gio = new GraphIO(null);
@@ -378,14 +378,14 @@ public class AnalyzeSVMClassifier implements Serializable{
                                 else{
                                     
                                     DependencyTree subTree= new DependencyTree();
-                                    if(word.getContent().equals("que"))
+                                    if(word.getContent().contains("("))
                                         System.out.println("found");
                                     String tree="";
                                     if(isTopDown){
                                         if(isCW)
-                                            tree= utt.getDepTree().getPruningTreeTopDownFeatureForHeadCW(word,subTree);
+                                            tree= utt.getDepTree().getPruningTreeTopDownFeatureForHeadCW(word,subTree,isPOS);
                                         else
-                                            tree= utt.getDepTree().getPruningTreeTopDownFeatureForHead(word,subTree);
+                                            tree= utt.getDepTree().getPruningTreeTopDownFeatureForHead(word,subTree,isPOS);
                                         //tree=(tree.contains("("))?"|BT| "+ tree+ "|ET|":"|BT| |ET|";
                                         tree=(tree.contains("("))?"|BT| "+ tree+ " ":"|BT| ";
                                     }
@@ -393,14 +393,14 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     String treeBUp="";
                                     if(isBottomUp){
                                         if(isCW)
-                                            treeBUp=utt.getDepTree().getPrunningTreeBottomUpFeatureForHeadCW(word,"",subTree);
+                                            treeBUp=utt.getDepTree().getPrunningTreeBottomUpFeatureForHeadCW(word,"",subTree,isPOS);
                                         else
-                                            treeBUp=utt.getDepTree().getPrunningTreeBottomUpFeatureForHead(word,"",subTree);
+                                            treeBUp=utt.getDepTree().getPrunningTreeBottomUpFeatureForHead(word,"",subTree,isPOS);
                                         treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"|BT| |ET|";
                                     }
                                     tree=tree.trim()+ treeBUp.trim();
                                     //outFile.append(word.getLabel()+"\t"+ word.getContent() +" "+tree.trim()+" nnodes= "+ subTree.getNumberOfNodes() + " level= "+subTree.getLevel() +" "+vector+"\n");
-                                    if(!isStopWord(word.getPosTag().getName()))
+                                    //if(!isStopWord(word.getPosTag().getName()))
                                         outFile.append(word.getLabel()+"\t"+tree.trim() +" "+vector+"\n");
                                 }
                             }   
@@ -632,7 +632,7 @@ public class AnalyzeSVMClassifier implements Serializable{
      * @param onlyVector 
      */
     
-    public void saveFilesForLClassifierSpans(String en, boolean onlyVector) {
+    public void saveFilesForLClassifierSpans(String en, boolean onlyVector, boolean isPOS) {
             try {
     
                 int totalOfspans=0;
@@ -846,7 +846,7 @@ public class AnalyzeSVMClassifier implements Serializable{
                                 if(onlyVector)
                                     outFile.append(label+"\t"+vector.trim()+"\n");
                                 else{
-                                    String tree= utt.getDepTree().getTreeTopDownFeatureForSegment(seg);
+                                    String tree= utt.getDepTree().getTreeTopDownFeatureForSegment(seg,isPOS);
                                     tree=(tree.contains("("))?"|BT| "+ tree+ " |ET|":"|BT| |ET|";
                                     //String treeBUp=utt.getDepTree().getTreeBottomUpFeatureForHead(word,"");
                                     //treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"";
@@ -874,7 +874,7 @@ public class AnalyzeSVMClassifier implements Serializable{
             }
     }   
     
-    public void saveFilesForClassifierAllSpans(String en,boolean istrain, boolean onlyVector) {
+    public void saveFilesForClassifierAllSpans(String en,boolean istrain, boolean onlyVector, boolean isPOS) {
             try {
 
                 int totalOfspans=0;
@@ -1054,7 +1054,7 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     if(onlyVector)
                                         outFile.append(label+"\t"+vector.trim()+"\n");
                                     else{
-                                        String tree= utt.getDepTree().getTreeTopDownFeatureForHead(head,true);
+                                        String tree= utt.getDepTree().getTreeTopDownFeatureForHead(head,isPOS);
                                         tree=(tree.contains("("))?"|BT| "+ tree+ " |ET|":"|BT| |ET|";
                                         //String treeBUp=utt.getDepTree().getTreeBottomUpFeatureForHead(word,"");
                                         //treeBUp=(treeBUp.contains("("))?" |BT| ("+ treeBUp + ") |ET|":"";
@@ -1325,23 +1325,23 @@ public class AnalyzeSVMClassifier implements Serializable{
    
     }    
  
-    public void savingAllSpansFiles(String strclass, boolean isvector){
-        saveFilesForClassifierAllSpans(strclass, true, isvector);
-        saveFilesForClassifierAllSpans(strclass, false, isvector);
+    public void savingAllSpansFiles(String strclass, boolean isvector, boolean isPOS){
+        saveFilesForClassifierAllSpans(strclass, true, isvector, isPOS);
+        saveFilesForClassifierAllSpans(strclass, false, isvector, isPOS);
     }    
     
-    public void savingSpansFiles(String strclass, boolean isvector){
-        saveFilesForLClassifierSpans(strclass, isvector);
-        saveFilesForClassifierAllSpans(strclass, false, isvector);
+    public void savingSpansFiles(String strclass, boolean isvector, boolean isPOS){
+        saveFilesForLClassifierSpans(strclass, isvector,isPOS);
+        saveFilesForClassifierAllSpans(strclass, false, isvector,isPOS);
     }
      
-    public void savingWordsFiles(String strclass, boolean isvector){
-        saveFilesForLClassifierWords(strclass,true, isvector);
-        saveFilesForLClassifierWords(strclass,false, isvector);
+    public void savingWordsFiles(String strclass, boolean isvector, boolean isPOS){
+        saveFilesForLClassifierWords(strclass,true, isvector,isPOS);
+        saveFilesForLClassifierWords(strclass,false, isvector,isPOS);
     }    
-    public void savingWordsPrTrFiles(String strclass, boolean isvector, boolean isCW, boolean isTopDown, boolean isBottomUp){
-        saveFilesForLClassifierWordsPruningTrees(strclass,true, isvector, isCW, isTopDown, isBottomUp);
-        saveFilesForLClassifierWordsPruningTrees(strclass,false, isvector, isCW, isTopDown, isBottomUp);
+    public void savingWordsPrTrFiles(String strclass, boolean isvector, boolean isCW, boolean isTopDown, boolean isBottomUp, boolean isPOS){
+        saveFilesForLClassifierWordsPruningTrees(strclass,true, isvector, isCW, isTopDown, isBottomUp, isPOS);
+        saveFilesForLClassifierWordsPruningTrees(strclass,false, isvector, isCW, isTopDown, isBottomUp, isPOS);
     }
     public void savingWordsPolyFiles(String strclass){
         saveFilesForPolyClassifierWords(strclass,true);
@@ -1369,8 +1369,8 @@ public class AnalyzeSVMClassifier implements Serializable{
          //svmclass.deserializingFeatures();
          //svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
          //Pruned trees
-         //classifier type, isvector, isCW, isTopDown, isBottomUp
-         svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, false,false,true,true);
+         //classifier type, isvector, isCW, isTopDown, isBottomUp, isPOS
+         svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, false,false,true,true,true);
          //trees as string features for polynomial kernels
          //svmclass.savingWordsPolyFiles(CNConstants.PRNOUN);
          

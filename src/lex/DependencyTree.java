@@ -418,7 +418,7 @@ public class DependencyTree implements Serializable{
         
         
         Dependency dep = getDependency(head);
-        String value=(isPOS)?head.getPosTag().getName():head.getContent();
+        String value=(isPOS)?head.getPosTag().getName():head.cleanContent();
         if(dep==null)
             return value;
           
@@ -437,45 +437,46 @@ public class DependencyTree implements Serializable{
         tree+=") ";
         return tree;
     }    
-    public String getTreeTopDownFeatureForHeadCW(Word head, int nCalls){
+    public String getTreeTopDownFeatureForHeadCW(Word head, int nCalls, boolean isPOS){
         String tree="";
         
-        
+        String nodeContent=(isPOS)?head.getPosTag().getName():head.cleanContent();
         Dependency dep = getDependency(head);
         if(dep==null)
            return head.getPosTag().getName();
         
         if(nCalls==0)
-            tree+="("+CNConstants.CURRWORD+head.getPosTag().getName();
+            tree+="("+CNConstants.CURRWORD+nodeContent;
         else
-            tree+="("+head.getPosTag().getName();
-        //tree+="("+head.getPosTag().getName();
+            tree+="("+nodeContent;
+        //tree+="("+nodeContent;
         for(Integer depid:dep.getDependents().keySet()){           
             String relName = dep.getRelations().get(depid);
             Word dependent=dep.getDependents().get(depid);
             //String subtree=getTreeTopDownFeatureForHead(dependent);
             //subtree= (subtree.contains("("))?"("+subtree+")":subtree;
-            tree+=" ("+relName+" "+getTreeTopDownFeatureForHeadCW(dependent,nCalls+1)+")";
+            tree+=" ("+relName+" "+getTreeTopDownFeatureForHeadCW(dependent,nCalls+1,isPOS)+")";
 
         }
         
         tree+=") ";
         return tree;
     }
-     public String getPruningTreeTopDownFeatureForHeadCW(Word head, DependencyTree dT){
+     public String getPruningTreeTopDownFeatureForHeadCW(Word head, DependencyTree dT, boolean isPOS){
         String tree="";
         
         Dependency dep = getDependency(head);
         
         dT.numNodes++;
+        String nodeContent=(isPOS)?head.getPosTag().getName():head.cleanContent();
         if(dep==null || dT.level > CNConstants.tree_level_threshold)
-            return head.getPosTag().getName();
+            return nodeContent;
         
               
         if(dT.depTree.isEmpty())
-            tree+="("+CNConstants.CURRWORD+head.getPosTag().getName();
+            tree+="("+CNConstants.CURRWORD+nodeContent;
         else
-            tree+="("+head.getPosTag().getName();
+            tree+="("+nodeContent;
         
         dT.addDependency(head, dep);
         dT.level++;
@@ -486,7 +487,7 @@ public class DependencyTree implements Serializable{
             Word dependent=dep.getDependents().get(depid);
             //String subtree=getTreeTopDownFeatureForHead(dependent);
             //subtree= (subtree.contains("("))?"("+subtree+")":subtree;
-            tree+=" ("+relName+" "+getPruningTreeTopDownFeatureForHeadCW(dependent,dT)+")";
+            tree+=" ("+relName+" "+getPruningTreeTopDownFeatureForHeadCW(dependent,dT, isPOS)+")";
             
             
         }
@@ -496,20 +497,21 @@ public class DependencyTree implements Serializable{
         return tree;
     }  
      
-     public String getPruningTreeTopDownFeatureForHead(Word head, DependencyTree dT){
+     public String getPruningTreeTopDownFeatureForHead(Word head, DependencyTree dT, boolean isPOS){
         String tree="";
         
         Dependency dep = getDependency(head);
         
         dT.numNodes++;
+        String nodeContent=(isPOS)?head.getPosTag().getName():head.cleanContent();
         if(dep==null || dT.level > CNConstants.tree_level_threshold)
-            return head.getPosTag().getName();
+            return nodeContent;
         
               
         if(dT.depTree.isEmpty())
-            tree+="("+head.getPosTag().getName();
+            tree+="("+nodeContent;
         else
-            tree+="("+head.getPosTag().getName();
+            tree+="("+nodeContent;
         
         dT.addDependency(head, dep);
         dT.level++;
@@ -520,7 +522,7 @@ public class DependencyTree implements Serializable{
             Word dependent=dep.getDependents().get(depid);
             //String subtree=getTreeTopDownFeatureForHead(dependent);
             //subtree= (subtree.contains("("))?"("+subtree+")":subtree;
-            tree+=" ("+relName+" "+getPruningTreeTopDownFeatureForHead(dependent,dT)+")";
+            tree+=" ("+relName+" "+getPruningTreeTopDownFeatureForHead(dependent,dT, isPOS)+")";
             
             
         }
@@ -536,73 +538,75 @@ public class DependencyTree implements Serializable{
      * @param tree
      * @return 
      */
-    public String getTreeBottomUpFeatureForHead(Word dependent, String tree){
+    public String getTreeBottomUpFeatureForHead(Word dependent, String tree,boolean isPOS){
         if(tree.isEmpty()) 
             tree="%S";
         
-        
+        String nodeContent=(isPOS)?dependent.getPosTag().getName():dependent.cleanContent();
         if(allDeps.containsKey(dependent.getPosition())){
             Word head= depsHead.get(dependent.getPosition());
             String rel = depRels.get(dependent.getPosition());
             if(tree.equals("%S"))
-                //tree=tree.replace("%S", " ("+rel+" "+dependent.getPosTag().getName())+")";
-                tree=tree.replace("%S", " ("+rel+" "+CNConstants.CURRWORD+dependent.getPosTag().getName())+")";
+                //tree=tree.replace("%S", " ("+rel+" "+nodeContent)+")";
+                tree=tree.replace("%S", " ("+rel+" "+CNConstants.CURRWORD+nodeContent)+")";
             else
-                tree=tree.replace("%S", " ("+rel+" ("+dependent.getPosTag().getName())+"))";
-            tree=getTreeBottomUpFeatureForHead(head, "%S"+tree);
+                tree=tree.replace("%S", " ("+rel+" ("+nodeContent)+"))";
+            tree=getTreeBottomUpFeatureForHead(head, "%S"+tree, isPOS);
         }else
-            tree=tree.replace("%S", dependent.getPosTag().getName());
+            tree=tree.replace("%S", nodeContent);
             
         
         return tree;
     }
     
-    public String getPrunningTreeBottomUpFeatureForHeadCW(Word dependent, String tree, DependencyTree dT){
+    public String getPrunningTreeBottomUpFeatureForHeadCW(Word dependent, String tree, DependencyTree dT, boolean isPOS){
         if(tree.isEmpty()) 
             tree="%S";
         
         dT.level++;
         dT.numNodes++;
+        String nodeContent=(isPOS)?dependent.getPosTag().getName():dependent.cleanContent();
         ///*
         if(dT.level> CNConstants.tree_level_threshold)
-            return tree.replace("%S", dependent.getPosTag().getName());
+            return tree.replace("%S", nodeContent);
         //*/
         if(allDeps.containsKey(dependent.getPosition())){
             Word head= depsHead.get(dependent.getPosition());
             String rel = depRels.get(dependent.getPosition());
             if(tree.equals("%S"))
-                //tree=tree.replace("%S", " ("+rel+" "+dependent.getPosTag().getName())+")";
-                tree=tree.replace("%S", " ("+rel+" "+CNConstants.CURRWORD+dependent.getPosTag().getName())+")";
+                //tree=tree.replace("%S", " ("+rel+" "+nodeContent)+")";
+                tree=tree.replace("%S", " ("+rel+" "+CNConstants.CURRWORD+nodeContent)+")";
             else
-                tree=tree.replace("%S", " ("+rel+" ("+dependent.getPosTag().getName())+"))";
-            tree=getPrunningTreeBottomUpFeatureForHeadCW(head, "%S"+tree, dT);
+                tree=tree.replace("%S", " ("+rel+" ("+nodeContent)+"))";
+            tree=getPrunningTreeBottomUpFeatureForHeadCW(head, "%S"+tree, dT,isPOS);
         }else{
             if(tree.equals("%S"))
-              tree=tree.replace("%S", CNConstants.CURRWORD+dependent.getPosTag().getName());
+              tree=tree.replace("%S", CNConstants.CURRWORD+nodeContent);
             else
-                tree=tree.replace("%S", dependent.getPosTag().getName());
+                tree=tree.replace("%S", nodeContent);
         }    
         
         return tree;
     }  
-    public String getPrunningTreeBottomUpFeatureForHead(Word dependent, String tree, DependencyTree dT){
+    public String getPrunningTreeBottomUpFeatureForHead(Word dependent, String tree, DependencyTree dT,boolean isPOS){
         if(tree.isEmpty()) 
             tree="%S";
         
         dT.level++;
         dT.numNodes++;
+        String nodeContent=(isPOS)?dependent.getPosTag().getName():dependent.cleanContent();
         ///*
         if(dT.level> CNConstants.tree_level_threshold)
-            return tree.replace("%S", dependent.getPosTag().getName());
+            return tree.replace("%S", nodeContent);
         //*/
         if(allDeps.containsKey(dependent.getPosition())){
             Word head= depsHead.get(dependent.getPosition());
             String rel = depRels.get(dependent.getPosition());
-            tree=tree.replace("%S", " ("+rel+" ("+dependent.getPosTag().getName())+"))";
-            tree=getPrunningTreeBottomUpFeatureForHead(head, "%S"+tree, dT);
+            tree=tree.replace("%S", " ("+rel+" ("+nodeContent)+"))";
+            tree=getPrunningTreeBottomUpFeatureForHead(head, "%S"+tree, dT,isPOS);
         }else{
     
-                tree=tree.replace("%S", dependent.getPosTag().getName());
+                tree=tree.replace("%S", nodeContent);
         }    
         
         return tree;
@@ -612,13 +616,14 @@ public class DependencyTree implements Serializable{
      * @param segment
      * @return 
      */
-    public String getTreeTopDownFeatureForSegment(Segment segment){
+    public String getTreeTopDownFeatureForSegment(Segment segment, boolean isPOS){
         String tree="";
         
         Word head= getDTRoot(segment);
         Dependency dep = getDependency(head);
+        String nodeContent=(isPOS)?head.getPosTag().getName():head.cleanContent();
         if(dep==null)
-            return head.getPosTag().getName();
+            return nodeContent;
         
         List<Integer> wordsintree=new ArrayList(dep.getDependents().keySet());
         wordsintree.add(head.getPosition());
@@ -626,7 +631,7 @@ public class DependencyTree implements Serializable{
         if(wordsintree.size()==1 && wordsintree.contains(head.getPosition()))
             return tree;
         
-        tree+="("+head.getPosTag().getName();
+        tree+="("+nodeContent;
         for(Integer depid:dep.getDependents().keySet()){
             String relName = dep.getRelations().get(depid);
             Word dependent=dep.getDependents().get(depid);
@@ -634,7 +639,7 @@ public class DependencyTree implements Serializable{
                 continue;
             //String subtree=getTreeTopDownFeatureForHead(dependent);
             //subtree= (subtree.contains("("))?"("+subtree+")":subtree;
-            tree+=" ("+relName+" "+getTreeTopDownFeatureForHead(dependent,true)+")";
+            tree+=" ("+relName+" "+getTreeTopDownFeatureForHead(dependent,isPOS)+")";
         }
         
         tree+=") ";

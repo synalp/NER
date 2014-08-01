@@ -122,13 +122,13 @@ public class LexicalUnit implements Cloneable{
 
        if(cleanLu.startsWith("*"))
            cleanLu = cleanLu.substring(1, cleanLu.length());
-
+       /*
        if(cleanLu.startsWith("'"))
            cleanLu = cleanLu.substring(1, cleanLu.length());
-
-       cleanLu = cleanLu.replace("(", "");
-       cleanLu = cleanLu.replace(")", "");
-
+       */
+       cleanLu = cleanLu.replace("(", "LPAR_");
+       cleanLu = cleanLu.replace(")", "RPAR_");
+       cleanLu = cleanLu.replace("?", "QMARK_");
 
 
        return cleanLu;
