@@ -39,7 +39,7 @@ public class PlotAPI {
                 x.setTickUnit(new NumberTickUnit(1));
 
         objChart.getXYPlot().getDomainAxis().setTickLabelsVisible(false);
-
+        
         ChartFrame frame = new ChartFrame(title, objChart);
         frame.pack();
         frame.setVisible(true); 
