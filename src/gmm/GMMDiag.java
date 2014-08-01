@@ -1,5 +1,6 @@
 package gmm;
 
+import edu.stanford.nlp.util.Pair;
 import java.util.Arrays;
 import java.util.List;
 import linearclassifier.AnalyzeClassifier;
@@ -26,6 +27,10 @@ import linearclassifier.Margin;
 public class GMMDiag extends GMM {
     final double minvar = 0.01;
     private GMM oracleGMM;
+    
+    private float minMean=Float.MAX_VALUE;
+    private float maxMean=Float.MIN_VALUE;
+    private float maxSigma=Float.MIN_VALUE;
     
     // this is diagonal variance (not inverse !)
     double[][] diagvar;
@@ -343,7 +348,7 @@ public class GMMDiag extends GMM {
             loglike = getLoglike(analyzer, margin);
             sqerr = Double.NaN;
             if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-            System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ " sqerr "+sqerr);
+            //System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ " sqerr "+sqerr);
         }
     }
     
@@ -353,5 +358,32 @@ public class GMMDiag extends GMM {
             for (int i=0;i<nlabs;i++) sqerr += (means[y][i]-g.means[y][i])*(means[y][i]-g.means[y][i]);
         }
         return sqerr;
+    }
+    
+    public Pair<Double,Double> getInterval(float nSigma){
+            
+            
+            for(int i=0; i<nlabs;i++){
+                for(int j=0; j<nlabs;j++){
+                 double mean= getMean(i, j);
+                 double sigma= Math.sqrt(getVar(i, j, j));
+
+                 if(mean < minMean)
+                     minMean=(float)mean;
+                 if(mean > maxMean)
+                     maxMean=(float)mean;
+                 if(sigma > maxSigma)
+                     maxSigma=(float)sigma;
+
+                }
+            }
+
+            Double lo= new Double(minMean-(maxSigma*nSigma));
+            Double hi= new Double(maxMean+(maxSigma*nSigma));
+            return new Pair(lo,hi);
+    }
+    
+    public float getMaxSigma(){
+        return this.maxSigma;
     }
 }
