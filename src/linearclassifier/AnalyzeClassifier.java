@@ -915,7 +915,7 @@ public class AnalyzeClassifier {
         mcInt.errorAnalysisBinInt(gmm,py,gmm.getDimension(),numTrials);
         PlotAPI plotIntegral = new PlotAPI("Risk vs trials","Num of trials", "Integral");   
 
-        ///*
+        /*
         fout.append("cf="+closedForm+";\n");
         fout.append("rmci=[");
         for(int i=100; i< 1000001;i+=100){
@@ -933,7 +933,7 @@ public class AnalyzeClassifier {
         fout.append("]\n");
         fout.flush();
          //*/
-        /*
+        ///*
         PlotAPI plotIntegral2 = new PlotAPI("Risk vs trials","Num of trials", "Integral"); 
         
         fout.append("rti=[");
@@ -951,7 +951,7 @@ public class AnalyzeClassifier {
         }
         fout.append("]\n");
         fout.flush();
-        */
+        //*/
         fout.close();
         return risk;  
     } catch (Exception ex) {
