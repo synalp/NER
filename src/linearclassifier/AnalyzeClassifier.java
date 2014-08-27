@@ -912,16 +912,16 @@ public class AnalyzeClassifier {
         float risk=0f,riskTrapezoidInt=0f;;
         NumericalIntegration mcInt = new NumericalIntegration();
         int numTrials=30000;
-        mcInt.errorAnalysisBinInt(gmm,py,gmm.getDimension(),numTrials);
+        //mcInt.errorAnalysisBinInt(gmm,py,gmm.getDimension(),numTrials);
         PlotAPI plotIntegral = new PlotAPI("Risk vs trials","Num of trials", "Integral");   
 
-        /*
+        ///*
         fout.append("cf="+closedForm+";\n");
         fout.append("rmci=[");
         for(int i=100; i< 1000001;i+=100){
             risk=0f;
             for(int y=0;y<py.length;y++){
-                    double integral=mcInt.integrateBinaryCase(gmm,1,CNConstants.UNIFORM, false,false,i);
+                    double integral=mcInt.integrateBinaryCase(gmm,y,CNConstants.UNIFORM, false,false,i);
                     risk+=py[y]*integral;
                     
             }
@@ -940,12 +940,13 @@ public class AnalyzeClassifier {
         for(int i=100; i< 100000;i+=100){
             riskTrapezoidInt=0f;
             for(int y=0;y<py.length;y++){
-                //double integral = mcInt.trapezoidIntegration(gmm, 1,Integer.MAX_VALUE);
-                double integral = mcInt.trapeziumMethod(gmm, 1,i);
+                //double integral = mcInt.trapezoidIntegration(gmm, y,Integer.MAX_VALUE);
+                double integral = mcInt.trapeziumMethod(gmm, y,1000);
+                System.out.println("py="+py[y]+" I["+y+"]="+integral);
                 riskTrapezoidInt+=py[y]*integral;
 
             }
-            plotIntegral2.addPoint(i, riskTrapezoidInt);
+            plotIntegral2.addPoint(1000, riskTrapezoidInt);
             fout.append(riskTrapezoidInt+";\n");
             System.out.println("rti="+riskTrapezoidInt+";");
         }
@@ -987,6 +988,34 @@ public class AnalyzeClassifier {
         System.out.println("rti="+riskTrapezoidInt+";");
 
     }      
+    
+    public void testingTerms(String sclassifier){
+        //final float[] priors = computePriors(sclassifier,model);
+        final float[] py = {0.9f,0.1f};
+        // get scores
+        GMMDiag gmm = new GMMDiag(2, py);
+        gmm.setClassifier(sclassifier);
+        gmm.train(this, marginMAP.get(sclassifier));
+        System.out.println("mean 00 "+gmm.getMean(0, 0));
+        System.out.println("mean 01 "+gmm.getMean(0, 1));
+        System.out.println("mean 10 "+gmm.getMean(1, 0));
+        System.out.println("mean 11 "+gmm.getMean(1, 1));
+        System.out.println("sigma 00 "+gmm.getVar(0, 0, 0));
+        System.out.println("sigma 01 "+gmm.getVar(0, 1, 1));
+        System.out.println("sigma 10 "+gmm.getVar(1, 0, 0));
+        System.out.println("sigma 11 "+gmm.getVar(1, 1, 1));
+        System.out.println("GMM trained");
+        
+        final float sqrtpi = (float)Math.sqrt(Math.PI);
+        final float pi = (float)Math.PI;
+        final float sigma00 = (float)Math.sqrt(gmm.getVar(0, 0, 0));
+        final float mean00  = (float)gmm.getMean(0, 0);
+        float t1 = py[0]*(1f-2f*mean00)/(2f*sigma00*sqrtpi) * (1f+(float)erf( (0.5-mean00)/sigma00 ));
+        NumericalIntegration nInt = new NumericalIntegration();
+        double t1NInt=  py[0]*nInt.trapeziumMethodNSquared(gmm, 3000);
+        System.out.println(t1+" vs "+t1NInt);
+        
+    }
     
     public float testingRForCorpus(String sclass, boolean iswiki){
                 //train the classifier with a small set of train files
@@ -1486,6 +1515,7 @@ public class AnalyzeClassifier {
         System.out.println("Closed form: "+risk);
 
         analyzing.checkingRNumInt(sclass, risk);  
+        //analyzing.testingTerms(sclass);
         /*
         risk = analyzing.computeROfThetaNumInt(sclass,true);
         System.out.println("Risk MCIntegration: "+risk);

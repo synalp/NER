@@ -532,7 +532,10 @@ public class NumericalIntegration {
                     new UnivariateFunction() {
                     public double value(double x)  {
                         //return easyFunction(x);
-                        return getBinaryConstrFunction(gmm,(float) x,k);
+                        
+                        double y=getBinaryConstrFunction(gmm,(float) x,k);
+                        //System.out.println("x="+x+" y="+y);
+                        return y;
                     }
                 };
                 
@@ -558,9 +561,34 @@ public class NumericalIntegration {
         sum += (getBinaryConstrFunction(gmm,(float) lo,k) + getBinaryConstrFunction(gmm,(float) hi,k)) / 2.0;
         return sum * range / nFloat;
     }    
-    
+    public  double trapeziumMethodNSquared(final GMMDiag gmm,  int n){
+        
+        Pair<Double,Double> pair= gmm.getInterval(MAXVAL);
+        double lo = pair.first().doubleValue();
+        //double lo = -Double.MAX_VALUE;
+        double hi = 0.5;
+        System.out.println("["+lo+","+hi+"]");          
+        double range = hi-lo;
+        double nFloat = (double)n;
+        double sum = 0.0;
+        //String xplot= "x=[\n";
+        //String yplot= "y=[\n";
+        for (int i = 1; i < n; i++){
+          double x = lo + range * (double)i / nFloat;
+          //xplot+=x+";\n";
+          double y=getNSquareTerm(gmm,(float) x);
+          //yplot+=y+";\n";
+          sum += y;
+        }
+        //xplot+="]";yplot+="]";
+        //System.out.println(xplot);
+        //System.out.println(yplot);
+        sum += (getNSquareTerm(gmm,(float) lo) + getNSquareTerm(gmm,(float) hi)) / 2.0;
+        return sum * range / nFloat;
+    }     
     public double getBinaryConstrFunction(GMMDiag gmm, float x, int k){
             
+        
         double prodOfGauss=gmm.getLike(k,0, x)*gmm.getLike(k,1, -x);
         double lossTerm=0.0;
         double val=0.0;
@@ -579,5 +607,16 @@ public class NumericalIntegration {
     }
     public double easyFunction(double x){
         return x*x;
+    }
+    
+    /*
+     * Testing closed form terms vs numerical integration terms
+     */
+    
+    public double getNSquareTerm(GMMDiag gmm, float x){
+       double nsquare=gmm.getLike(0,0, x)*gmm.getLike(0,0, x); 
+       
+       return nsquare;
+        
     }
 }

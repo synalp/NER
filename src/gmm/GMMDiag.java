@@ -71,13 +71,19 @@ public class GMMDiag extends GMM {
      * 
      * @param y first dimension of  mu
      * @param l second dimension of mu
-     * @param alphal x
+     * @param x x
      * @return 
      */
-    public double getLike(int y, int l, float alphal){
-        double inexp= ((alphal-means[y][l])*(alphal-means[y][l]))/(2*diagvar[y][l]);
-        double loglike=- gconst[y] - inexp;
-        double like = logMath.logToLinear((float)loglike);
+    public double getLike(int y, int l, float x){
+        
+        double inexp= Math.pow((x-means[y][l]),2)/(2.0*diagvar[y][l]);
+        double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y][l]);
+        co/=2.0;
+        
+        double loglike=- co - inexp;
+        //double like = logMath.logToLinear((float)loglike);
+        double like = Math.exp(loglike);
+        //System.out.println("mean["+y+"]["+l+"]"+means[y][l]+" var["+y+"]["+l+"]"+diagvar[y][l]+" gconst["+y+"]="+gconst[y]+" constant="+co+ " inexp "+inexp+ "loglike "+loglike+ "like "+like);
         return like;
     }
     
