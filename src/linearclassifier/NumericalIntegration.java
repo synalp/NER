@@ -523,7 +523,7 @@ public class NumericalIntegration {
             Pair<Double,Double> pair= gmm.getInterval(MAXVAL);
             double lo = pair.first().doubleValue();
             double hi = pair.second().doubleValue();
-            System.out.println("["+lo+","+hi+"]");
+            //System.out.println("["+lo+","+hi+"]");
                 //Trapezoidal integration
                 //integrate(UnivariateRealFunction f, double min, double max) 
                 TrapezoidIntegrator tIntegr= new TrapezoidIntegrator();
@@ -549,7 +549,7 @@ public class NumericalIntegration {
         Pair<Double,Double> pair= gmm.getInterval(MAXVAL);
         double lo = pair.first().doubleValue();
         double hi = pair.second().doubleValue();
-        System.out.println("["+lo+","+hi+"]");          
+        //System.out.println("["+lo+","+hi+"]");          
         double range = hi-lo;
         double nFloat = (double)n;
         double sum = 0.0;

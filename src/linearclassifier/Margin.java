@@ -39,6 +39,10 @@ public class Margin {
     public void setWeights(double[][] weightss){
         this.weights=weightss;
     }
+    public void updateWeights(double[][] weightss){
+        for(int l=0; l< weightss.length;l++)
+          this.weights[l]=Arrays.copyOf(weightss[l],weightss[l].length);
+    }    
     
     public double[][] getWeights(){
         return this.weights;
@@ -101,6 +105,13 @@ public class Margin {
         }
         return scores;
     }
+ 
+    public double[] getScoreForAllInstancesLabel1(List<List<Integer>> features,double[] scores){
+        for(int i=0; i< features.size();i++){
+            scores[i]=getScore(features.get(i),1);
+        }
+        return scores;
+    }  
     
     public int classify(int[] feats) {
         int bestlab=-1;

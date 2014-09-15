@@ -51,8 +51,8 @@ public class AnalyzeSVMClassifier implements Serializable{
     public static String TESTFILE="groups.%S.tab.treek.test";
     public static String INCHUNKER="chunk/%S.in.chunker";
     public static String OUTCHUNKER="chunk/%S.out.chunker";
-    public static String LISTTRAINFILES="esterParseTrainETB.xmll";//"esterParseTrainALL.xmll";
-    public static String LISTTESTFILES="esterParseTestETB.xmll"; //"esterParseTestALL.xmll";
+    public static String LISTTRAINFILES="esterParseTrainALL.xmll";//"esterParseTrainETB.xmll";//
+    public static String LISTTESTFILES="esterParseTestALL.xmll";//"esterParseTestETB.xmll"; //
     public static String UTF8_ENCODING="UTF8";
     public static String PROPERTIES_FILE="streek.props";
     public static String NUMFEATSINTRAINFILE="2-";
@@ -502,13 +502,13 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     /*
                                     if(!dictFeatures.containsKey(word.getContent()))
                                         dictFeatures.put(word.getContent(), dictFeatures.size()+1);
-                                    */
+                                    
                                     if(!dictFeatures.containsKey(word.getPosTag().getFName()))
                                         dictFeatures.put(word.getPosTag().getFName(), dictFeatures.size()+1);
                                     
                                     if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
                                         dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);  
-                                    
+                                    */
                                     List<String> addFeats=new ArrayList<>();
                                     if(stdictTrainFeatures.containsKey(wordCounter))
                                         addFeats = stdictTrainFeatures.get(wordCounter);
@@ -1370,9 +1370,9 @@ public class AnalyzeSVMClassifier implements Serializable{
          //svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
          //Pruned trees
          //classifier type, isvector, isCW, isTopDown, isBottomUp, isPOS
-         svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, false,false,true,true,true);
+         //svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, false,false,true,true,true);
          //trees as string features for polynomial kernels
-         //svmclass.savingWordsPolyFiles(CNConstants.PRNOUN);
+         svmclass.savingWordsPolyFiles(CNConstants.PRNOUN);
          
          
      }
