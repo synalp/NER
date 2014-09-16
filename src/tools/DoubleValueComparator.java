@@ -22,11 +22,11 @@ public class DoubleValueComparator implements Comparator {
         public int compare(Object a, Object b) {
 
             if ((Double) base.get(a) > (Double) base.get(b)) {
-                return -1;
+                return 1;
             } else if ((Double) base.get(a) == (Double) base.get(b)) {
                 return 0;
             } else {
-                return 1;
+                return -1;
             }
         }
     }

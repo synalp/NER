@@ -43,6 +43,10 @@ public class Margin {
     public void setWeights(double[][] weightss){
         this.weights=weightss;
     }
+    public void updateWeights(double[][] weightss){
+        for(int l=0; l< weightss.length;l++)
+          this.weights[l]=Arrays.copyOf(weightss[l],weightss[l].length);
+    }    
     
     public double[][] getWeights(){
         return this.weights;
