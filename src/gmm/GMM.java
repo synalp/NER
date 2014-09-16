@@ -87,7 +87,12 @@ public class GMM {
         double loglike=0;
         for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
             List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
-            for (int lab=0;lab<nlabs;lab++) z[lab] = margin.getScore(featuresByInstance,lab);
+            for (int lab=0;lab<nlabs;lab++){ 
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(instance, lab);
+                else
+                    z[lab] = margin.getScore(featuresByInstance,lab);
+            }
             double loglikeEx=logMath.linearToLog(0);
             for (int y=0;y<nlabs;y++) {
                 Arrays.fill(tmp, 0);
@@ -115,7 +120,10 @@ public class GMM {
         for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
             List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
             for (int lab=0;lab<nlabs;lab++) {
-                z[lab] = margin.getScore(featuresByInstance,lab);
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(instance, lab);
+                else
+                    z[lab] = margin.getScore(featuresByInstance,lab);
             }
             for (int i=0;i<nlabs;i++) {
                 means[0][i]+=z[i];
@@ -129,7 +137,11 @@ public class GMM {
         for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
             List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
             for (int lab=0;lab<nlabs;lab++) {
-                z[lab] = margin.getScore(featuresByInstance,lab);
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(instance, lab);
+                else
+                    z[lab] = margin.getScore(featuresByInstance,lab);
+                
                 tmp[lab] = z[lab]-means[0][lab];
             }
             for (int i=0;i<nlabs;i++) {
