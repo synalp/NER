@@ -1418,6 +1418,7 @@ public class AnalyzeClassifier {
         try {
             testFile = new BufferedReader(new InputStreamReader(new FileInputStream(TESTFILE.replace("%S", CNConstants.PRNOUN)), UTF8_ENCODING));
             int tp=0, tn=0, fp=0, fn=0;
+            
             for(;;){
 
                 String line = testFile.readLine();   
@@ -1432,13 +1433,19 @@ public class AnalyzeClassifier {
                 if(pos.equals(CNConstants.POSTAGNAM) && label.equals(CNConstants.PRNOUN))
                     tp++;
                 
+                
                 if(pos.equals(CNConstants.POSTAGNAM)&& label.equals(CNConstants.NOCLASS))
                     fp++;
+                    
+                 
                 
                 if(!pos.equals(CNConstants.POSTAGNAM) &&label.equals(CNConstants.PRNOUN))
                     fn++;
+                    
+                
                 if(!pos.equals(CNConstants.POSTAGNAM) && label.equals(CNConstants.NOCLASS))
                     tn++;
+                
 
             }
             double precision= (double) tp/(tp+fp);
@@ -1448,6 +1455,8 @@ public class AnalyzeClassifier {
             System.out.println(" POSTAG PN precision: "+precision);
             System.out.println(" POSTAG PN recall: "+recall);
             System.out.println(" POSTAG PN f1: "+f1);
+ 
+
             
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -1465,23 +1474,32 @@ public class AnalyzeClassifier {
         HashMap<String,Integer> wordDict=deserializingWords();
         HashMap<Integer,String> wordStr=new HashMap<>();
         for(String key:wordDict.keySet()){
+            //System.out.println("ID\t"+wordDict.get(key)+"\tWORD\t"+key);
             wordStr.put(wordDict.get(key), key);
         }
         HashMap<String,String> recLabels= new HashMap<>();
         
         BufferedReader testFile = null;
-        BufferedReader lpFile=null;
+        BufferedReader lpFile=null, input=null;
         try {
             testFile = new BufferedReader(new FileReader(TESTFILE.replace("%S",CNConstants.PRNOUN))); //label_prop_output_100iters
-            lpFile = new BufferedReader(new InputStreamReader(new FileInputStream("lprop/label_prop_output_catdist_w"), UTF8_ENCODING));
+            lpFile = new BufferedReader(new InputStreamReader(new FileInputStream("lprop/label_prop_output_catdist_pos"), UTF8_ENCODING));
+            input = new BufferedReader(new InputStreamReader(new FileInputStream("lprop/input_graph_pos"), UTF8_ENCODING));
             
-            int tp=0, tn=0, fp=0, fn=0;
+            
             //read the label propagation output
             for(;;){
                String lpline = lpFile.readLine();
                if(lpline== null)
                     break; 
                
+               ///*
+               String inputline= input.readLine();
+               String[] graph= inputline.split("\\t");
+               int node1=Integer.parseInt(graph[0].substring(1));
+               int node2=Integer.parseInt(graph[1].substring(1));
+               System.out.println(wordStr.get(node1)+"-"+ wordStr.get(node2)+"-"+graph[2]);
+               //*/        
                 String values[] = lpline.split("\\t");
                 int wordid=Integer.parseInt(values[0].substring(1));
                 String[] recvals= values[3].split(" ");
@@ -1492,16 +1510,21 @@ public class AnalyzeClassifier {
                 String maxlabel="";
                 double maxval=Integer.MIN_VALUE;
                 for(int i=0; i< recvals.length;i+=2){
+		    String lbl=recvals[i];
+	            if(lbl.startsWith("__DUM"))
+			continue;
                     double val = Double.parseDouble(recvals[i+1]);
                     if(val>maxval){
                         maxval=val;
                         maxlabel=recvals[i];
                     }    
                 }
-
+                //System.out.println("ID\t"+wordid+"\tWORD\t"+wordStr.get(wordid)+"\tREC LABEL\t"+maxlabel);
                 recLabels.put(wordStr.get(wordid), (maxlabel.equals("L1"))?CNConstants.PRNOUN:CNConstants.NOCLASS);              
-                System.out.println("label: " + maxlabel + "value " + maxval);
-            }    
+                //System.out.println("label: " + maxlabel + "value " + maxval);
+            }   
+            int tp=0, tn=0, fp=0, fn=0;
+            int tp0=0, tn0=0, fp0=0, fn0=0;
             for(;;){
                 String line = testFile.readLine();   
                 
@@ -1513,26 +1536,46 @@ public class AnalyzeClassifier {
                 String values[] = line.split("\\t");
                 String label = values[0];
                 String recognizedLabel = recLabels.get(values[1]);
+                //System.out.println("ID\t"+wordDict.get(values[1])+"\tWORD\t"+values[1]+"\tREC LABEL\t"+recognizedLabel+"\tTRUE LABEL\t"+label);
+                if(recognizedLabel.equals(CNConstants.PRNOUN) && label.equals(CNConstants.PRNOUN)){
+		    //System.out.println("tp word: "+ values[1]+" "+recognizedLabel);	
+                    tp++;tn0++;
+		}
                 
-                if(recognizedLabel.equals(CNConstants.PRNOUN) && label.equals(CNConstants.PRNOUN))
-                    tp++;
-                
-                if(recognizedLabel.equals(CNConstants.PRNOUN)&& label.equals(CNConstants.NOCLASS))
-                    fp++;
-                
-                if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.PRNOUN))
-                    fn++;
-                if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.NOCLASS))
-                    tn++;
+                if(recognizedLabel.equals(CNConstants.PRNOUN)&& label.equals(CNConstants.NOCLASS)){
+                    fp++;fn0++;
+                }
+                if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.PRNOUN)){
+                    fn++;fp0++;
+                }    
+                if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.NOCLASS)){
+                    tn++;tp0++;
+                }    
 
             }
             double precision= (double) tp/(tp+fp);
             double recall= (double) tp/(tp+fn);
             double f1=(2*precision*recall)/(precision+recall);
+            double accuracy=(double) (tp+tn)/(tp+tn+fp+fn);
             
+            System.out.println("confusion matrix:\n ["+ tp+","+fp+"\n"+fn+","+tn+"]");
+            System.out.println("confusion matrix:\n ["+ tp0+","+fp0+"\n"+fn0+","+tn0+"]");
             System.out.println("  PN precision: "+precision);
             System.out.println("  PN recall: "+recall);
             System.out.println("  PN f1: "+f1);
+            System.out.println("  Accuracy: "+accuracy);
+            
+            
+            precision= (double) tp0/(tp0+fp0);
+            recall= (double) tp0/(tp0+fn0);
+            f1=(2*precision*recall)/(precision+recall);
+            accuracy=(double) (tp0+tn0)/(tp0+tn0+fp0+fn0);
+            
+            System.out.println(" NO precision: "+precision);
+            System.out.println(" NO recall: "+recall);
+            System.out.println(" NO f1: "+f1);  
+            
+            System.out.println("GENERAL ACCURACY "+ accuracy);
             
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -1953,9 +1996,9 @@ public class AnalyzeClassifier {
          
             train = new BufferedReader(new FileReader(TRAINFILE.replace("%S",CNConstants.PRNOUN)));
             test = new BufferedReader(new FileReader(TESTFILE.replace("%S",CNConstants.PRNOUN))); 
-            outInput = new OutputStreamWriter(new FileOutputStream("lprop/input_graph_w"),UTF8_ENCODING);
-            outGold = new OutputStreamWriter(new FileOutputStream("lprop/gold_labels_w"),UTF8_ENCODING);
-            outSeed = new OutputStreamWriter(new FileOutputStream("lprop/seeds_w"),UTF8_ENCODING);
+            outInput = new OutputStreamWriter(new FileOutputStream("lprop/input_graph_pos2"),UTF8_ENCODING);
+            outGold = new OutputStreamWriter(new FileOutputStream("lprop/gold_labels_pos2"),UTF8_ENCODING);
+            outSeed = new OutputStreamWriter(new FileOutputStream("lprop/seeds_pos2"),UTF8_ENCODING);
         
         int linecounter=1;
         
@@ -2005,8 +2048,8 @@ public class AnalyzeClassifier {
             goldTest.put(wordt, categ);
             List<Double> numFeats=new ArrayList<>();
             numFeats.add(Double.parseDouble(dictFeatures.get(pos).toString()));
-            numFeats.add(Double.parseDouble(dictFeatures.get(wshape.trim()).toString()));
-            numFeats.add(Double.parseDouble(dictFeatures.get(lngram.trim()).toString()));
+            //numFeats.add(Double.parseDouble(dictFeatures.get(wshape.trim()).toString()));
+            //numFeats.add(Double.parseDouble(dictFeatures.get(lngram.trim()).toString()));
             vectorfeats.put(wordt,numFeats);
 
             linecounter++;
@@ -2015,7 +2058,7 @@ public class AnalyzeClassifier {
         serializingWords(dictWords);
         System.out.println("TOTALOFLINES # "+linecounter);
         System.out.println("TOTALOFNODES(words) # "+vectorfeats.size());
-        double[][] feats= new double[linecounter][3];
+        double[][] feats= new double[linecounter][1];
 
         
         for(String key:vectorfeats.keySet()){
@@ -2028,13 +2071,16 @@ public class AnalyzeClassifier {
         }
         
 ///*        
-        //double[][] relallnodes=new double[linecounter][3];
+        //double[][] relallnodes=new double[linecounter][1];
         Long before=System.currentTimeMillis();
 	System.out.println("Before computing all x all distance "+before);
         //Euclidean Distance of one word with the rest
         //EuclideanDistance eDist = new EuclideanDistance();
         int outercounter=0;
         for(String key1:vectorfeats.keySet()){
+            if(key1.equals("Fabrice"))
+                System.out.println("entro : "+ vectorfeats.get("Fabrice"));
+            
             TreeMap<Integer,Double> nodesrel=new TreeMap<>();
             //relatednodes.put(i,relsni);
             for(String key2:vectorfeats.keySet()){
@@ -2046,50 +2092,17 @@ public class AnalyzeClassifier {
                 //double dist = eDist.compute(feats[dictWords.get(key1)], feats[dictWords.get(key2)]);
                 //nodesrel.put(dictWords.get(key2),dist);
                 double dist=0.0;
-                double[] w= {0.4,0.4,0.2};
+                //double[] w= {0.4,0.4,0.2};
                 for(int fs1=0;fs1<feats[dictWords.get(key1)].length;fs1++){
                     if(feats[dictWords.get(key1)][fs1]==feats[dictWords.get(key2)][fs1])
-                        dist+=1.0*w[fs1];
+                        dist+=1.0;//*w[fs1];
                     else
-                        dist+=2.0*w[fs1];
+                        dist+=4.0;//*w[fs1];
                     
                 }
-                nodesrel.put(dictWords.get(key2),dist);
-                //relsni.put(j, dist);
-                //if(relatednodes.containsKey(j))
-                //    relsnj=relatednodes.get(j);
-                                 
-                //relsnj.put(i,dist);
-                //relatednodes.put(j, relsnj);
-                //relallnodes[i-1][j-1]=dist;
-                //relallnodes[j-1][i-1]=dist;
-                //System.out.println(key1+"-"+key2);
-
-            }
-                //relatednodes.put(i,relsn);
                 
-            DoubleValueComparator bvc = new DoubleValueComparator(nodesrel);
-            TreeMap<Integer, Double> sortedDist = new TreeMap<>(bvc);
-            sortedDist.putAll(nodesrel);
-
-            int counter =0;
-            for(Integer keys:sortedDist.keySet()){
-                Double sDist=sortedDist.get(keys);
-                if(sDist==null)
-                    continue;
-                
-                
-                    
-                
-                //relsn.put(key,sortedDist.get(key));
-                outInput.append("N"+dictWords.get(key1)+"\tN"+keys+"\t"+decFormat.format(sDist.doubleValue())+"\n");
-                outInput.flush();  
-
-                //if(counter>=100)
-                //    break;
-                
-                counter++;            
-            
+                outInput.append("N"+dictWords.get(key1)+"\tN"+dictWords.get(key2)+"\t"+decFormat.format(dist)+"\n");
+                outInput.flush();                  
 
             }
             
@@ -2292,8 +2305,8 @@ public class AnalyzeClassifier {
         //analyzing.checkingMCTrapezoidNumInt(sclass);
         //analyzing.generatingArffData(true);
         //analyzing.evaluationKMEANS();
-        //analyzing.generatingLabelPropGraph();
-        analyzing.evaluatingLabelProp();
+        analyzing.generatingLabelPropGraph();
+        //analyzing.evaluatingLabelProp();
     }
   
 }
