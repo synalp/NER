@@ -123,8 +123,8 @@ public class Margin {
 
         } 
         generatedScores=genScores;
-        Histoplot.showit(scores0, ninst);
-        Histoplot.showit(scores1, ninst);
+        //Histoplot.showit(scores0, ninst);
+        //Histoplot.showit(scores1, ninst);
     }
 
     public double[] getScoreForAllInstancesLabel0(List<List<Integer>> features,double[] scores){
