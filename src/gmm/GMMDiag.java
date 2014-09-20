@@ -65,10 +65,14 @@ public class GMMDiag extends GMM {
     protected double getLoglike(int y, float[] z) {
         for (int k=0;k<nlabs;k++)
             tmp[k]=(z[k]-means[y][k])/diagvar[y][k];
-        double o=0;
-        for (int j=0;j<nlabs;j++) o += (z[j]-means[y][j])*tmp[j];
-        o/=2.0;
-        double loglikeYt = - gconst[y] - o;
+        double sumsqdiffy=0;
+        for (int j=0;j<nlabs;j++)
+            sumsqdiffy += (z[j]-means[y][j])*tmp[j];
+        sumsqdiffy/=2.0;
+            
+        
+        double loglikeYt = - gconst[y] - sumsqdiffy;
+        
         return loglikeYt;
     }
     /**
@@ -325,16 +329,7 @@ public class GMMDiag extends GMM {
                 
             }
             
-            /*
-            int besty=0;
-            for (int y=1;y<nlabs;y++)
-                if (tmp[y]>tmp[besty]) besty=y;
-            nex[besty]++;
-            ex2lab[inst]=besty;
-            for (int i=0;i<nlabs;i++) {
-                means[besty][i]+=z[i];
-            }*/
-            
+             
             for (int y=0;y<nlabs;y++){ 
                 nex[y]++;
                 //ex2lab[inst]=y;
@@ -359,7 +354,7 @@ public class GMMDiag extends GMM {
                 
                 
         }
-        System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
+        //System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
         for (int inst=0;inst<analyzer.getNumberOfInstances();inst++) {
             List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, inst);
             for (int i=0;i<nlabs;i++) {
@@ -368,14 +363,7 @@ public class GMMDiag extends GMM {
                 else                
                     z[i] = margin.getScore(featuresByInstance,i);
             }
-            /*
-            int besty = ex2lab[inst];
-            
-            for (int i=0;i<nlabs;i++) {
-                tmp[i] = z[i]-means[besty][i];
-                diagvar[besty][i]+=tmp[i]*tmp[i];
-                
-            }*/
+
             float normConst = logMath.linearToLog(0);
             for (int y=0;y<nlabs;y++){ 
                 tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
@@ -428,21 +416,25 @@ public class GMMDiag extends GMM {
                 diagvar[y][i]=diagvar[0][i];
             }
         }
+        
         for (int y=0;y<nlabs;y++) {
-            if (y%2==0)
-                for (int i=0;i<nlabs;i++)
-                    means[y][i]+=Math.sqrt(diagvar[y][i])*ratio;
-            else
-                for (int i=0;i<nlabs;i++)
-                    means[y][i]-=Math.sqrt(diagvar[y][i])*ratio;
+            if (y%2==0){
+                means[y][0]+=Math.sqrt(diagvar[y][0])*ratio;
+                means[y][1]=-means[y][0];
+            }else{
+                means[y][1]-=Math.sqrt(diagvar[y][1])*ratio;
+                means[y][0]=-means[y][1];
+            }    
         }
+        System.out.println("split means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
+        
     }
     /**
      * after splitting by trainViterbi
      * means00 = mean of scores computed with model 0 = mu00 = mu-y=0-NO (mu_kk)
      * means01 = mean of scores computed with model 1 = mu01 = mu-y=0-YES (mu_kl)
      * means10 = mean of scores computed with model 0 = mu10 = mu-y=1-NO (mu_kl)
-     * means11 = mean of scores computed with model 1 = mu01 = mu-y=1-YES (mu_kk)
+     * means11 = mean of scores computed with model 1 = mu11 = mu-y=1-YES (mu_kk)
      * 
      * @param analyze
      * @param margin 
@@ -486,28 +478,29 @@ public class GMMDiag extends GMM {
             }
         }
         assert analyze.getNumberOfInstances()>0;
-        for (int i=0;i<nlabs;i++) {
-            diagvar[0][i] /= (double)analyze.getNumberOfInstances();
-            if (diagvar[0][i] < minvar) diagvar[0][i]=minvar;
-            
-        }
-        
-        assert analyze.getNumberOfInstances()>0;
+
         
         // precompute gconst
         /*
          * log de
          * (2pi)^{d/2} * |Covar|^{1/2} 
          */
-        double det=1;
         for (int i=0;i<nlabs;i++) {
             diagvar[0][i] /= (double)analyze.getNumberOfInstances();
             if (diagvar[0][i] < minvar) diagvar[0][i]=minvar;
-            det *= diagvar[0][i];
+            for (int j=1;j<nlabs;j++) diagvar[j][i]=diagvar[0][i];
+            
         }
-        double co=(double)nlabs*logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(det);
-        co/=2.0;
-        for (int i=0;i<nlabs;i++) gconst[i]=co;  
+
+        for (int i=0;i<nlabs;i++){
+            double co=(double)nlabs*logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[0][i]);
+            co/=2.0;            
+            gconst[i]=co;
+            //double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y][l]);
+            //co/=2.0;
+        }  
+        System.out.println("train1gauss means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
+        System.out.println("train1gauss var=["+diagvar[0][0]+","+diagvar[0][1]+";\n"+diagvar[1][0]+","+diagvar[1][1]+"]");
     }
     
     
@@ -525,7 +518,7 @@ public class GMMDiag extends GMM {
             loglike = getLoglike(analyzer, margin);
             sqerr = Double.NaN;
             if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-            //System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ " sqerr "+sqerr);
+            System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ " sqerr "+sqerr);
         }
     }
     

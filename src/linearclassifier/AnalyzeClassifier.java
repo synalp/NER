@@ -482,6 +482,12 @@ public class AnalyzeClassifier {
         return null;
     }
     
+    public Margin getMargin(String classifier){
+        if(marginMAP.containsKey(classifier))
+            return marginMAP.get(classifier);
+        return null;
+    }
+    
     /**
      * Return the features per instance associated at one classifier
      * @param classifier
@@ -2119,31 +2125,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
    
     }   
 
-    public void testingGMM(){
-        //final float[] priors = computePriors(sclassifier,model);
-        List<List<Integer>> featsperInst = new ArrayList<>(); 
-        List<Integer> labelperInst = new ArrayList<>();        
-        final float[] priors = {0.9f,0.1f};
-        String sclass=CNConstants.PRNOUN;
-        
-        trainOneClassifier(sclass,false);
-        LinearClassifier model = modelMap.get(sclass);
-        getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-        featInstMap.put(sclass,featsperInst);
-        lblInstMap.put(sclass, labelperInst);         
-        Margin margin = marginMAP.get(sclass);
-        Margin.GENERATEDDATA=true;
-        margin.generateRandomScore(labelperInst.size());
-        // get scores
-        GMMDiag gmm = new GMMDiag(2, priors);
-        gmm.setClassifier(sclass);
-        gmm.train(this, margin);
-        System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
-        +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
-        System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
-        +gmm.getVar(1, 0, 0)+" , "+gmm.getVar(1, 1, 1));
-        System.out.println("GMM trained");        
-    }
+
    
 
     
@@ -2494,8 +2476,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
         //mfile.delete();
         Long beforeUnsup=System.currentTimeMillis();
-        analyzing.wkSClassStochCoordGr(CNConstants.PRNOUN,false);
-        //analyzing.unsupervisedClassifier(CNConstants.PRNOUN,false);
+        //analyzing.wkSClassStochCoordGr(CNConstants.PRNOUN,false);
+        analyzing.unsupervisedClassifier(CNConstants.PRNOUN,false);
         //analyzing.chekingUnsupClassifierNInt(CNConstants.PRNOUN,false);
         //analyzing.checkingRvsTheta(CNConstants.PRNOUN,false);
         Long afterUnsup=System.currentTimeMillis();
@@ -2552,7 +2534,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
 
         //analyzing.printingValuesInOctave();
         //Testing GMM
-        analyzing.testingGMM();
+        
 
         //analyzing.generatingArffData(true);
         //analyzing.evaluationKMEANS();
