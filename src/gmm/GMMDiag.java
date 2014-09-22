@@ -528,7 +528,7 @@ public class GMMDiag extends GMM {
             loglike = getLoglike(analyzer, margin);
             sqerr = Double.NaN;
             if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-            System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ " sqerr "+sqerr);
+            //System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ " sqerr "+sqerr);
         }
     }
     
