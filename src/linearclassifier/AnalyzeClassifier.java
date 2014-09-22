@@ -394,6 +394,9 @@ public class AnalyzeClassifier {
             }
         }
     }
+    public void setNumberOfInstances(int numInst){
+        this.numInstances=numInst;
+    }
     /**
      * Compute the score F_{\theta}(X) per category
      * Store the scores in an array, that is then analyzed for seen

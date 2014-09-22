@@ -33,6 +33,9 @@ public class Margin {
     //private double[] sumfeatsPerInst;
     private float[][] generatedScores;
 
+    public Margin(){
+        
+    }
     
     public Margin(LinearClassifier model) {
         weights=model.weights();
@@ -114,7 +117,7 @@ public class Margin {
         Arrays.fill(scores0, 0.0);
         Arrays.fill(scores1, 0.0);*/
         float[][] genScores= new float[ninst][2];
-        NormalDistribution distr0 = new NormalDistribution(8, 1);
+        NormalDistribution distr0 = new NormalDistribution(8, 0.5);
         NormalDistribution distr1 =  new NormalDistribution(2, 0.5);
         Random r = new Random();
         for(int i=0; i<ninst; i++){
