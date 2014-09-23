@@ -49,5 +49,11 @@ package tools;
     //features
     public static String CURRWORD="CW_";
     public static int    tree_level_threshold=8;
+    public static String RECOEXT=".utf8";
+    public static final String  DEFAULT_TREETAGGER="tagger";
+    //Tree tagger configuration
+    public static final String TAGGER_REL="postag";
+    public static final String TREETAGGERPAR="/lib/french-utf8.par";
+    public static final String TREETAGGERBIN="/lib/french-par-linux-3.2-utf8.bin";    
     
 }

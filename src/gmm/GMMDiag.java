@@ -1,10 +1,14 @@
 package gmm;
 
+
+import edu.stanford.nlp.classify.LinearClassifier;
+
 import edu.stanford.nlp.util.Pair;
 import java.util.Arrays;
 import java.util.List;
 import linearclassifier.AnalyzeClassifier;
 import linearclassifier.Margin;
+import tools.CNConstants;
 
 
 /**
@@ -61,10 +65,14 @@ public class GMMDiag extends GMM {
     protected double getLoglike(int y, float[] z) {
         for (int k=0;k<nlabs;k++)
             tmp[k]=(z[k]-means[y][k])/diagvar[y][k];
-        double o=0;
-        for (int j=0;j<nlabs;j++) o += (z[j]-means[y][j])*tmp[j];
-        o/=2.0;
-        double loglikeYt = - gconst[y] - o;
+        double sumsqdiffy=0;
+        for (int j=0;j<nlabs;j++)
+            sumsqdiffy += (z[j]-means[y][j])*tmp[j];
+        sumsqdiffy/=2.0;
+            
+        
+        double loglikeYt = - gconst[y] - sumsqdiffy;
+        
         return loglikeYt;
     }
     /**
@@ -101,11 +109,19 @@ public class GMMDiag extends GMM {
         double loglike=0;
         for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
             List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
-            for (int lab=0;lab<nlabs;lab++) z[lab] = margin.getScore(featuresByInstance,lab);
+            for (int lab=0;lab<nlabs;lab++){
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(instance, lab);
+                else
+                    z[lab]=z[lab] = margin.getScore(featuresByInstance,lab);
+            }
             double loglikeEx=logMath.linearToLog(0);
             for (int y=0;y<nlabs;y++) {
                 double loglikeYt = logWeights[y] + getLoglike(y, z);
-                loglikeEx = logMath.addAsLinear((float)loglikeEx, (float)loglikeYt);
+                if(y==0)
+                    loglikeEx=loglikeYt;
+                else
+                    loglikeEx = logMath.addAsLinear((float)loglikeEx, (float)loglikeYt);
             }
             loglike +=loglikeEx;
         }
@@ -123,7 +139,10 @@ public class GMMDiag extends GMM {
         for (int ex=0;ex<analyzer.getNumberOfInstances();ex++) {
             List<Integer> instance = analyzer.getFeaturesPerInstance(classifier, ex);
             for (int lab=0;lab<nlabs;lab++) {
-                z[lab] = margin.getScore(instance,lab);
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(ex, lab);
+                else
+                    z[lab] = margin.getScore(instance,lab);
             }
             int goldLab = analyzer.getLabelsPerInstance(classifier,ex);
             nex[goldLab]++;
@@ -144,7 +163,10 @@ public class GMMDiag extends GMM {
         for (int ex=0;ex<analyzer.getNumberOfInstances();ex++) {
             List<Integer> features = analyzer.getFeaturesPerInstance(classifier, ex);
             for (int i=0;i<nlabs;i++) {
-                z[i] = margin.getScore(features,i);
+                if(Margin.GENERATEDDATA)
+                    z[i] = margin.getGenScore(ex, i);
+                else
+                    z[i] = margin.getScore(features,i);
             }
             int goldLab = analyzer.getLabelsPerInstance(classifier,ex);
             for (int i=0;i<nlabs;i++) {
@@ -175,7 +197,8 @@ public class GMMDiag extends GMM {
     }
     
     
-    public void trainViterbi(AnalyzeClassifier analyzer, Margin margin) {
+
+    public void trainViterbi0(AnalyzeClassifier analyzer, Margin margin) {
         final float[] z = new float[nlabs];
         final GMMDiag gmm0 = this.clone();
         for (int i=0;i<nlabs;i++) {
@@ -187,7 +210,7 @@ public class GMMDiag extends GMM {
         Arrays.fill(nex, 0);
         
         int[] ex2lab = new int[analyzer.getNumberOfInstances()];
-        float normConst=0f;
+        
         for (int inst=0;inst<analyzer.getNumberOfInstances();inst++) {
             List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, inst);
             for (int lab=0;lab<nlabs;lab++) {
@@ -198,7 +221,7 @@ public class GMMDiag extends GMM {
             //logWeights has already the priors which is the extra pattern pi
             for (int y=0;y<nlabs;y++){ 
                 tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
-                normConst+=logMath.logToLinear((float)tmp[y]);
+                
                 
             }
             
@@ -269,7 +292,14 @@ public class GMMDiag extends GMM {
      * 
      * @param analyzer
      */
-    public void trainViterbi2(AnalyzeClassifier analyzer, Margin margin) {
+
+   
+    /**
+     * reassigns each frame to one mixture, and retrain the mean and var
+     * 
+     * @param analyzer
+     */
+    public void trainViterbi(AnalyzeClassifier analyzer, Margin margin) {
         final float[] z = new float[nlabs];
         final GMMDiag gmm0 = this.clone();
         for (int i=0;i<nlabs;i++) {
@@ -277,87 +307,98 @@ public class GMMDiag extends GMM {
             Arrays.fill(diagvar[i], 0);
         }
         int[] nex = new int[nlabs];
-        float[] nk = new float[nlabs];
+        double[] nk = new double[nlabs];
+        
         Arrays.fill(nex, 0);
-        Arrays.fill(nk, 0);
-        int[] ex2lab = new int[analyzer.getNumberOfInstances()];
-        float normConst=0f;
+        Arrays.fill(nk, 0.0);
+        
+               
         for (int inst=0;inst<analyzer.getNumberOfInstances();inst++) {
             List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, inst);
             for (int lab=0;lab<nlabs;lab++) {
-                z[lab] = margin.getScore(featuresByInstance,lab);
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(inst, lab);
+                else                
+                    z[lab] = margin.getScore(featuresByInstance,lab);
             }
             Arrays.fill(tmp, 0);
-            
+
             //logWeights has already the priors which is the extra pattern pi
+            float normConst = logMath.linearToLog(0);
             for (int y=0;y<nlabs;y++){ 
                 tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
-                normConst+=logMath.logToLinear((float)tmp[y]);
+                if(y==0)
+                    normConst=(float)tmp[y];
+                else
+                    normConst=  logMath.addAsLinear(normConst,(float)tmp[y]);
                 
             }
             
-            /*
-            int besty=0;
-            for (int y=1;y<nlabs;y++)
-                if (tmp[y]>tmp[besty]) besty=y;
-            nex[besty]++;
-            ex2lab[inst]=besty;
-            for (int i=0;i<nlabs;i++) {
-                means[besty][i]+=z[i];
-            }*/
-            
+             
             for (int y=0;y<nlabs;y++){ 
                 nex[y]++;
-                ex2lab[inst]=y;
-                nk[y]+=logMath.logToLinear((float)tmp[y])/normConst;
-                for (int i=0;i<nlabs;i++) 
-                    means[y][i]+=(logMath.logToLinear((float)tmp[i])/normConst)*z[i];  
+                //ex2lab[inst]=y;
+                double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                nk[y]+=posterior;
+                for (int l=0;l<nlabs;l++){ 
+                    means[y][l]+=posterior*z[l];  
+                   
+                }
             }
-            
+            //System.out.println(" instance "+inst + "\n normConst = "+ normConst +"  sum mean ["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"]  nk="+Arrays.toString(nk) );
         }
         
         for (int y=0;y<nlabs;y++) {
-            if (nex[y]==0)
-                for (int i=0;i<nlabs;i++) means[y][i]=0;
+            if (nk[y]==0)
+                for (int i=0;i<nlabs;i++) 
+                    means[y][i]=0; //or means[y][i]=Float.MAX_VALUE; ?
             else
-                for (int i=0;i<nlabs;i++) {
-                    means[y][i]/=(float)nk[y];
-                }
+                for (int i=0;i<nlabs;i++){
+                    means[y][i]/=nk[y];
+                }    
+                
+                
         }
-            
+        //System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
         for (int inst=0;inst<analyzer.getNumberOfInstances();inst++) {
             List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, inst);
             for (int i=0;i<nlabs;i++) {
-                z[i] = margin.getScore(featuresByInstance,i);
+                if(Margin.GENERATEDDATA)
+                    z[i] = margin.getGenScore(inst, i);
+                else                
+                    z[i] = margin.getScore(featuresByInstance,i);
             }
-            /*
-            int besty = ex2lab[inst];
-            
-            for (int i=0;i<nlabs;i++) {
-                tmp[i] = z[i]-means[besty][i];
-                diagvar[besty][i]+=tmp[i]*tmp[i];
-                
-            }*/
-            for (int y=0;y<nlabs;y++){ 
-                for (int i=0;i<nlabs;i++) {
-                    tmp[i] = z[i]-means[y][i];
-                    diagvar[y][i]+=(logMath.logToLinear((float)tmp[i])/normConst)*(tmp[i]*tmp[i]);
 
+            float normConst = logMath.linearToLog(0);
+            for (int y=0;y<nlabs;y++){ 
+                tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
+                if(y==0)
+                    normConst=(float)tmp[y];
+                else
+                    normConst=  logMath.addAsLinear(normConst,(float)tmp[y]);
+            }
+            for (int y=0;y<nlabs;y++){ 
+                double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                for (int i=0;i<nlabs;i++){ 
+                    double mudiff = z[i]-means[y][i];
+                    diagvar[y][i]+=posterior*(mudiff*mudiff);
+                    
                 }
+                 
             }
             
         }
         
         for (int y=0;y<nlabs;y++) {
             double logdet=0;
-            if (nex[y]==0)
+            if (nk[y]==0)
                 for (int i=0;i<nlabs;i++) {
                     diagvar[y][i] = minvar;
                     logdet += logMath.linearToLog(diagvar[y][i]);
                 }
             else
                 for (int i=0;i<nlabs;i++) {
-                    diagvar[y][i] /= (double)nk[y];
+                    diagvar[y][i] /= nk[y];
                     
                     if (diagvar[y][i] < minvar) 
                         diagvar[y][i]=minvar;
@@ -382,25 +423,30 @@ public class GMMDiag extends GMM {
                 diagvar[y][i]=diagvar[0][i];
             }
         }
+        
         for (int y=0;y<nlabs;y++) {
-            if (y%2==0)
-                for (int i=0;i<nlabs;i++)
-                    means[y][i]+=Math.sqrt(diagvar[y][i])*ratio;
-            else
-                for (int i=0;i<nlabs;i++)
-                    means[y][i]-=Math.sqrt(diagvar[y][i])*ratio;
+            if (y%2==0){
+                means[y][0]+=Math.sqrt(diagvar[y][0])*ratio;
+                means[y][1]=-means[y][0];
+            }else{
+                means[y][0]-=Math.sqrt(diagvar[y][1])*ratio;
+                means[y][1]=-means[y][0];
+            }    
         }
+        System.out.println("split means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
+        
     }
     /**
      * after splitting by trainViterbi
      * means00 = mean of scores computed with model 0 = mu00 = mu-y=0-NO (mu_kk)
      * means01 = mean of scores computed with model 1 = mu01 = mu-y=0-YES (mu_kl)
      * means10 = mean of scores computed with model 0 = mu10 = mu-y=1-NO (mu_kl)
-     * means11 = mean of scores computed with model 1 = mu01 = mu-y=1-YES (mu_kk)
+     * means11 = mean of scores computed with model 1 = mu11 = mu-y=1-YES (mu_kk)
      * 
      * @param analyze
      * @param margin 
      */
+    @Override
     public void train1gauss(AnalyzeClassifier analyze, Margin margin) {
         final float[] z = new float[nlabs];
         for (int i=0;i<nlabs;i++) {
@@ -409,7 +455,10 @@ public class GMMDiag extends GMM {
         for (int ex=0;ex<analyze.getNumberOfInstances();ex++) {
             List<Integer> featuresByInstance = analyze.getFeaturesPerInstance(classifier, ex);
             for (int lab=0;lab<nlabs;lab++) {
-                z[lab] = margin.getScore(featuresByInstance,lab);
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(ex, lab);
+                else                
+                    z[lab] = margin.getScore(featuresByInstance,lab);
                 //System.out.println("lab="+lab+" z[lab]="+z[lab]);
                 assert !Float.isNaN(z[lab]);
             }
@@ -425,7 +474,10 @@ public class GMMDiag extends GMM {
         for (int ex=0;ex<analyze.getNumberOfInstances();ex++) {
             List<Integer> featuresByInstance = analyze.getFeaturesPerInstance(classifier, ex);
             for (int i=0;i<nlabs;i++) {
-                z[i] = margin.getScore(featuresByInstance,i);
+                if(Margin.GENERATEDDATA)
+                    z[i] = margin.getGenScore(ex, i);
+                else                
+                    z[i] = margin.getScore(featuresByInstance,i);
                 assert !Float.isNaN(z[i]);
                 tmp[i] = z[i]-means[0][i];
             }
@@ -434,33 +486,36 @@ public class GMMDiag extends GMM {
             }
         }
         assert analyze.getNumberOfInstances()>0;
-        for (int i=0;i<nlabs;i++) {
-            diagvar[0][i] /= (double)analyze.getNumberOfInstances();
-            if (diagvar[0][i] < minvar) diagvar[0][i]=minvar;
-            
-        }
-        
-        assert analyze.getNumberOfInstances()>0;
+
         
         // precompute gconst
         /*
          * log de
          * (2pi)^{d/2} * |Covar|^{1/2} 
          */
-        double det=1;
+        double logdet=0;
         for (int i=0;i<nlabs;i++) {
             diagvar[0][i] /= (double)analyze.getNumberOfInstances();
             if (diagvar[0][i] < minvar) diagvar[0][i]=minvar;
-            det *= diagvar[0][i];
+            for (int j=1;j<nlabs;j++) diagvar[j][i]=diagvar[0][i];
+            logdet += logMath.linearToLog(diagvar[0][i]);
         }
-        double co=(double)nlabs*logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(det);
-        co/=2.0;
-        for (int i=0;i<nlabs;i++) gconst[i]=co;  
+
+        
+            double co=(double)nlabs*logMath.linearToLog(2.0*Math.PI) + logdet;
+            co/=2.0;            
+            for (int i=0;i<nlabs;i++) gconst[i]=co; 
+            //double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y][l]);
+            //co/=2.0;
+            
+        System.out.println("train1gauss means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
+        System.out.println("train1gauss var=["+diagvar[0][0]+","+diagvar[0][1]+";\n"+diagvar[1][0]+","+diagvar[1][1]+"]");
+        System.out.println("train1gauss var=["+gconst[0]+","+gconst[1]+"]");
     }
     
     
     public void train(AnalyzeClassifier analyzer, Margin margin) {
-        final int niters=13;
+        final int niters=50;
         train1gauss(analyzer, margin);
         double loglike = getLoglike(analyzer, margin);
         assert !Double.isNaN(loglike);
@@ -511,4 +566,6 @@ public class GMMDiag extends GMM {
     public float getMaxSigma(){
         return this.maxSigma;
     }
+
+
 }

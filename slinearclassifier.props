@@ -1,18 +1,18 @@
 #
-#Mon Sep 08 17:40:01 CEST 2014
+#Tue Sep 23 10:51:07 CEST 2014
 1.usePrefixSuffixNGrams=true
 QNsize=15
 2.useString=true
 useQN=true
 goldAnswerColumn=0
 1.minNGramLeng=1
-trainFile=groups.pn.tab.lc.train
+trainFile=groups.pn.tab.lc.reco.train
 1.wordShape=chris2useLC
 tolerance=1e-3
 1.maxNGramLeng=4
 sigma=3
-printClassifierParam=200
-displayedColumn=1
 intern=true
-1.useNGrams=true
+displayedColumn=1
+printClassifierParam=200
 1.binnedLengths=2,4,6,10
+1.useNGrams=true

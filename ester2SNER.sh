@@ -49,7 +49,7 @@ do
   popd
   mv /tmp/output_treetagged.xml dev/$j
 done
-fi
+
 #NO PARSING
 if [ "1" == "0" ]; then
 echo "parsing du train et du test"

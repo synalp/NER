@@ -9,6 +9,9 @@ import edu.stanford.nlp.util.Index;
 import edu.stanford.nlp.util.Triple;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
+import org.apache.commons.math3.distribution.NormalDistribution;
+import tools.Histoplot;
 
 /**
  * This class is an interface with
@@ -21,13 +24,18 @@ import java.util.List;
  * @author rojasbar
  */
 public class Margin {
+    public static boolean GENERATEDDATA=false;
     //Weights
     private double[][] weights;
     private Index<String> labelIdx, featureIdx;
     private LinearClassifier stanfordModel;
     //private int numInstances;
     //private double[] sumfeatsPerInst;
+    private float[][] generatedScores;
 
+    public Margin(){
+        
+    }
     
     public Margin(LinearClassifier model) {
         weights=model.weights();
@@ -89,7 +97,11 @@ public class Margin {
         }
         //System.out.println("SCORE:"+sumWeightsOf1Features);
         return sumWeightsOf1Features;
-    }   
+    }
+    
+    public float getGenScore(int instance, int label){
+        return generatedScores[instance][label];
+    }
        
     public float getScore(int[] features, int label) {
         float sumWeightsOf1Features = 0;
@@ -97,6 +109,28 @@ public class Margin {
             sumWeightsOf1Features += weights[features[j]][label];
         }
         return sumWeightsOf1Features;
+    }
+    
+    public void generateRandomScore(int ninst){
+        /*double[] scores0= new double[ninst];
+        double[] scores1= new double[ninst];
+        Arrays.fill(scores0, 0.0);
+        Arrays.fill(scores1, 0.0);*/
+        float[][] genScores= new float[ninst][2];
+        NormalDistribution distr0 = new NormalDistribution(8, 0.5);
+        NormalDistribution distr1 =  new NormalDistribution(2, 0.5);
+        Random r = new Random();
+        for(int i=0; i<ninst; i++){
+            float rnd=r.nextFloat();
+            genScores[i][0]=(rnd<0.9)?(float) distr0.sample():(float) distr1.sample();
+            genScores[i][1]=-genScores[i][0];
+            //scores0[i]=genScores[i][0];
+            //scores1[i]=genScores[i][1];
+
+        } 
+        generatedScores=genScores;
+        //Histoplot.showit(scores0, ninst);
+        //Histoplot.showit(scores1, ninst);
     }
 
     public double[] getScoreForAllInstancesLabel0(List<List<Integer>> features,double[] scores){
