@@ -4,14 +4,13 @@
  */
 package reco;
 
-import fr.loria.emospeech.agents.tagger.Tagger;
-import fr.loria.emospeech.model.Utterance;
-import fr.loria.emospeech.model.Word;
+import edu.stanford.nlp.classify.LinearClassifier;
+import tagger.Tagger;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,23 +18,13 @@ import java.util.HashMap;
 import java.util.List;
 import jsafran.DetGraph;
 import jsafran.GraphIO;
+import lex.Segment;
+import lex.Utterance;
+import lex.Word;
 
 
 import linearclassifier.AnalyzeClassifier;
-import static linearclassifier.AnalyzeClassifier.LISTTESTFILES;
-import static linearclassifier.AnalyzeClassifier.LISTTRAINFILES;
-import static linearclassifier.AnalyzeClassifier.ONLYONEMULTICLASS;
-import static linearclassifier.AnalyzeClassifier.ONLYONEPNOUNCLASS;
-import static linearclassifier.AnalyzeClassifier.TESTFILE;
-import static linearclassifier.AnalyzeClassifier.TRAINFILE;
-import static linearclassifier.AnalyzeClassifier.TRAINSIZE;
-import static linearclassifier.AnalyzeClassifier.UTF8_ENCODING;
-import static linearclassifier.AnalyzeClassifier.groupsOfNE;
-import static linearclassifier.AnalyzeClassifier.isStopWord;
-import resources.WikipediaAPI;
 import tools.CNConstants;
-import utils.ErrorsReporting;
-import utils.JDiff;
 import utils.SuiteDeMots;
 
 
@@ -48,11 +37,14 @@ public class ASROut {
     private AnalyzeClassifier lclass= new AnalyzeClassifier();
     private String developmentDir = "dev";
     private String testDir="test";
-    
+    public static String  TRAINFILE="groups.%S.tab.lc.reco.train";
+    public static String  TESTFILE="groups.%S.tab.lc..reco.test";    
     
     public ASROut(){
        AnalyzeClassifier.LISTTRAINFILES="esterRecoTrain.xmll";
        AnalyzeClassifier.LISTTESTFILES="esterRecoTest.xmll";
+       AnalyzeClassifier.MODELFILE="bin.%S.lc.mods.reco";
+       
     }
     
 
@@ -64,10 +56,10 @@ public class ASROut {
                 OutputStreamWriter outFile =null;
                 String xmllist=AnalyzeClassifier.LISTTRAINFILES;
                 if(istrain)
-                    outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", en)),UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
                 else{
-                    xmllist=LISTTESTFILES;
-                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),UTF8_ENCODING);
+                    xmllist=AnalyzeClassifier.LISTTESTFILES;
+                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
                 }            
             BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
             int uttCounter=0;
@@ -75,8 +67,10 @@ public class ASROut {
                 String line = inFile.readLine();
                 if (line==null) 
                     break;
-                
-                String filename= line.substring(line.lastIndexOf("/"));
+                int idx=line.lastIndexOf("/");
+                if(idx==-1)
+                    break;
+                String filename= line.substring(idx);
                 filename=filename.replace(CNConstants.RECOEXT, ".xml");
                 String  orfilePath=developmentDir+filename;
                 File file = new File(orfilePath);
@@ -85,8 +79,8 @@ public class ASROut {
                 
                 List<DetGraph> gs = gio.loadAllGraphs(orfilePath);
                 List<String> allwords= new ArrayList<>();
-                List<String> allpos= new ArrayList<>();
                 List<String> goldlabels= new ArrayList<>();
+                
                 for (int i=0;i<gs.size();i++) {
                         DetGraph group = gs.get(i);  
                                  
@@ -98,9 +92,9 @@ public class ASROut {
                                 if (groups!=null)
                                     for (int gr : groups) {
 
-                                        if(en.equals(ONLYONEPNOUNCLASS)){
+                                        if(en.equals(AnalyzeClassifier.ONLYONEPNOUNCLASS)){
                                             //all the groups are proper nouns pn
-                                            for(String str:groupsOfNE){
+                                            for(String str:AnalyzeClassifier.groupsOfNE){
                                                 if (group.groupnoms.get(gr).startsWith(str)) {
                                                     lab=en;
                                                     break;
@@ -114,7 +108,7 @@ public class ASROut {
                                                 lab=en;
                                                 break;
                                             }else{
-                                                if (en.equals(ONLYONEMULTICLASS)) {
+                                                if (en.equals(AnalyzeClassifier.ONLYONEMULTICLASS)) {
                                                     String groupName=group.groupnoms.get(gr);
                                                     groupName=groupName.substring(0, groupName.indexOf("."));
                                                     //if(!Arrays.asList(groupsOfNE).toString().contains(groupName))
@@ -139,7 +133,6 @@ public class ASROut {
                                     */
 
                                     allwords.add(group.getMot(j).getForme());
-                                    allpos.add(group.getMot(j).getPOS());
                                     goldlabels.add(lab);
                                     
                         }
@@ -151,14 +144,21 @@ public class ASROut {
                 }
                 List<String> allRecoWords=new ArrayList<>();
                 BufferedReader recoFile = new BufferedReader(new FileReader(line));
+                Utterance recoBIGUtterance= new Utterance(); 
+                List<Word> recWords= new ArrayList<>();
+                int lineNumber=0;
                 for(;;){
                     String recoLine = recoFile.readLine();
                     if (recoLine==null) 
                         break;
                     allRecoWords.add(recoLine);
-                    
+                    Word word = new Word(lineNumber,recoLine);
+                    recWords.add(word);
+                    lineNumber++;
                 }
-                 
+                recoBIGUtterance.setWords(recWords);
+                
+                //alignment
                 String[] orWords= new String[allwords.size()];
                 allwords.toArray(orWords);
                 SuiteDeMots orMots= new SuiteDeMots(orWords);
@@ -178,29 +178,28 @@ public class ASROut {
                 }
                 /*
                 for(Integer key:wordsMap.keySet()){
-                    System.out.println(wordsMap.get(key));
+                    int val = wordsMap.get(key);
+                    String valst = (val!=-1)?allwords.get(val):"EMPTY";
+                    System.out.println(allRecoWords.get(key)+" aligned to "+valst);
                 }
-                */
+                //*/
+                //tag all the reco words
+                Tagger tagger = new Tagger();
+                tagger.computePOStags(recoBIGUtterance.getSegment());
+                tagger.destroy();
+                Tagger.clean();    
+                System.out.println("size of reco words"+allRecoWords.size());
+                System.out.println("size of words in big utterance"+recoBIGUtterance.getSegment().getWords().size());
+                
                 for(int i=0; i<allRecoWords.size();i++){
                     int goldIndx= wordsMap.get(i);
                     String wordStr=allRecoWords.get(i);
                     //What should I do if it does not find the word in the gold ???
                     String label=CNConstants.NOCLASS;
-                    String pos=CNConstants.CHAR_NULL;
-                    if(goldIndx!=CNConstants.INT_NULL){
+                    String pos=recoBIGUtterance.getWords().get(i).getPosTag().getName();
+                    if(goldIndx!=CNConstants.INT_NULL)
                           label=goldlabels.get(goldIndx);
-                          pos = allpos.get(goldIndx);
-                    }      
-                    if(pos.equals(CNConstants.CHAR_NULL)){
-                        Tagger tagger = new Tagger();
-                        Utterance taggedUtterance = new Utterance(wordStr);
-                        tagger.computePOStags(taggedUtterance.getSegment());
-                        tagger.destroy();
-                        Tagger.clean(); 
-                        for(Word word:taggedUtterance.getSegment().getWords()){
-                            pos=word.getPosTag().getName();
-                        }
-                    }
+
                     outFile.append(label+"\t"+wordStr+"\t"+pos+"\n");
                     
                 }
@@ -215,10 +214,21 @@ public class ASROut {
             }
     }   
     
+    public void callLClassifier(String sclass){
+        AnalyzeClassifier.TRAINFILE=TRAINFILE;
+        AnalyzeClassifier.TESTFILE=TESTFILE;
+        lclass.trainAllLinearClassifier(sclass,false,false);
+        lclass.testingClassifier(false,sclass,false);
+        LinearClassifier model = lclass.getModel(sclass);
+        double f1=lclass.testingClassifier(model,TESTFILE.replace("%S", sclass));
+            
+    }
  
     public static void  main(String[] args){
         ASROut asrout= new ASROut();
-        asrout.processingASROutput(CNConstants.PRNOUN, true);
+        //asrout.processingASROutput(CNConstants.PRNOUN, true);
+        //asrout.processingASROutput(CNConstants.PRNOUN, false);
+        asrout.callLClassifier(CNConstants.PRNOUN);
     }
     
 }    
