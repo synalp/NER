@@ -5,8 +5,6 @@
 package linearclassifier;
 
 
-import java.io.FileNotFoundException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -18,7 +16,6 @@ import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.Datum;
 
-import edu.stanford.nlp.util.Pair;
 import gmm.GMMDiag;
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,7 +36,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
-import java.lang.Integer;
 import java.text.DecimalFormat;
 import java.util.Random;
 import java.util.TreeMap;
@@ -1193,7 +1189,7 @@ public class AnalyzeClassifier {
         
    }      
 
-      public void wkSClassStochCoordGr(String sclass, boolean closedForm) {
+   public void wkSClassStochCoordGr(String sclass, boolean closedForm) {
         PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
         PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
         
@@ -1207,7 +1203,6 @@ public class AnalyzeClassifier {
         trainOneClassifier(sclass,false);  
         LinearClassifier model = modelMap.get(sclass);
         Margin margin = marginMAP.get(sclass);
-        int selectedFeats[] = margin.getTopWeights();
         //scan the test instances for train the gmm
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>(); 
@@ -1242,20 +1237,13 @@ public class AnalyzeClassifier {
                 if (emptyfeats.contains("["+featIdx+","+w+"]")) continue;
                 float delta = 0.5f;
 
-                System.out.println("before weight= "+w0);
+                
                 weightsForFeat[featIdx][w] = w0 + w0*delta;
-                System.out.println("after delta= "+ delta);
-                System.out.println("after w0 + w0*delta= "+ (w0 + w0*delta));
-                System.out.println("after weight= "+weightsForFeat[featIdx][w]);
-                //TODO:updating the new weights in the gmm?
+                
                 float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
 
-
-                System.out.println("For feat["+ featIdx +"] weight["+ w +"] R estim ["+iter+"] = "+estimr0);    
-
-                    gradw[w] = (estimr-estimr0)/(w0*delta);
-                    System.out.println("grad "+gradw[w]);
-
+                gradw[w] = (estimr-estimr0)/(w0*delta);
+                System.out.println("grad "+gradw[w]);
 
                 weightsForFeat[featIdx][w]=w0; 
 
@@ -1297,7 +1285,128 @@ public class AnalyzeClassifier {
         }
         
    }      
+   /**
+     * The gradient method used ins the Finite Difference
+     * f'(a) is approximately (f(a+h)-f(a))/h
+     * @param sclass 
+     */ 
+   public void wkSupClassifierConstr(String sclass, boolean closedForm) {
+        PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
+        PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
+        
+        boolean isMC=false;
+        int numIntIters=100;
+        
 
+        final int niters = 100;
+
+        final float eps = 0.1f;   
+        int counter=0;
+        //train the classifier with a small set of train files
+        trainOneClassifier(sclass,false);  
+        LinearClassifier model = modelMap.get(sclass);
+        Margin margin = marginMAP.get(sclass);
+        int selectedFeats[] = margin.getTopWeights();
+        //scan the test instances for train the gmm
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>(); 
+        getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
+        featInstMap.put(sclass,featsperInst);
+        lblInstMap.put(sclass, labelperInst);   
+        double[] scores= new double[featsperInst.size()];
+        Arrays.fill(scores, 0.0);
+        //Histoplot.showit(scorest,featsperInst.size());
+        HashSet<String> emptyfeats = new HashSet<>();
+        System.out.println("Working with classifier "+sclass);
+        
+        float estimr0=(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+
+
+        System.out.println("init R "+estimr0);
+        //plotR.addPoint(counter, estimr0);
+        double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
+        //plotF1.addPoint(counter,f1);
+
+        System.out.println("Number of features" + margin.getNfeats());
+        for (int iter=0;iter<niters;iter++) {
+            double[][] weightsForFeat=margin.getWeights();
+            final float[] gradw = new float[weightsForFeat.length];
+            //for(int i=0;i<weightsForFeat.length;i++){
+            for(int i=0;i<selectedFeats.length;i++){
+                int featIdx = selectedFeats[i];
+                for(int w=0;w < weightsForFeat[featIdx].length;w++){
+                    float w0 = (float) weightsForFeat[featIdx][w];
+//                    if(iter==0)
+//                        w0 = (float) Math.random(); //set initial weights randomly                   
+                    if (emptyfeats.contains("["+i+","+w+"]")) continue;
+                    float delta = 0.5f;
+                    /*for (int j=0;;j++) {
+                        if(j>10)
+                            break;*/
+                        System.out.println("before weight= "+w0);
+                        weightsForFeat[featIdx][w] = w0 + w0*delta;
+                        System.out.println("after delta= "+ delta);
+                        System.out.println("after w0 + w0*delta= "+ (w0 + w0*delta));
+                        System.out.println("after weight= "+weightsForFeat[featIdx][w]);
+                        //TODO:updating the new weights in the gmm?
+                        float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+
+
+                        System.out.println("For feat["+ i +"] weight["+ w +"] R estim ["+iter+"] = "+estimr0);    
+
+                        gradw[w] = (estimr-estimr0)/(w0*delta);
+                        System.out.println("grad "+gradw[w]);
+                        // we don't go above 10 because some weights may not be used at all
+                        /*if (gradw[w]==0 && delta<10) delta*=2f;
+                        else if (gradw[w]>0.1||gradw[w]<-0.1) delta/=2f;
+                        else break;*/
+                    //}
+
+                    weightsForFeat[featIdx][w]=w0;    
+                
+                    if (gradw[w]==0) 
+                            emptyfeats.add("["+i+","+w+"]");
+                    else{  
+                        weightsForFeat[featIdx][w] -= gradw[w] * eps;
+                        weightsForFeat[featIdx][w] = -weightsForFeat[featIdx][w];
+                    }
+                    break;
+
+                }
+                /*
+                for(int w=0;w < weightsForFeat[0].length;w++){ 
+                    weightsForFeat[0][w]= Math.random();
+                    weightsForFeat[1][w]= Math.random();
+                }*/
+                counter++;
+                estimr0 =(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass,isMC,numIntIters);
+                System.out.println("*******************************"); 
+                System.out.println("R estim ["+iter+"] = "+estimr0);     
+                plotR.addPoint(counter, estimr0);
+                System.out.println("*******************************");
+                model.setWeights(weightsForFeat);
+                f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
+                plotF1.addPoint(counter, f1);
+                System.out.println("*******************************"); 
+
+                Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
+                //save the model regularly
+                if(iter%30==0){
+                    File mfile = new File(MODELFILE.replace("%S", sclass));
+                    try {
+                        IOUtils.writeObjectToFile(model, mfile);
+                    } catch (IOException ex) {
+
+                    }
+               }            
+            }
+
+        }
+        for(String emptyW:emptyfeats){
+            System.out.println(emptyW);
+        }
+        
+   }  
    public void chekingUnsupClassifierNInt(String sclass, boolean closedForm) {
         OutputStreamWriter fout = null;
          boolean isMC=true;        
@@ -2475,12 +2584,13 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
-        /*
+        ///*
         //File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
         //mfile.delete();
         Long beforeUnsup=System.currentTimeMillis();
+        analyzing.wkSupClassifierConstr(CNConstants.PRNOUN,false);
         //analyzing.wkSClassStochCoordGr(CNConstants.PRNOUN,false);
-        analyzing.unsupervisedClassifier(CNConstants.PRNOUN,false);
+        //analyzing.unsupervisedClassifier(CNConstants.PRNOUN,false);
         //analyzing.chekingUnsupClassifierNInt(CNConstants.PRNOUN,false);
         //analyzing.checkingRvsTheta(CNConstants.PRNOUN,false);
         Long afterUnsup=System.currentTimeMillis();
@@ -2536,9 +2646,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //analyzing.checkingMCTrapezoidNumInt(sclass);
 
         //analyzing.printingValuesInOctave();
-        //Testing GMM
         
-
         //analyzing.generatingArffData(true);
         //analyzing.evaluationKMEANS();
         //analyzing.generatingLabelPropGraph();

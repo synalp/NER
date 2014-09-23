@@ -49,5 +49,7 @@ package tools;
     //features
     public static String CURRWORD="CW_";
     public static int    tree_level_threshold=8;
+    public static String RECOEXT=".utf8";
+    
     
 }
