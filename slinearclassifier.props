@@ -1,5 +1,5 @@
 #
-#Tue Sep 23 10:51:07 CEST 2014
+#Tue Sep 23 15:20:00 CEST 2014
 1.usePrefixSuffixNGrams=true
 QNsize=15
 2.useString=true
@@ -11,8 +11,8 @@ trainFile=groups.pn.tab.lc.reco.train
 tolerance=1e-3
 1.maxNGramLeng=4
 sigma=3
-intern=true
-displayedColumn=1
 printClassifierParam=200
-1.binnedLengths=2,4,6,10
+displayedColumn=1
+intern=true
 1.useNGrams=true
+1.binnedLengths=2,4,6,10
