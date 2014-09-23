@@ -24,6 +24,8 @@ import lex.Word;
 
 
 import linearclassifier.AnalyzeClassifier;
+import static linearclassifier.AnalyzeClassifier.isStopWord;
+import resources.WikipediaAPI;
 import tools.CNConstants;
 import utils.SuiteDeMots;
 
@@ -48,7 +50,7 @@ public class ASROut {
     }
     
 
-    public void processingASROutput(String en, boolean istrain){
+    public void processingASROutput(String en, boolean istrain, boolean iswiki){
         
         
         GraphIO gio = new GraphIO(null);
@@ -198,9 +200,18 @@ public class ASROut {
                     String label=CNConstants.NOCLASS;
                     String pos=recoBIGUtterance.getWords().get(i).getPosTag().getName();
                     if(goldIndx!=CNConstants.INT_NULL)
-                          label=goldlabels.get(goldIndx);
-
-                    outFile.append(label+"\t"+wordStr+"\t"+pos+"\n");
+                        label=goldlabels.get(goldIndx);
+                        if(iswiki){
+                            if(!isStopWord(pos)){
+                                String inWiki ="F";
+                                if(!pos.startsWith("PRO") && !pos.startsWith("ADJ")&&
+                                        !pos.startsWith("VER") && !pos.startsWith("ADV"))
+                                    inWiki =(WikipediaAPI.processPage(wordStr).equals(CNConstants.CHAR_NULL))?"F":"T";
+                                outFile.append(label+"\t"+wordStr+"\t"+pos+"\t"+ inWiki +"\n");
+                               
+                            } 
+                        }else if(!isStopWord(pos))
+                            outFile.append(label+"\t"+wordStr+"\t"+pos+"\n");
                     
                 }
                 outFile.flush();
@@ -214,11 +225,13 @@ public class ASROut {
             }
     }   
     
-    public void callLClassifier(String sclass){
+    public void callLClassifier(String sclass, boolean iswiki){
         AnalyzeClassifier.TRAINFILE=TRAINFILE;
         AnalyzeClassifier.TESTFILE=TESTFILE;
-        lclass.trainAllLinearClassifier(sclass,false,false);
-        lclass.testingClassifier(false,sclass,false);
+        processingASROutput(CNConstants.PRNOUN, true, iswiki);
+        processingASROutput(CNConstants.PRNOUN, false, iswiki);
+        lclass.trainAllLinearClassifier(sclass,false,iswiki);
+        lclass.testingClassifier(false,sclass,iswiki);
         LinearClassifier model = lclass.getModel(sclass);
         double f1=lclass.testingClassifier(model,TESTFILE.replace("%S", sclass));
             
@@ -228,7 +241,7 @@ public class ASROut {
         ASROut asrout= new ASROut();
         //asrout.processingASROutput(CNConstants.PRNOUN, true);
         //asrout.processingASROutput(CNConstants.PRNOUN, false);
-        asrout.callLClassifier(CNConstants.PRNOUN);
+        asrout.callLClassifier(CNConstants.PRNOUN, true);
     }
     
 }    
