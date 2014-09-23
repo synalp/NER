@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC "-//Hibernate/Hibernate Configuration DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+  <session-factory>
+    
+    <property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property>
+    <!--property name="hibernate.connection.url">jdbc:mysql://localhost/emospeech</property>
+    <property name="hibernate.connection.username">espeech</property>
+    <property name="hibernate.connection.password">espeech</property-->
+    <property name="hibernate.connection.url">jdbc:mysql://localhost/wikidb</property>
+    <property name="hibernate.connection.username">contnomina</property>
+    <property name="hibernate.connection.password">contnomina</property>
+    
+    <!--property name="hibernate.connection.provider_class"> org.hibernate.connection.C3P0ConnectionProvider</property-->
+    <property name="connection.provider_class">org.hibernate.connection.C3P0ConnectionProvider</property>
+    <property name="connection.autoReconnect"> true</property>
+    <property name="connection.autoReconnectForPools">true</property>
+    <property name="connection.is-connection-validation-required">true</property>
+    <!-- JDBC connection pool (use the built-in) -->
+    <!--property name="connection.pool_size">2</property-->
+    <!-- configuration pool via c3p0-->
+    <property name="c3p0.acquire_increment">1</property>
+    <property name="c3p0.max_size">30</property>
+    <property name="c3p0.max_statements">5</property>
+    <property name="c3p0.min_size">5</property>
+    <property name="c3p0.timeout">180</property> <!--79381 1800 seconds -->
+    <property name="c3p0.idle_test_period">180</property> <!-- seconds -->
+    <property name="c3p0.preferredTestQuery">select 1;</property>
+    
+    <!-- SQL dialect -->
+    <property name="hibernate.dialect">org.hibernate.dialect.MySQLInnoDBDialect</property>
+    
+    <!-- Enable Hibernate's current session context: org.hibernate.context.ManagedSessionContext -->
+    <property name="current_session_context_class">thread</property>
+
+    <!-- Disable the second-level cache  -->
+    <property name="cache.provider_class">org.hibernate.cache.NoCacheProvider</property>
+
+    <!-- Echo all executed SQL to stdout -->
+    <property name="hibernate.show_sql">false</property>
+    <!-- Encription -->
+    <!--property name="connection.provider_class">org.hibernate.connection.C3P0ConnectionProvider</property-->
+
+    <!--property name="connection.provider_class">org.jasypt.hibernate.connectionprovider.EncryptedPasswordDriverManagerConnectionProvider</property-->
+    <!--property name="connection.encryptor_registered_name">hibernateEncryptor</property-->
+  </session-factory>
+</hibernate-configuration>

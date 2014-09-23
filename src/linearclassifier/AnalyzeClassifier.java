@@ -41,9 +41,13 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.lang.Integer;
 import java.text.DecimalFormat;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.SortedSet;
 import java.util.TreeMap;
 
 
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jsafran.DetGraph;
@@ -1483,23 +1487,30 @@ public class AnalyzeClassifier {
         BufferedReader lpFile=null, input=null;
         try {
             testFile = new BufferedReader(new FileReader(TESTFILE.replace("%S",CNConstants.PRNOUN))); //label_prop_output_100iters
-            lpFile = new BufferedReader(new InputStreamReader(new FileInputStream("lprop/label_prop_output_catdist_pos"), UTF8_ENCODING));
-            input = new BufferedReader(new InputStreamReader(new FileInputStream("lprop/input_graph_pos"), UTF8_ENCODING));
+            lpFile = new BufferedReader(new InputStreamReader(new FileInputStream("lprop/label_prop_output_catdist_pos3"), UTF8_ENCODING));
+            input = new BufferedReader(new InputStreamReader(new FileInputStream("lprop/input_graph_pos3"), UTF8_ENCODING));
             
-            
+            //read the input just to inspect it was correct, and to check the vocabulary of words
+            /*
+            for(;;){
+                              
+               String inputline= input.readLine();
+               
+               if(inputline == null)
+                   break;
+               
+               String[] graph= inputline.split("\\t");
+               int node1=Integer.parseInt(graph[0].substring(1));
+               int node2=Integer.parseInt(graph[1].substring(1));
+               System.out.println(wordStr.get(node1)+"-"+ wordStr.get(node2)+"-"+graph[2]);                
+            }
+            */
             //read the label propagation output
             for(;;){
                String lpline = lpFile.readLine();
                if(lpline== null)
                     break; 
-               
-               ///*
-               String inputline= input.readLine();
-               String[] graph= inputline.split("\\t");
-               int node1=Integer.parseInt(graph[0].substring(1));
-               int node2=Integer.parseInt(graph[1].substring(1));
-               System.out.println(wordStr.get(node1)+"-"+ wordStr.get(node2)+"-"+graph[2]);
-               //*/        
+      
                 String values[] = lpline.split("\\t");
                 int wordid=Integer.parseInt(values[0].substring(1));
                 String[] recvals= values[3].split(" ");
@@ -1519,7 +1530,7 @@ public class AnalyzeClassifier {
                         maxlabel=recvals[i];
                     }    
                 }
-                //System.out.println("ID\t"+wordid+"\tWORD\t"+wordStr.get(wordid)+"\tREC LABEL\t"+maxlabel);
+                System.out.println("ID\t"+wordid+"\tWORD\t"+wordStr.get(wordid)+"\tREC LABEL\t"+maxlabel);
                 recLabels.put(wordStr.get(wordid), (maxlabel.equals("L1"))?CNConstants.PRNOUN:CNConstants.NOCLASS);              
                 //System.out.println("label: " + maxlabel + "value " + maxval);
             }   
@@ -1996,9 +2007,9 @@ public class AnalyzeClassifier {
          
             train = new BufferedReader(new FileReader(TRAINFILE.replace("%S",CNConstants.PRNOUN)));
             test = new BufferedReader(new FileReader(TESTFILE.replace("%S",CNConstants.PRNOUN))); 
-            outInput = new OutputStreamWriter(new FileOutputStream("lprop/input_graph_pos2"),UTF8_ENCODING);
-            outGold = new OutputStreamWriter(new FileOutputStream("lprop/gold_labels_pos2"),UTF8_ENCODING);
-            outSeed = new OutputStreamWriter(new FileOutputStream("lprop/seeds_pos2"),UTF8_ENCODING);
+            outInput = new OutputStreamWriter(new FileOutputStream("lprop/input_graph_pos3"),UTF8_ENCODING);
+            outGold = new OutputStreamWriter(new FileOutputStream("lprop/gold_labels_pos3"),UTF8_ENCODING);
+            outSeed = new OutputStreamWriter(new FileOutputStream("lprop/seeds_pos3"),UTF8_ENCODING);
         
         int linecounter=1;
         
@@ -2081,16 +2092,17 @@ public class AnalyzeClassifier {
             if(key1.equals("Fabrice"))
                 System.out.println("entro : "+ vectorfeats.get("Fabrice"));
             
-            TreeMap<Integer,Double> nodesrel=new TreeMap<>();
+            TreeMap<Integer,Double> lowDist=new TreeMap<>();
+            TreeMap<Integer,Double> topDist=new TreeMap<>();
             //relatednodes.put(i,relsni);
-            for(String key2:vectorfeats.keySet()){
+            for(String  key2:vectorfeats.keySet()){
                 
                 if(key1.equals(key2))
                     continue;
                 
                 //TreeMap<Integer,Double> relsnj= new TreeMap<>();                
                 //double dist = eDist.compute(feats[dictWords.get(key1)], feats[dictWords.get(key2)]);
-                //nodesrel.put(dictWords.get(key2),dist);
+                
                 double dist=0.0;
                 //double[] w= {0.4,0.4,0.2};
                 for(int fs1=0;fs1<feats[dictWords.get(key1)].length;fs1++){
@@ -2100,12 +2112,47 @@ public class AnalyzeClassifier {
                         dist+=4.0;//*w[fs1];
                     
                 }
-                
-                outInput.append("N"+dictWords.get(key1)+"\tN"+dictWords.get(key2)+"\t"+decFormat.format(dist)+"\n");
-                outInput.flush();                  
+                if(dist==1.0)
+                    lowDist.put(dictWords.get(key2),dist);
+                else
+                    topDist.put(dictWords.get(key2),dist);
+                //outInput.append("N"+dictWords.get(key1)+"\tN"+dictWords.get(key2)+"\t"+decFormat.format(dist)+"\n");
+                //outInput.flush();                  
 
             }
+            //DoubleValueComparator bvc = new DoubleValueComparator(nodesrel);
+            //SortedSet<Map.Entry<Integer, Double>> sortedDist = DoubleValueComparator.entriesSortedByValues(nodesrel);
+            //TreeMap<Integer, Double> sortedDist = new TreeMap<>(bvc);
+            //sortedDist.putAll(nodesrel);
             
+         
+            
+            
+            int totalDist=lowDist.size()+topDist.size();
+            double propL1= (double) lowDist.size()/totalDist;
+            double propL2= 1-propL1;
+            double totalL1=1000*propL1;
+            double totalL2=1000*propL2;
+            int counter =0;
+            for(Integer keys:lowDist.keySet()){
+                
+                outInput.append("N"+dictWords.get(key1)+"\tN"+keys+"\t"+decFormat.format(lowDist.get(keys).doubleValue())+"\n");
+                outInput.flush();  
+                                
+                if(counter>=totalL1)
+                    break;
+                counter++;
+            }    
+            counter =0;
+            for(Integer keys:topDist.keySet()){
+                
+                outInput.append("N"+dictWords.get(key1)+"\tN"+keys+"\t"+decFormat.format(topDist.get(keys).doubleValue())+"\n");
+                outInput.flush();  
+                                
+                if(counter>=totalL2)
+                    break;
+                counter++;
+            }            
             //System.out.println("scanned node"+dictWords.get(key1)+"===WORD==="+key1);
             System.out.println("scanned outer counter"+outercounter);
             outercounter++;

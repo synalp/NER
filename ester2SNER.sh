@@ -30,8 +30,28 @@ do
 done
 fi
 
-#NO PARSING
 if [ "0" == "0" ]; then
+echo "conversion du dev en .xml"
+mkdir dev 
+for i in /home/rojasbar/development/contnomina/corpus/ESTER2ftp/EN/dev/*.trs
+#for i in /home/rojasbar/development/contnomina/corpus/ESTER2ftp/EN/test/*.trs
+do
+  j=`echo $i | sed 's,/, ,g;s,trs$,,g' | awk '{print $NF}'`"xml"
+  echo "convert dev to xml "$i" "$j
+  echo $i > tmp.trsl
+  java -cp "$JCP" ester2.ESTER2EN -trs2xml tmp.trsl
+  mv output.xml oo2.xml
+  java -cp "$JCP" jsafran.ponctuation.UttSegmenter oo2.xml
+  mv -f output.xml /tmp/
+  pushd .
+  java -cp "$JCP" jsafran.JSafran -retag /tmp/output.xml
+  mv -f output_treetagged.xml /tmp/
+  popd
+  mv /tmp/output_treetagged.xml dev/$j
+done
+fi
+#NO PARSING
+if [ "1" == "0" ]; then
 echo "parsing du train et du test"
 #cp -f ../jsafran/mate.mods.FTBfull ./mate.mods
 cp -f ../jsafran/mate.mods.ETB ./mate.mods
