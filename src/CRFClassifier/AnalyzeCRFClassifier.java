@@ -190,18 +190,18 @@ public class AnalyzeCRFClassifier {
         }
    }     
         
-   public  void saveGroups(boolean ispn,boolean bltrain){
+   public  void saveGroups(boolean ispn,boolean bltrain, boolean isLower){
        //only one proper noun classifier
        String[] classStr={ONLYONEPNOUNCLASS};
        if(!ispn)
            classStr=groupsOfNE;
        
        for(String str:classStr)
-           saveFilesForLClassifier(str,bltrain);
+           saveFilesForLClassifier(str,bltrain,isLower);
 
     }
         
-    public void saveFilesForLClassifier(String en, boolean bltrain) {
+    public void saveFilesForLClassifier(String en, boolean bltrain, boolean isLower) {
             try {
                 GraphIO gio = new GraphIO(null);
                 OutputStreamWriter outFile =null;
@@ -258,8 +258,12 @@ public class AnalyzeCRFClassifier {
                                         outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+ inWiki +"\n");
                                     } 
                                      */                                  
-                                    if(!isStopWord(group.getMot(j).getPOS()))
-                                    outFile.append(group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+"NOCL\t"+lab+"\n");
+                                    if(!isStopWord(group.getMot(j).getPOS())){
+                                        if(isLower)
+                                            outFile.append(group.getMot(j).getForme().toLowerCase()+"\t"+group.getMot(j).getPOS()+"\t"+"NOCL\t"+lab+"\n");
+                                        else
+                                            outFile.append(group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+"NOCL\t"+lab+"\n");
+                                    }    
                                         
                             }
                             
@@ -334,12 +338,12 @@ public class AnalyzeCRFClassifier {
      * @param labeled
      * @return 
      */    
-    public void trainAllCRFClassifier(boolean ispn,boolean blsavegroups) {
+    public void trainAllCRFClassifier(boolean ispn,boolean blsavegroups, boolean isLower) {
         //TreeMap<String,Double> lcfeatsDict = new TreeMap<>();
         //TreeMap<String,Double> featsDict = new TreeMap<>();
         //save the trainset
         if(blsavegroups)
-            saveGroups(ispn,true);
+            saveGroups(ispn,true,isLower);
         //only one proper noun classifier
         String[] classStr={ONLYONEPNOUNCLASS};
         if(!ispn)
@@ -441,9 +445,9 @@ public class AnalyzeCRFClassifier {
     /**
      * Test the classifier
      */
-    public void testingClassifier(boolean ispn,boolean isSavingGroups, String smodel){
+    public void testingClassifier(boolean ispn,boolean isSavingGroups, String smodel, boolean isLower){
        if(isSavingGroups)
-            saveGroups(ispn,false);
+            saveGroups(ispn,false, isLower);
        
        if(ispn)
            smodel=ONLYONEPNOUNCLASS;
@@ -456,7 +460,7 @@ public class AnalyzeCRFClassifier {
             //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
             //Process process = Runtime.getRuntime().exec(call);
             //stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier
-            String cmd="java -Xmx1g -cp  /home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
+            String cmd="java -Xmx1g -cp  /home/synalp/experiments/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
             Process process = Runtime.getRuntime().exec(cmd);
             InputStream stdout = process.getInputStream();
             
@@ -477,9 +481,10 @@ public class AnalyzeCRFClassifier {
                 String line=input.readLine();
                 if(line == null)
                     break;
+                /*
                 if(!line.startsWith("Cls"))
                     continue;
-                
+                */
                 System.out.println("EVAL: "+line);
                  
             }          
@@ -538,7 +543,7 @@ public class AnalyzeCRFClassifier {
 
     public void drawingPNScores(){
 
-        trainAllCRFClassifier(true,true);
+        trainAllCRFClassifier(true,true,false);
         //Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
         //analyzing.testingClassifier(true,true, "");
         String sclass = CNConstants.PRNOUN;
@@ -583,10 +588,10 @@ public class AnalyzeCRFClassifier {
             
         }
         //*/
-        //trainLinearclassifier(ispn,blsavegroups)
-        analyzing.trainAllCRFClassifier(true,true);
+        //trainLinearclassifier(ispn,blsavegroups,islower)
+        analyzing.trainAllCRFClassifier(true,true,false);
         //Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
-        analyzing.testingClassifier(true,true, "");
+        analyzing.testingClassifier(true,true, "",false);
         //analyzing.drawingPNScores();
 
         
