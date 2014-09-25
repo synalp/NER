@@ -1,7 +1,7 @@
 #
 #Wed Sep 24 14:11:53 CEST 2014
 usePrevSequences=true
-gazette=gazettelcase.txt
+gazette=gazettes/gazettelcase.txt
 backgroundSymbol=NO
 useClassFeature=true
 useTypeSeqs2=true
