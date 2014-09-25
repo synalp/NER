@@ -18,6 +18,17 @@ Package:
 	AnalyzeClassifier.java : -interfaces with Stanford Linear Classifier 
  				 -implements a weakly supervised algorithm based on risk minimisation.
 					It can use the closed form for the risk estimation or a numerical approximation to the risk.
+					-configuration: you can give to the classifier the name of classifier, for the moment the following types are supported
+						-"pers": binary classifier for detecting whether or not one word is a person
+						-"org":  binary classifier for detecting whether or not one word is a organization
+						-"prod":  binary classifier for detecting whether or not one word is a product 
+						-"loc":  binary classifier for detecting whether or not one word is a localization 
+                                                -"pn": if there is one general classifier that detects a proper name
+						-"all": multiclass classifier detecting the categories: person,organization,produt and localization.
+						All these constants are setted in the class tools.CNConstans.
+					-input: set the static variables LISTTRAINFILES and LISTTESTFILES, which are files containing
+                                                the list of files to process, see as examples esterTrain.xmll and esterTest.
+						TODO: set these variables from ther project properties file 
 					You can set a flag for using wikipedia as an extrafeature.
 					If entity found in wikipedia as person, place,organization or product. (it can take up to 2h)
         Margin.java, store stanford linear classifier weights, features, and instances.
@@ -47,4 +58,6 @@ Package:
 -src/labelpropagation
 	LabelPropagation.java, prepares the input for the JUNTO label propagation toolit and evaluates its output file
        
+
+Classification tasks:
 
