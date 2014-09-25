@@ -12,7 +12,7 @@ In addition it access external ressources, namely a database with the wikipedia 
 
 We also implemented a weakly supervised algorithm that is first initialized with the weights given by the stanford linear classifier.
 
-The following classes interface with these utilities
+The following packages and classes interface with these utilities
 Package:
 -src/linearclassifier
 	AnalyzeClassifier.java : -interfaces with Stanford Linear Classifier 
@@ -39,9 +39,12 @@ Package:
 -src/lex , necessary classes for storing utterances, words, lexical unix, postags and dependency trees
 
 
--resources
+-src/resources
        WikipediaAPI.java, access to wikipedia pages in French all stored in a mysql database, up to feb 2104
        For the database configuration, in a mysql database, create an user "contonmina/contnomina" in localhost, 
        Create the wikipedia database by executing the script in wikipedia/db/dbWikibackupMar32014.sql
+
+-src/labelpropagation
+	LabelPropagation.java, prepares the input for the JUNTO label propagation toolit and evaluates its output file
        
 
