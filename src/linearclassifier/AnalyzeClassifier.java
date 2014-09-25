@@ -91,6 +91,11 @@ public class AnalyzeClassifier {
     public AnalyzeClassifier(){
 
     }
+    /**
+     * Updates the properties files with the name of the training file
+     * @param nameEntity
+     * @param iswiki 
+     */
     public void updatingPropFile(String nameEntity, boolean iswiki){
        
 
@@ -114,7 +119,7 @@ public class AnalyzeClassifier {
         
    }     
         
-   public  void saveGroups(String sclass,boolean bltrain, boolean iswiki){
+   public  void saveGroups(String sclass,boolean bltrain, boolean iswiki, boolean allLower){
        //only one proper noun classifier
        String[] classStr={ONLYONEPNOUNCLASS};
        
@@ -125,11 +130,11 @@ public class AnalyzeClassifier {
            classStr=groupsOfNE;
        
        for(String str:classStr)
-           saveFilesForLClassifier(str,bltrain, iswiki);
+           saveFilesForLClassifier(str,bltrain, iswiki, allLower);
 
     }
         
-    public void saveFilesForLClassifier(String en, boolean bltrain, boolean iswiki) {
+    public void saveFilesForLClassifier(String en, boolean bltrain, boolean iswiki, boolean isLower) {
             try {
                 //if(bltrain&iswiki)
                 //WikipediaAPI.loadWiki();
@@ -206,9 +211,12 @@ public class AnalyzeClassifier {
                                             wordcount++;
                                             System.out.println("processed word number " + wordcount);
                                         } 
-                                    }else if(!isStopWord(group.getMot(j).getPOS()))
-                                        outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\n");
-                                     
+                                    }else if(!isStopWord(group.getMot(j).getPOS())){
+                                        if(isLower)
+                                            outFile.append(lab+"\t"+group.getMot(j).getForme().toLowerCase()+"\t"+group.getMot(j).getPOS()+"\n");
+                                        else
+                                            outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\n");
+                                    }
                             }
                             
                             uttCounter++;
@@ -287,12 +295,12 @@ public class AnalyzeClassifier {
      * @param labeled
      * @return 
      */    
-    public void trainAllLinearClassifier(String model,boolean blsavegroups, boolean iswiki) {
+    public void trainAllLinearClassifier(String model,boolean blsavegroups, boolean iswiki, boolean isLower) {
         //TreeMap<String,Double> lcfeatsDict = new TreeMap<>();
         //TreeMap<String,Double> featsDict = new TreeMap<>();
         //save the trainset
         if(blsavegroups)
-            saveGroups(model,true,iswiki);
+            saveGroups(model,true,iswiki, isLower);
         //only one proper noun classifier
         String[] classStr={ONLYONEPNOUNCLASS};
        if(model.equals(ONLYONEMULTICLASS)){
@@ -311,10 +319,10 @@ public class AnalyzeClassifier {
         
     }   
     
-    public void trainMulticlassNER(boolean savegroups, boolean iswiki){
+    public void trainMulticlassNER(boolean savegroups, boolean iswiki, boolean isLower){
         //ONLYONEMULTICLASS
         if(savegroups)
-            saveGroups(ONLYONEMULTICLASS,true,iswiki);
+            saveGroups(ONLYONEMULTICLASS,true,iswiki, isLower);
               
        
         //call the classifier
@@ -561,9 +569,9 @@ public class AnalyzeClassifier {
     /**
      * Test the classifier
      */
-    public void testingClassifier(boolean isSavingGroups, String smodel, boolean iswiki){
+    public void testingClassifier(boolean isSavingGroups, String smodel, boolean iswiki, boolean isLower){
        if(isSavingGroups)
-            saveGroups(smodel,false, iswiki);
+            saveGroups(smodel,false, iswiki, isLower);
        
        
        updatingPropFile(smodel,iswiki);
@@ -1204,6 +1212,7 @@ public class AnalyzeClassifier {
         trainOneClassifier(sclass,false);  
         LinearClassifier model = modelMap.get(sclass);
         Margin margin = marginMAP.get(sclass);
+        int selectedFeats[] = margin.getTopWeights();
         //scan the test instances for train the gmm
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>(); 
@@ -1229,33 +1238,41 @@ public class AnalyzeClassifier {
             double[][] weightsForFeat=margin.getWeights();
             final float[] gradw = new float[weightsForFeat.length];
             
-            Random rnd = new Random();
-            int featIdx = rnd.nextInt(weightsForFeat.length);            
             
-            for(int w=0;w < weightsForFeat[featIdx].length;w++){
-                float w0 = (float) weightsForFeat[featIdx][w];
+            Random rnd = new Random();
+            
+            //takes one feature randomly
+            float randomsetval=rnd.nextFloat();
+            int featIdx =rnd.nextInt(weightsForFeat.length);
+            
+            if(randomsetval>0.8)
+                 featIdx = selectedFeats[rnd.nextInt(selectedFeats.length)];
+                 
+            
+            
+            float w0 = (float) weightsForFeat[featIdx][0];
 
-                if (emptyfeats.contains("["+featIdx+","+w+"]")) continue;
-                float delta = 0.5f;
+            if (emptyfeats.contains("["+featIdx+","+0+"]")) continue;
+            float delta = 0.5f;
 
+
+            weightsForFeat[featIdx][0] = w0 + w0*delta;
+
+            float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+
+            gradw[0] = (estimr-estimr0)/(w0*delta);
+            System.out.println("grad "+gradw[0]);
+
+            weightsForFeat[featIdx][0]=w0; 
+
+            if (gradw[0]==0) 
+                    emptyfeats.add("["+featIdx+","+0+"]");
+            else{  
+                weightsForFeat[featIdx][0] -= gradw[0] * eps;                    
+                weightsForFeat[featIdx][1]=-weightsForFeat[featIdx][0];
+            }    
                 
-                weightsForFeat[featIdx][w] = w0 + w0*delta;
-                
-                float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
-
-                gradw[w] = (estimr-estimr0)/(w0*delta);
-                System.out.println("grad "+gradw[w]);
-
-                weightsForFeat[featIdx][w]=w0; 
-
-                if (gradw[w]==0) 
-                        emptyfeats.add("["+featIdx+","+w+"]");
-                else{  
-                    weightsForFeat[featIdx][w] -= gradw[w] * eps;                    
-                    weightsForFeat[featIdx][w+1]=-weightsForFeat[featIdx][w];
-                }    
-                break;
-            }
+            
 
             counter++;
             estimr0 =(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass,isMC,numIntIters);
@@ -1335,45 +1352,39 @@ public class AnalyzeClassifier {
             //for(int i=0;i<weightsForFeat.length;i++){
             for(int i=0;i<selectedFeats.length;i++){
                 int featIdx = selectedFeats[i];
-                for(int w=0;w < weightsForFeat[featIdx].length;w++){
-                    float w0 = (float) weightsForFeat[featIdx][w];
+                
+                float w0 = (float) weightsForFeat[featIdx][0];
 //                    if(iter==0)
 //                        w0 = (float) Math.random(); //set initial weights randomly                   
-                    if (emptyfeats.contains("["+i+","+w+"]")) continue;
-                    float delta = 0.5f;
-                    /*for (int j=0;;j++) {
-                        if(j>10)
-                            break;*/
-                        System.out.println("before weight= "+w0);
-                        weightsForFeat[featIdx][w] = w0 + w0*delta;
-                        System.out.println("after delta= "+ delta);
-                        System.out.println("after w0 + w0*delta= "+ (w0 + w0*delta));
-                        System.out.println("after weight= "+weightsForFeat[featIdx][w]);
-                        //TODO:updating the new weights in the gmm?
-                        float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+                if (emptyfeats.contains("["+i+","+0+"]")) continue;
+                float delta = 0.5f;
+                /*for (int j=0;;j++) {
+                    if(j>10)
+                        break;*/
+
+                    weightsForFeat[featIdx][0] = w0 + w0*delta;
+                    float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
 
 
-                        System.out.println("For feat["+ i +"] weight["+ w +"] R estim ["+iter+"] = "+estimr0);    
+                    System.out.println("For feat["+ i +"] weight["+ 0 +"] R estim ["+iter+"] = "+estimr0);    
 
-                        gradw[w] = (estimr-estimr0)/(w0*delta);
-                        System.out.println("grad "+gradw[w]);
-                        // we don't go above 10 because some weights may not be used at all
-                        /*if (gradw[w]==0 && delta<10) delta*=2f;
-                        else if (gradw[w]>0.1||gradw[w]<-0.1) delta/=2f;
-                        else break;*/
-                    //}
+                    gradw[0] = (estimr-estimr0)/(w0*delta);
+                    System.out.println("grad "+gradw[0]);
+                    // we don't go above 10 because some weights may not be used at all
+                    /*if (gradw[w]==0 && delta<10) delta*=2f;
+                    else if (gradw[w]>0.1||gradw[w]<-0.1) delta/=2f;
+                    else break;*/
+                //}
 
-                    weightsForFeat[featIdx][w]=w0;    
-                
-                    if (gradw[w]==0) 
-                            emptyfeats.add("["+i+","+w+"]");
-                    else{  
-                        weightsForFeat[featIdx][w] -= gradw[w] * eps;
-                        weightsForFeat[featIdx][w] = -weightsForFeat[featIdx][w];
+                weightsForFeat[featIdx][0]=w0;    
+
+                if (gradw[0]==0) 
+                        emptyfeats.add("["+i+","+0+"]");
+                else{  
+                    weightsForFeat[featIdx][0] -= gradw[0] * eps;
+                    weightsForFeat[featIdx][1] = -weightsForFeat[featIdx][0];
                     }
-                    break;
-
-                }
+                    
                 /*
                 for(int w=0;w < weightsForFeat[0].length;w++){ 
                     weightsForFeat[0][w]= Math.random();
@@ -1710,12 +1721,15 @@ public class AnalyzeClassifier {
        
    }
 
-    public void evaluationCLASSRESULTS(){
+
+    public void evaluationCLASSRESULTS(String filename){
+
         BufferedReader testFile = null;
         try {
-            testFile = new BufferedReader(new InputStreamReader(new FileInputStream("analysis/CRFS/lcResults.txt"), UTF8_ENCODING));
+            testFile = new BufferedReader(new InputStreamReader(new FileInputStream("analysis/"+filename), UTF8_ENCODING));
             
             int tp=0, tn=0, fp=0, fn=0;
+            
             for(;;){
 
                 String line = testFile.readLine();   
@@ -1726,6 +1740,8 @@ public class AnalyzeClassifier {
                     continue;
                 
                 String values[] = line.split("\\t");
+                
+                
                 String label = values[1];
                 String recognizedLabel = values[2];
                 
@@ -1740,6 +1756,7 @@ public class AnalyzeClassifier {
                 if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.NOCLASS))
                     tn++;
 
+                
             }
             double precision= (double) tp/(tp+fp);
             double recall= (double) tp/(tp+fn);
@@ -2166,8 +2183,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             mfile.delete();
             mfile = new File(TESTFILE.replace("%S", sclass));
             mfile.delete();
-            analyzing.trainAllLinearClassifier(sclass,true,false);
-            analyzing.testingClassifier(true,sclass,false);
+            analyzing.trainAllLinearClassifier(sclass,true,false,false);
+            analyzing.testingClassifier(true,sclass,false,false);
             LinearClassifier model = analyzing.getModel(sclass);
             double f1=analyzing.testingClassifier(model,TESTFILE.replace("%S", sclass));
             analyzing.testingRForCorpus(sclass,false);
@@ -2220,8 +2237,9 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
         //mfile.delete();
         Long beforeUnsup=System.currentTimeMillis();
-        analyzing.wkSupClassifierConstr(CNConstants.PRNOUN,false);
-        //analyzing.wkSClassStochCoordGr(CNConstants.PRNOUN,false);
+        System.out.println("generated data:"+ Margin.GENERATEDDATA);
+        //analyzing.wkSupClassifierConstr(CNConstants.PRNOUN,true);
+        analyzing.wkSClassStochCoordGr(CNConstants.PRNOUN,true);
         //analyzing.unsupervisedClassifier(CNConstants.PRNOUN,false);
         //analyzing.chekingUnsupClassifierNInt(CNConstants.PRNOUN,false);
         //analyzing.checkingRvsTheta(CNConstants.PRNOUN,false);
@@ -2281,6 +2299,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         
         //analyzing.generatingArffData(true);
         //analyzing.evaluationKMEANS();
+
 
 
     }

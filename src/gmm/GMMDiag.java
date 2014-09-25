@@ -433,7 +433,7 @@ public class GMMDiag extends GMM {
                 means[y][1]=-means[y][0];
             }    
         }
-        System.out.println("split means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
+        //System.out.println("split means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
         
     }
     /**
@@ -507,10 +507,11 @@ public class GMMDiag extends GMM {
             for (int i=0;i<nlabs;i++) gconst[i]=co; 
             //double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y][l]);
             //co/=2.0;
-            
+        /*    
         System.out.println("train1gauss means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
         System.out.println("train1gauss var=["+diagvar[0][0]+","+diagvar[0][1]+";\n"+diagvar[1][0]+","+diagvar[1][1]+"]");
         System.out.println("train1gauss var=["+gconst[0]+","+gconst[1]+"]");
+        */
     }
     
     
