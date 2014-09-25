@@ -31,8 +31,8 @@ prune_threshold = 0
 
 # Choose one of the three label propagations algorithms
 #algo = lp_zgl
-#algo = adsorption
-algo = mad
+algo = adsorption
+#algo = mad
 
 # Hyperparameters for Adsorption and MAD
 mu1 = 1
