@@ -42,7 +42,7 @@ Package:
 -src/resources
        WikipediaAPI.java, access to wikipedia pages in French all stored in a mysql database, up to feb 2104
        For the database configuration, in a mysql database, create an user "contonmina/contnomina" in localhost, 
-       Create the wikipedia database by executing the script in wikipedia/db/dbWikibackupMar32014.sql
+       Create the wikipedia database by executing the script in wikipedia/db/dbWikibackupMar32014.sql (11G)  
 
 -src/labelpropagation
 	LabelPropagation.java, prepares the input for the JUNTO label propagation toolit and evaluates its output file
