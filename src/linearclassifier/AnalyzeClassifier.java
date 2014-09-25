@@ -68,7 +68,6 @@ public class AnalyzeClassifier {
     public static String TESTFILE="groups.%S.tab.lc.test";
     public static String LISTTRAINFILES="esterTrain.xmll";
     public static String LISTTESTFILES="esterTest.xmll";
-    public static String UTF8_ENCODING="UTF8";
     public static String PROPERTIES_FILE="slinearclassifier.props";
     public static String NUMFEATSINTRAINFILE="2-";
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
@@ -142,10 +141,10 @@ public class AnalyzeClassifier {
                 OutputStreamWriter outFile =null;
                 String xmllist=LISTTRAINFILES;
                 if(bltrain)
-                    outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", en)),UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
                 else{
                     xmllist=LISTTESTFILES;
-                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
                 }
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
                 int uttCounter=0,wordcount=0;
@@ -352,7 +351,7 @@ public class AnalyzeClassifier {
     public void getValues(String fileName, LinearClassifier model, List<List<Integer>> featsperInst,List<Integer> labelperInst){
         BufferedReader inFile = null;
         try {
-            inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), UTF8_ENCODING));
+            inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), CNConstants.UTF8_ENCODING));
             
             numInstances=0;
 
@@ -450,19 +449,19 @@ public class AnalyzeClassifier {
                 isntWscoreperLabel.add(instWronglF);
                 try{
                     //System.out.println(printVector(scoreperLabel[l]));
-                    OutputStreamWriter outFile = new OutputStreamWriter(new FileOutputStream("analysis/ftheta_r"+key+"_"+y+".m"),UTF8_ENCODING);
+                    OutputStreamWriter outFile = new OutputStreamWriter(new FileOutputStream("analysis/ftheta_r"+key+"_"+y+".m"),CNConstants.UTF8_ENCODING);
                     outFile.append("ftheta_r"+key+"_"+y+"="+rscoreperLabel.get(y).toString());
                     outFile.flush();
                     outFile.close();  
-                    outFile = new OutputStreamWriter(new FileOutputStream("analysis/ftheta_w"+key+"_"+y+".m"),UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream("analysis/ftheta_w"+key+"_"+y+".m"),CNConstants.UTF8_ENCODING);
                     outFile.append("ftheta_w"+key+"_"+y+"="+wscoreperLabel.get(y).toString());
                     outFile.flush();
                     outFile.close(); 
-                    outFile = new OutputStreamWriter(new FileOutputStream("analysis/inst_r"+key+"_"+y+".m"),UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream("analysis/inst_r"+key+"_"+y+".m"),CNConstants.UTF8_ENCODING);
                     outFile.append("inst_r"+key+"_"+y+"="+instRscoreperLabel.get(y).toString());
                     outFile.flush();
                     outFile.close(); 
-                    outFile = new OutputStreamWriter(new FileOutputStream("analysis/inst_w"+key+"_"+y+".m"),UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream("analysis/inst_w"+key+"_"+y+".m"),CNConstants.UTF8_ENCODING);
                     outFile.append("inst_w"+key+"_"+y+"="+isntWscoreperLabel.get(y).toString());
                     outFile.flush();
                     outFile.close();                     
@@ -523,8 +522,8 @@ public class AnalyzeClassifier {
      */
     public void checkingInstances(String modelKey){
         try{
-            BufferedReader inFile = new BufferedReader(new InputStreamReader(new FileInputStream("analysis/inst.mat"), UTF8_ENCODING));
-            BufferedReader trFile = new BufferedReader(new InputStreamReader(new FileInputStream(TRAINFILE.replace("%S", modelKey)), UTF8_ENCODING));
+            BufferedReader inFile = new BufferedReader(new InputStreamReader(new FileInputStream("analysis/inst.mat"), CNConstants.UTF8_ENCODING));
+            BufferedReader trFile = new BufferedReader(new InputStreamReader(new FileInputStream(TRAINFILE.replace("%S", modelKey)), CNConstants.UTF8_ENCODING));
             LinearClassifier lc=this.modelMap.get(modelKey);
             
             for(;;){
@@ -936,7 +935,7 @@ public class AnalyzeClassifier {
     }   
     public  float checkingRNumInt( String sclassifier,double closedForm) {
         try {
-        OutputStreamWriter fout  = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/comparingIntR.m"),UTF8_ENCODING);
+        OutputStreamWriter fout  = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/comparingIntR.m"),CNConstants.UTF8_ENCODING);
         
         //final float[] priors = computePriors(sclassifier,model);
         final float[] py = {0.9f,0.1f};
@@ -1428,10 +1427,10 @@ public class AnalyzeClassifier {
             String data="datamc=[\n"; 
             
             if(closedForm){
-                fout = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/ImpactCFAccOrW.m"),UTF8_ENCODING);
+                fout = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/ImpactCFAccOrW.m"),CNConstants.UTF8_ENCODING);
                 data="datacf=[\n";
             }else
-            fout = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/ImpactMCIntAcc_Init2.m"),UTF8_ENCODING);
+            fout = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/ImpactMCIntAcc_Init2.m"),CNConstants.UTF8_ENCODING);
             //train the classifier with a small set of train files
             trainOneClassifier(sclass,false);  
             LinearClassifier model = modelMap.get(sclass);
@@ -1593,7 +1592,7 @@ public class AnalyzeClassifier {
 
             boolean isMC=false;
             int numIntIters=100;
-            fout = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/Rvstheta.m"),UTF8_ENCODING);
+            fout = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/Rvstheta.m"),CNConstants.UTF8_ENCODING);
 
             //train the classifier with a small set of train files
             trainOneClassifier(sclass,false);
@@ -1666,7 +1665,7 @@ public class AnalyzeClassifier {
    public void evaluationPOSTAGGER(){
         BufferedReader testFile = null;
         try {
-            testFile = new BufferedReader(new InputStreamReader(new FileInputStream(TESTFILE.replace("%S", CNConstants.PRNOUN)), UTF8_ENCODING));
+            testFile = new BufferedReader(new InputStreamReader(new FileInputStream(TESTFILE.replace("%S", CNConstants.PRNOUN)), CNConstants.UTF8_ENCODING));
             int tp=0, tn=0, fp=0, fn=0;
             
             for(;;){
@@ -1726,7 +1725,7 @@ public class AnalyzeClassifier {
 
         BufferedReader testFile = null;
         try {
-            testFile = new BufferedReader(new InputStreamReader(new FileInputStream("analysis/"+filename), UTF8_ENCODING));
+            testFile = new BufferedReader(new InputStreamReader(new FileInputStream("analysis/"+filename), CNConstants.UTF8_ENCODING));
             
             int tp=0, tn=0, fp=0, fn=0;
             
@@ -1783,7 +1782,7 @@ public class AnalyzeClassifier {
         BufferedReader kmfile = null;
         try {
             testFile = new BufferedReader(new FileReader(TESTFILE.replace("%S",CNConstants.PRNOUN))); 
-            kmfile = new BufferedReader(new InputStreamReader(new FileInputStream("/home/rojasbar/development/contnomina/kmeans/kmresults.mat"), UTF8_ENCODING));
+            kmfile = new BufferedReader(new InputStreamReader(new FileInputStream("/home/rojasbar/development/contnomina/kmeans/kmresults.mat"), CNConstants.UTF8_ENCODING));
             int tp=0, tn=0, fp=0, fn=0;
             String line = ""; 
             for(;;){
@@ -2108,10 +2107,10 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         try {
         if(istrain){  
             infile = new BufferedReader(new FileReader(TRAINFILE.replace("%S",CNConstants.PRNOUN)));
-            outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", CNConstants.PRNOUN)+".arff"),UTF8_ENCODING);
+            outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", CNConstants.PRNOUN)+".arff"),CNConstants.UTF8_ENCODING);
         }else{
             infile = new BufferedReader(new FileReader(TESTFILE.replace("%S",CNConstants.PRNOUN))); 
-            outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", CNConstants.PRNOUN)+".arff"),UTF8_ENCODING);
+            outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", CNConstants.PRNOUN)+".arff"),CNConstants.UTF8_ENCODING);
         }
 
          
