@@ -33,6 +33,7 @@ import linearclassifier.AnalyzeClassifier;
 import static linearclassifier.AnalyzeClassifier.isStopWord;
 import resources.WikipediaAPI;
 import tools.CNConstants;
+import tools.GeneralConfig;
 import utils.SuiteDeMots;
 
 
@@ -52,8 +53,10 @@ public class ASROut {
     public static String  LISTTESTFILES="esterRecoTest.xmll";
     
     public ASROut(){
-
-       
+        GeneralConfig.loadProperties();
+        LISTDEVFILES=GeneralConfig.listASRDev;
+        LISTTESTFILES=GeneralConfig.listASRTest;
+        Capitalization.PROPERTIES_FILE=GeneralConfig.capProps;
     }
     
 

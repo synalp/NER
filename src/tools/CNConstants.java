@@ -43,6 +43,14 @@ package tools;
     public static String DEFLISTSVMTRAIN="esterParseTrainALL.xmll";
     public static String LISTSVMTESTPROP="listSVMTest";
     public static String DEFLISTSVMTEST="esterParseTestALL.xmll";
+    //ASR Output
+    public static String LISTASRDEVPROP="ListASRDev";
+    public static String DEFLISTASRDEV="esterRecoDev.xmll";
+    public static String LISTASRTESTPROP="ListASRTest";
+    public static String DEFLISTASRTEST="esterRecoTest.xmll";
+    //Capitalization
+    public static String CAPPROPS="crfProps";    
+    public static String DEFCAPPROPS="capitalization.props"; 
     //Wikipedia
     public static String WIKIDBHOSTPROP="wikiDBHost";
     public static String DEFWIKIDBHOST="localhost";
