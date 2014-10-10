@@ -99,7 +99,7 @@ public class Segment implements Cloneable{
         for(int i=start; i<=end; i++){
             text = text + " " + words.get(i).getContent();
         }
-        return text;
+        return text.trim();
     }
 
     public String getLemmas(){

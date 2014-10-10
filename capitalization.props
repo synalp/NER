@@ -1,5 +1,5 @@
 #
-#Mon Oct 06 13:44:26 CEST 2014
+#Mon Sep 29 16:55:54 CEST 2014
 usePrevSequences=true
 backgroundSymbol=NO
 useClassFeature=true
@@ -9,7 +9,7 @@ wordShape=chris2useLC
 useTypeySequences=true
 useDisjunctive=true
 noMidNGrams=true
-serializeTo=en.prod.crf.mods
+serializeTo=kiki.mods
 maxNGramLeng=6
 useTags=true
 useNGrams=true
@@ -17,7 +17,7 @@ usePrev=true
 tolerance=0.01
 useNext=true
 maxLeft=1
-trainFile=groups.prod.tab.crf.train
-map=word\=0,tag\=1,answer\=3
-useWord=true
+trainFile=cap.tab.crf.train
+map=word\=0,answer\=1
 useTypeSeqs=true
+useWord=true

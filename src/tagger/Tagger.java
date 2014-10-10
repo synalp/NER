@@ -42,10 +42,10 @@ public class Tagger{
         //GeneralConfig genConf= new GeneralConfig();
         String taggerPath= System.getProperty("com.sun.aas.instanceRoot");
         if(taggerPath== null){
-            taggerPath=CNConstants.DEFAULT_TREETAGGER;
+            taggerPath=CNConstants.DEFTAGGERDIR;
         }
         else
-            taggerPath+= "/applications/WOZ/"+CNConstants.DEFAULT_TREETAGGER;
+            taggerPath+= "/applications/WOZ/"+CNConstants.DEFTAGGERDIR;
         treetagger = new TreeTaggerWrapper<String>();
         tokenPos = 0;
         System.setProperty("treetagger.home", taggerPath);

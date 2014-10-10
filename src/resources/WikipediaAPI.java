@@ -32,6 +32,7 @@ import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 
 import tools.CNConstants;
+import tools.GeneralConfig;
 import tools.hibernate.HibernateUtil;
 
 /**
@@ -59,10 +60,11 @@ public class WikipediaAPI implements WikiConstants {
     
     public static void setConfiguration(){
         try {
-            dbConfig.setHost("localhost");
-            dbConfig.setDatabase("wikidb");
-            dbConfig.setUser("contnomina");
-            dbConfig.setPassword("contnomina");
+            GeneralConfig.loadProperties();
+            dbConfig.setHost(GeneralConfig.wikiDBHost);
+            dbConfig.setDatabase(GeneralConfig.wikiDBInstance);
+            dbConfig.setUser(GeneralConfig.wikiDBUser);
+            dbConfig.setPassword(GeneralConfig.wikiDBPassword);
             dbConfig.setLanguage(Language.french);    
             
             // Create a new French wikipedia.

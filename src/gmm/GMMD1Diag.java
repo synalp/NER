@@ -1,14 +1,11 @@
 package gmm;
 
 
-import edu.stanford.nlp.classify.LinearClassifier;
-
 import edu.stanford.nlp.util.Pair;
 import java.util.Arrays;
 import java.util.List;
-import linearclassifier.AnalyzeClassifier;
 import linearclassifier.Margin;
-import tools.CNConstants;
+
 
 
 /**
@@ -102,11 +99,12 @@ public class GMMD1Diag extends GMMD1 {
     }
     
     @Override
-    public double getLoglike(AnalyzeClassifier analyzer, Margin margin) {
+    public double getLoglike(Margin margin) {
        float z = 0f;
         double loglike=0;
-        for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
+        int numInstances = margin.getLabelPerInstances().size();
+        for (int instance=0;instance<numInstances;instance++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(instance, 0);
             else
@@ -125,7 +123,7 @@ public class GMMD1Diag extends GMMD1 {
         return loglike;
     }
 
-    public void trainOracle(AnalyzeClassifier analyzer, Margin margin) {
+    public void trainOracle(Margin margin) {
         float z = 0f;
         for (int i=0;i<ngauss;i++) {
             Arrays.fill(means, 0);
@@ -133,15 +131,16 @@ public class GMMD1Diag extends GMMD1 {
         }
         int[] nex = new int[ngauss];
         Arrays.fill(nex, 0);
-        for (int ex=0;ex<analyzer.getNumberOfInstances();ex++) {
-            List<Integer> instance = analyzer.getFeaturesPerInstance(classifier, ex);
+        int numInstances = margin.getLabelPerInstances().size();
+        for (int ex=0;ex<numInstances;ex++) {
+            List<Integer> instance = margin.getFeaturesPerInstance(ex);
             
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(ex, 0);
             else
                 z = margin.getScore(instance,0);
            
-            int goldLab = analyzer.getLabelsPerInstance(classifier,ex);
+            int goldLab = margin.getLabelPerInstance(ex);
             nex[goldLab]++;
             for (int i=0;i<ngauss;i++) {
                 means[goldLab]+=z;
@@ -156,15 +155,15 @@ public class GMMD1Diag extends GMMD1 {
                 
         }
         
-        for (int ex=0;ex<analyzer.getNumberOfInstances();ex++) {
-            List<Integer> features = analyzer.getFeaturesPerInstance(classifier, ex);
+        for (int ex=0;ex<numInstances;ex++) {
+            List<Integer> features = margin.getFeaturesPerInstance(ex);
             
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(ex, 0);
             else
                 z = margin.getScore(features,0);
             
-            int goldLab = analyzer.getLabelsPerInstance(classifier,ex);
+            int goldLab = margin.getLabelPerInstance(ex);
             for(int i=0; i<ngauss;i++){
                 tmp[i] = z-means[i];
                 diagvar[goldLab]+=tmp[i]*tmp[i];   
@@ -188,8 +187,8 @@ public class GMMD1Diag extends GMMD1 {
             gconst[y]=co;
         }
         
-        double loglike = getLoglike(analyzer, margin);
-        System.out.println("trainoracle loglike "+loglike+" nex "+analyzer.getNumberOfInstances());
+        double loglike = getLoglike(margin);
+        System.out.println("trainoracle loglike "+loglike+" nex "+numInstances);
     }
     
     
@@ -207,7 +206,7 @@ public class GMMD1Diag extends GMMD1 {
      * 
      * @param analyzer
      */
-    public void trainViterbi(AnalyzeClassifier analyzer, Margin margin) {
+    public void trainViterbi(Margin margin) {
         float z = 0f;
         final GMMD1Diag gmm0 = this.clone();
         
@@ -220,9 +219,9 @@ public class GMMD1Diag extends GMMD1 {
         Arrays.fill(nex, 0);
         Arrays.fill(nk, 0.0);
         
-               
-        for (int inst=0;inst<analyzer.getNumberOfInstances();inst++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, inst);
+        int numInstances = margin.getLabelPerInstances().size();       
+        for (int inst=0;inst<numInstances;inst++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(inst);
             
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(inst, 0);
@@ -261,8 +260,8 @@ public class GMMD1Diag extends GMMD1 {
                 
         }
         //System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
-        for (int inst=0;inst<analyzer.getNumberOfInstances();inst++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, inst);
+        for (int inst=0;inst<numInstances;inst++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(inst);
             
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(inst, 0);
@@ -344,13 +343,13 @@ public class GMMD1Diag extends GMMD1 {
      * @param margin 
      */
     @Override
-    public void train1gauss(AnalyzeClassifier analyze, Margin margin) {
+    public void train1gauss(Margin margin) {
         float z = 0f;
         
         Arrays.fill(means, 0);
-        
-        for (int ex=0;ex<analyze.getNumberOfInstances();ex++) {
-            List<Integer> featuresByInstance = analyze.getFeaturesPerInstance(classifier, ex);
+        int numInstances = margin.getLabelPerInstances().size();
+        for (int ex=0;ex<numInstances;ex++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(ex);
             
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(ex, 0);
@@ -364,12 +363,12 @@ public class GMMD1Diag extends GMMD1 {
             
         }
         
-        means[0]/=(float)analyze.getNumberOfInstances();
+        means[0]/=(float)numInstances;
         for (int j=1;j<ngauss;j++) means[j]=means[0];
         
         Arrays.fill(diagvar, 0);
-        for (int ex=0;ex<analyze.getNumberOfInstances();ex++) {
-            List<Integer> featuresByInstance = analyze.getFeaturesPerInstance(classifier, ex);
+        for (int ex=0;ex<numInstances;ex++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(ex);
             
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(ex, 0);
@@ -380,7 +379,7 @@ public class GMMD1Diag extends GMMD1 {
             diagvar[0]+=tmp[0]*tmp[0];
             
         }
-        assert analyze.getNumberOfInstances()>0;
+        assert numInstances>0;
 
         
         // precompute gconst
@@ -390,7 +389,7 @@ public class GMMD1Diag extends GMMD1 {
          */
         
         
-        diagvar[0] /= (double)analyze.getNumberOfInstances();
+        diagvar[0] /= (double)numInstances;
         if (diagvar[0] < minvar) diagvar[0]=minvar;
         for (int j=1;j<ngauss;j++) diagvar[j]=diagvar[0];
             
@@ -410,18 +409,19 @@ public class GMMD1Diag extends GMMD1 {
     }
     
     
-    public void train(AnalyzeClassifier analyzer, Margin margin) {
+    public void train(Margin margin) {
         final int niters=50;
-        train1gauss(analyzer, margin);
-        double loglike = getLoglike(analyzer, margin);
+        train1gauss(margin);
+        double loglike = getLoglike(margin);
         assert !Double.isNaN(loglike);
         double sqerr = Double.NaN;
+        int numInstances = margin.getLabelPerInstances().size();
         if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-        System.out.println("train1gauss loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ "sqerr "+sqerr);
+        System.out.println("train1gauss loglike "+loglike+" nex "+numInstances+ "sqerr "+sqerr);
         split();
         for (int iter=0;iter<niters;iter++) {
-            trainViterbi(analyzer, margin);
-            loglike = getLoglike(analyzer, margin);
+            trainViterbi(margin);
+            loglike = getLoglike(margin);
             sqerr = Double.NaN;
             if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
             //System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ " sqerr "+sqerr);

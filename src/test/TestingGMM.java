@@ -30,21 +30,20 @@ public class TestingGMM {
             String sclass=CNConstants.PRNOUN;
 
             analyzing.trainOneClassifier(sclass,false);
+            
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-            HashMap<String, List<List<Integer>>> featInstMap = new HashMap<>();
-            HashMap<String, List<Integer>> lblInstMap = new HashMap<>();         
-            featInstMap.put(sclass,featsperInst);
-            lblInstMap.put(sclass, labelperInst);  
-            analyzing.setFeaturesPerInst(featInstMap);
-            analyzing.setLabelsPerInst(lblInstMap);
+            Margin margin = analyzing.getMargin(sclass);
+            margin.setFeaturesPerInstance(featsperInst);
+            margin.setLabelPerInstance(labelperInst);
+    
             
             
             int numinst=labelperInst.size();
             //Margin margin = new Margin();
             //numinst=50;
             //analyzing.setNumberOfInstances(numinst);
-            Margin margin = analyzing.getMargin(sclass);
+            
             Margin.GENERATEDDATA=true;
             margin.generateRandomScore(numinst);
             /*
@@ -56,8 +55,7 @@ public class TestingGMM {
             System.out.println("******  ONE DIMENSIONAL GMM ********");
             // get scores
             GMMD1Diag gmm = new GMMD1Diag(2, priors);
-            //gmm.setClassifier("NOCLASS");
-            gmm.train(analyzing, margin);
+            gmm.train(margin);
             System.out.println("mean=[ "+gmm.getMean(0)+" , "+-gmm.getMean(0)+";\n"+
             +gmm.getMean(1)+" , "+-gmm.getMean(1)+"]");
             System.out.println("var=[ "+gmm.getVar(0)+" , "+gmm.getVar(0)+";\n"+
@@ -65,8 +63,7 @@ public class TestingGMM {
             System.out.println("GMM trained");      
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
             GMMDiag gmmMD = new GMMDiag(2, priors);
-            gmmMD.setClassifier("NOCLASS");
-            gmmMD.train(analyzing, margin);
+            gmmMD.train(margin);
             System.out.println("mean=[ "+gmmMD.getMean(0,0)+" , "+gmmMD.getMean(0,1)+";\n"+
             +gmmMD.getMean(1,0)+" , "+gmmMD.getMean(1,1)+"]");
             System.out.println("var=[ "+gmmMD.getVar(0,1,1)+" , "+gmmMD.getVar(0,1,1)+";\n"+

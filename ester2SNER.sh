@@ -1,10 +1,10 @@
 #!/bin/bash
 
 JCP="bin:lib/jsafran.jar:lib/mallet.jar:lib/mallet-deps.jar:lib/trove.jar:lib/org.annolab.tt4j-1.0.12.jar:build/classes::lib/anna.jar"
-
-allens="pers fonc org loc prod time amount"
+#allens="pers fonc org loc prod time amount"
+allens="pers org loc prod"
+#allens="pn"
 # debug
-#allens="pers"
 
 dest2="/home/rojasbar/development/contnomina/corpus/ESTER2ftp/package_scoring_ESTER2-v1.7/information_extraction_task"
 export PATH=$PATH:$dest2/tools
@@ -30,7 +30,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "conversion du dev en .xml"
 mkdir dev 
 for i in /home/rojasbar/development/contnomina/corpus/ESTER2ftp/EN/dev/*.trs
@@ -49,6 +49,7 @@ do
   popd
   mv /tmp/output_treetagged.xml dev/$j
 done
+fi
 
 #NO PARSING
 if [ "1" == "0" ]; then
@@ -73,22 +74,22 @@ echo "create training files for CRF"
 #ls parser/*_mate.xml > train.xmll
 #echo "no syntax"
 ls train/*.xml > train.xmll
-for i in pers fonc org loc prod time amount
+for i in $allens 
 do
   echo $i
-  # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
+  # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab.crf
   # laisse le champs syntaxique vide
   java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER train.xmll $i
-  cp -f groups.$i.tab groups.$i.tab.train
+  cp -f groups.$i.tab.crf groups.$i.tab.crf.train
 done
 fi
 
 if [ "1" == "0" ]; then
 echo "train CRF"
-for en in pers fonc org loc prod time amount 
+for en in $allens 
 #unk
 do
-  sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab.train,g' syn.props > tmp.props
+  sed 's,trainFile=synfeats0.tab,trainFile=groups.'$en'.tab.crf.train,g' syn.props > tmp.props
   java -Xmx20g -cp ../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar  edu.stanford.nlp.ie.crf.CRFClassifier -prop tmp.props
   mv kiki.mods en.$en.mods
 done
@@ -143,13 +144,13 @@ done
 fi
 if [ "1" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
-ls test/*.xml | grep -v -e merged > train.xmll
+ls test/*.xml | grep -v -e merged > test.xmll
 for i in $allens
 do
   echo $i
-  # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
-  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER train.xmll $i
-  cp -f groups.$i.tab groups.$i.tab.test
+  # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab.crf
+  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER test.xmll $i
+  cp -f groups.$i.tab.crf groups.$i.tab.crf.test
 done
 fi
 
@@ -158,7 +159,7 @@ for en in $allens
 do
   echo "test the CRF for $en"
   # I use a compiled version instead of the jar because I put verbose=2 so that to see all samples from Gibbs, and not just the best one
-  java -Xmx1g -cp ../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab > test.$en.log
+  java -Xmx1g -cp ../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab.crf.test > test.$en.log
 done
 fi
 #exit
@@ -174,10 +175,10 @@ done
 fi
 
 # merge les res dans un seul stmne
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
 echo "put all CRF outputs into a single xml file"
-ls test/*.xml | grep -v -e merged > train.xmll
-java -cp "$JCP" ester2.ESTER2EN -mergeens train.xmll $allens
+#ls test/*.xml | grep -v -e merged > train.xmll
+java -cp "$JCP" ester2.ESTER2EN -mergeens esterTestALL.xmll $allens
 echo "convert the graph.xml into a .stm-ne file"
 nl=`wc -l test/trs2xml.list | cut -d' ' -f1`
 for (( c=1; c<=$nl; c++ )) 
@@ -192,7 +193,8 @@ done
 fi
 
 # eval selon protocole ESTER2
-if [ "1" == "0" ]; then
+if [ "0" == "0" ]; then
+#analysis/spans/score-ne -rd $dest2/../../EN/test/ -cfg analysis/spans/NE-ESTER2.cfg -dic $dest2/tools/ESTER1-dictionnary-v1.9.1.dic test/*.stm-ne
 score-ne -rd $dest2/../../EN/test/ -cfg $dest2/example/ref/NE-ESTER2.cfg -dic $dest2/tools/ESTER1-dictionnary-v1.9.1.dic test/*.stm-ne
 fi
 

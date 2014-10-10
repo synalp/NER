@@ -31,7 +31,7 @@ public class GMMD1 {
     final int ngauss;
     final LogMath logMath = new LogMath();
     protected double[] tmp;
-    protected String classifier;
+   
     
     public GMMD1(final int nclasses, final float priors[]) {
         this(nclasses,priors,true);
@@ -60,10 +60,7 @@ public class GMMD1 {
         tmp = new double[ngauss];
     }
     
-    public void setClassifier(String classifierGroup){
-        this.classifier=classifierGroup;
-    }
-    
+
     public double getVar(int y) {
         return var[y];
     }
@@ -82,11 +79,12 @@ public class GMMD1 {
         return Double.NaN;
     }
 
-    public double getLoglike(AnalyzeClassifier analyzer, Margin margin) {
+    public double getLoglike(Margin margin) {
         float z = 0f;
         double loglike=0;
-        for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
+        int numberOfInstances=margin.getLabelPerInstances().size();
+        for (int instance=0;instance<numberOfInstances;instance++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
             for (int lab=0;lab<ngauss;lab++){ 
                 if(Margin.GENERATEDDATA)
                     z = margin.getGenScore(instance, 0);
@@ -110,13 +108,14 @@ public class GMMD1 {
     }
     
       
-    public void train1gauss(AnalyzeClassifier analyzer, Margin margin) {
+    public void train1gauss(Margin margin) {
         float z = 0f;
         for (int i=0;i<ngauss;i++) {
             Arrays.fill(means, 0);
         }
-        for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
+        int numberOfInstances=margin.getLabelPerInstances().size();
+        for (int instance=0;instance<numberOfInstances;instance++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(instance, 0);
             else
@@ -127,12 +126,12 @@ public class GMMD1 {
             }
         }
         for (int i=0;i<ngauss;i++) {
-            means[i]/=(float)analyzer.getNumberOfInstances();
+            means[i]/=(float)numberOfInstances;
             for (int j=1;j<ngauss;j++) means[j]=means[i];
         }
         
-        for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
+        for (int instance=0;instance<numberOfInstances;instance++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
             
             if(Margin.GENERATEDDATA)
                 z = margin.getGenScore(instance, 0);
@@ -149,7 +148,7 @@ public class GMMD1 {
             
         }
         for (int i=0;i<ngauss;i++) 
-                var[i]/=(double)analyzer.getNumberOfInstances();
+                var[i]/=(double)numberOfInstances;
         
         // precompute gconst
 
@@ -161,7 +160,7 @@ public class GMMD1 {
 
 
         
-        double loglike = getLoglike(analyzer, margin);
+        double loglike = getLoglike(margin);
         System.out.println("train1gauss loglike "+loglike);
     }
 

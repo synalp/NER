@@ -6,6 +6,10 @@ package reco;
 
 import CRFClassifier.AnalyzeCRFClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
+import edu.stanford.nlp.ie.crf.CRFClassifier;
+import edu.stanford.nlp.io.IOUtils;
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
 import tagger.Tagger;
 
 import java.io.BufferedReader;
@@ -19,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import jsafran.DetGraph;
 import jsafran.GraphIO;
+import lex.LexicalUnit;
 import lex.Segment;
 import lex.Utterance;
 import lex.Word;
@@ -146,6 +151,7 @@ public class ASROut {
 
 
                 }
+                
                 List<String> allRecoWords=new ArrayList<>();
                 BufferedReader recoFile = new BufferedReader(new FileReader(line));
                 Utterance recoBIGUtterance= new Utterance(); 
@@ -336,6 +342,65 @@ public class ASROut {
                 }
                 recoBIGUtterance.setWords(recWords);
                 
+                //capitalization
+                Capitalization cap = new Capitalization();
+                CRFClassifier capClass=cap.getClassifier();
+                //String fileContents = IOUtils.slurpFile(args[1]);
+                List<List<CoreLabel>> out = capClass.classify(recoBIGUtterance.toString());
+                //System.out.println(recoBIGUtterance.toString());
+                for (List<CoreLabel> sentence : out) {
+                  int wordCount=0;
+                  for (int i=0;i<sentence.size();i++) {
+                      String wordString=sentence.get(i).word();
+                      if(wordCount>=recoBIGUtterance.getWords().size()){
+                          System.out.println("FOUND word: "+wordString+ recoBIGUtterance.toString().length());
+                      }  
+
+                      if(wordString.equals("'"))
+                          wordString=sentence.get(i-1)+wordString;
+
+                      
+                      if(wordString.startsWith("aujourd")&&
+                         !wordString.equals("aujourd'hui")&&sentence.get(i+2).word().equals("hui") ){
+                              wordString=wordString+"'"+sentence.get(i+2);
+                              i+=2;
+                      } 
+                      if(wordString.startsWith("star")&&
+                         !wordString.equals("star'ac")&&sentence.get(i+2).word().equals("ac") ){
+                              wordString=wordString+"'"+sentence.get(i+2);
+                              i+=2;
+                      }                       
+                      if( wordString.equals("jusqu")){
+                          wordString=wordString+"'";
+                          i++;
+                      }                        
+                      System.out.println(wordString+"\t"+recoBIGUtterance.getWords().get(wordCount).getContent());
+                      if(recoBIGUtterance.getWords().get(wordCount).getContent().startsWith("<")|| 
+                         recoBIGUtterance.getWords().get(wordCount).getContent().startsWith("(%")){
+                          wordCount++;
+                          
+                      }    
+                      if(wordString.equals(recoBIGUtterance.getWords().get(wordCount).getContent())){
+                          if(sentence.get(i).get(CoreAnnotations.AnswerAnnotation.class).equals(Capitalization.CAPITALIZATION)){
+                            Word recWord= recoBIGUtterance.getWords().get(wordCount);
+                            LexicalUnit lu=recWord.getLexicalUnit();
+                            String wordStr=lu.getName();
+                            char[] chars = new char[wordStr.length()];
+                            wordStr.getChars(0, wordStr.length(), chars, 0); 
+                            wordStr=wordStr.replace(chars[0], Character.toUpperCase(chars[0]));
+                            lu.setName(wordStr);
+                            
+                          }
+                          wordCount++;    
+                      }
+                      //word.get(CoreAnnotations.AnswerAnnotation.class));
+                      
+                    //System.out.print(word.word() + '/' + word.get(CoreAnnotations.AnswerAnnotation.class) + ' ');
+                  }
+                  //System.out.println();
+                }
+              
+                
                 //alignment
                 String[] orWords= new String[allwords.size()];
                 allwords.toArray(orWords);
@@ -355,6 +420,7 @@ public class ASROut {
                         
                 }
                 /*
+                // Printing the alignment
                 for(Integer key:wordsMap.keySet()){
                     int val = wordsMap.get(key);
                     String valst = (val!=-1)?allwords.get(val):"EMPTY";
@@ -371,7 +437,7 @@ public class ASROut {
                 
                 for(int i=0; i<allRecoWords.size();i++){
                     int goldIndx= wordsMap.get(i);
-                    String wordStr=allRecoWords.get(i);
+                    String wordStr=recoBIGUtterance.getWords().get(i).getContent();
                     //What should I do if it does not find the word in the gold ???
                     String label=CNConstants.NOCLASS;
                     String pos=recoBIGUtterance.getWords().get(i).getPosTag().getName();
@@ -423,36 +489,46 @@ public class ASROut {
     }
      public void callStanfordNER(String sclass){
         AnalyzeCRFClassifier.MODELFILE="en.%S.crf.mods.reco";
-        ///*
+        /*
         processingASROutputToCRF(CNConstants.PRNOUN, true, false);
         processingASROutputToCRF(CNConstants.PRNOUN, false, false);
         //*/
-        crfclass.trainAllCRFClassifier(true,true,true);
+        crfclass.trainAllCRFClassifier(true,true,false);
         
-        AnalyzeCRFClassifier.TESTFILE=DEVFILE;  
-        crfclass.testingClassifier(true,false,sclass,false);
-        
-        AnalyzeCRFClassifier.TESTFILE=TESTFILE;  
-        crfclass.testingClassifier(true,false,sclass,false);        
+        AnalyzeCRFClassifier.TESTFILE=DEVFILE;
+        if(sclass.equals(CNConstants.PRNOUN)){
+            crfclass.testingClassifier(true,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
+            AnalyzeCRFClassifier.TESTFILE=TESTFILE;  
+            crfclass.testingClassifier(true,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");             
+        }else{
+            crfclass.testingClassifier(false,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
+            AnalyzeCRFClassifier.TESTFILE=TESTFILE;  
+            crfclass.testingClassifier(false,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");             
+        }    
+       
             
     }
     public void evaluatingResults(String fileName){
-        lclass.evaluationCLASSRESULTS(fileName);
+        AnalyzeClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,fileName);
         
     }
     public static void  main(String[] args){
         ASROut asrout= new ASROut();
-        //asrout.processingASROutput(CNConstants.PRNOUN, true);
-        //asrout.processingASROutput(CNConstants.PRNOUN, false);
+        //asrout.processingASROutputToCRF(CNConstants.PRNOUN, true,false);
+        //asrout.processingASROutputToCRF(CNConstants.PRNOUN, false,false);
         //asrout.callLClassifier(CNConstants.PRNOUN, false);
         //asrout.callStanfordNER(CNConstants.PRNOUN);
         ///*
-        asrout.evaluatingResults("RECO/CRFResultsRecoDev_gazlower.txt");
-        asrout.evaluatingResults("RECO/CRFResultsRecoTest_gazlower.txt");
-        //asrout.evaluatingResults("RECO/LCResultsRecoDev.txt");
-        //asrout.evaluatingResults("RECO/LCResultsRecoTest.txt");
-        
+        //asrout.evaluatingResults("analysis/RECO/CRFResultsRecoDev_gazlower.txt");
+        //asrout.evaluatingResults("analysis/RECO/CRFResultsRecoTest_gazlower.txt");
+        //asrout.evaluatingResults("analysis/RECO/LCResultsRecoDev.txt");
+        //asrout.evaluatingResults("analysis/RECO/LCResultsRecoTest.txt");
         //*/
+        asrout.evaluatingResults("analysis/Reco/AfterCapcrfDev.txt");
+        asrout.evaluatingResults("analysis/Reco/AfterCapcrfTest.txt");
+        //asrout.evaluatingResults("analysis/Reco/AfterCapcrfDevNOGAZ.txt");
+        //asrout.evaluatingResults("analysis/Reco/AfterCapcrfTestNOGAZ.txt");
+        
     }
     
 }    

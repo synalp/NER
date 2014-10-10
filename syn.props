@@ -4,7 +4,7 @@ useTags=true
 usePrev=true
 useNext=true
 
-backgroundSymbol=NO
+backgroundSymbol=O
 
 tolerance=0.01
 

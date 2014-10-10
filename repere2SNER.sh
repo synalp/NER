@@ -48,9 +48,8 @@ fi
 #done
 #fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create training files for CRF"
-#ls parser/*_mate.xml > train.xmll
 #echo "no syntax"
 ls reptrain/*.xml > train.xmll
 for i in pers
@@ -59,7 +58,7 @@ do
   # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
   # laisse le champs syntaxique vide
   java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER train.xmll $i
-  cp -f groups.$i.tab groups.$i.tab.train
+  cp -f groups.$i.tab.crf groups.$i.tab.train
 done
 fi
 
@@ -99,7 +98,7 @@ do
 done
 fi
 
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "conversion du test en .xml, similar to train"
 rm -rf reptest
 mkdir reptest
@@ -121,15 +120,15 @@ do
   echo $i" reptest/"$j >> reptest/trs2xml.list
 done
 fi
-if [ "0" == "0" ]; then
+if [ "1" == "0" ]; then
 echo "create the TAB files from the groups in the graphs.xml files"
-ls reptest/*.xml | grep -v -e merged > train.xmll
+ls reptest/*.xml | grep -v -e merged > test.xmll
 for i in $allens
 do
   echo $i
   # merge toutes les ENs qui commencent par $i en un seul fichier groups.$i.tab
-  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER train.xmll $i
-  cp -f groups.$i.tab groups.$i.tab.test
+  java -Xmx1g -cp "$JCP" ester2.ESTER2EN -saveNER test.xmll $i
+  cp -f groups.$i.tab.crf groups.$i.tab.test
 done
 fi
 
@@ -138,7 +137,7 @@ for en in $allens
 do
   echo "test the CRF for $en"
   # I use a compiled version instead of the jar because I put verbose=2 so that to see all samples from Gibbs, and not just the best one
-  java -Xmx1g -cp ../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab > test.$en.log
+  java -Xmx1g -cp ../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier en.$en.mods -testFile groups.$en.tab.test > test.$en.log
 done
 fi
 #exit

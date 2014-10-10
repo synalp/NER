@@ -1,6 +1,3 @@
-/*
- * Created in June-2008
- */
 package tools;
 
 
@@ -20,7 +17,44 @@ package tools;
  * -->
  */
  public class CNConstants {
-	
+    //properties file
+    public static String PROPERTIES_FILE="etc/ner.properties";
+    
+    public static String PARSEDIRPROP="parseDir";
+    public static String DEFPARSEDIR="parse";
+    //TREETAGGER directory
+    public static String TAGGERDIRPROP="treetagger";
+    public static String DEFTAGGERDIR="tagger";
+
+    //Stanford Linear Classifier
+    public static String LISTLCTRAINPROP="listLCTrain";
+    public static String DEFLISTTRAIN="esterTrainALL.xmll";
+    public static String LISTLCTESTPROP="listLCTest";
+    public static String DEFLISTTEST="esterTestALL.xmll";
+    public static String LCPROPS="lcProps";
+    public static String DEFLCPROPS="slinearclassifier.props";
+    //StanfordCRF
+    public static String LISTCRFTRAINPROP="listCRFTrain";
+    public static String LISTCRFTESTPROP="listCRFTest";
+    public static String CRFPROPS="crfProps";
+    public static String DEFCRFPROPS="scrf.props";
+    //SVMLight
+    public static String LISTSVMTRAINPROP="listSVMTrain";
+    public static String DEFLISTSVMTRAIN="esterParseTrainALL.xmll";
+    public static String LISTSVMTESTPROP="listSVMTest";
+    public static String DEFLISTSVMTEST="esterParseTestALL.xmll";
+    //Wikipedia
+    public static String WIKIDBHOSTPROP="wikiDBHost";
+    public static String DEFWIKIDBHOST="localhost";
+    public static String WIKIDBPORTPROP="wikiDBPort";
+    public static String DEFWIKIDBPORT="3306";
+    public static String WIKIDBINSTANCEPROP="wikiDBInstance";
+    public static String DEFWIKIDBINSTANCE="wikidb";
+    public static String WIKIDBUSERPROP="wikiDBUser";
+    public static String DEFWIKIDBUSER="contnomina";
+    public static String WIKIDBPASSPROP="wikiDBPassword";    
+    public static String DEFWIKIDBPASS="contnomina";  
+    
     //General Constants
     public static final String  CHAR_NULL = "--";
     public static final int INT_NULL=-1;
@@ -32,6 +66,8 @@ package tools;
     public static String NOCLASS="NO";
     public static String OUTCLASS="O";
     public static String ALL="all"; 
+    public static String BIO="BIO";
+    public static String BILOU="BILOU";
     
     public static String GAUSSIAN="G";
     public static String BETA="B";
@@ -50,7 +86,7 @@ package tools;
     public static String CURRWORD="CW_";
     public static int    tree_level_threshold=8;
     public static String RECOEXT=".utf8";
-    public static final String  DEFAULT_TREETAGGER="tagger";
+   
     //Tree tagger configuration
     public static final String TAGGER_REL="postag";
     public static final String TREETAGGERPAR="/lib/french-utf8.par";

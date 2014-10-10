@@ -4,10 +4,13 @@
  */
 package linearclassifier;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.util.Index;
 import edu.stanford.nlp.util.Triple;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -29,10 +32,22 @@ public class Margin {
     private double[][] weights;
     private Index<String> labelIdx, featureIdx;
     private LinearClassifier stanfordModel;
+    private String classifierBinFile;
     //private int numInstances;
     //private double[] sumfeatsPerInst;
     private float[][] generatedScores;
-
+    private List<List<Integer>> featsperInst = new ArrayList<>();
+    private List<Integer> labelperInst = new ArrayList<>();    
+    
+    //paralell coordinate gradient
+    private List<Double> originalWeights0 = new ArrayList<>();
+    List<Double> shuffleWeights = new ArrayList<>();
+    private int startIndex=0;
+    
+    private List<Double> subListOfFeatures= new ArrayList<>();
+    private HashMap<Integer,Integer> shuffleAndOrFeatIdxMap = new HashMap<>();
+    double[][] orWeightsCopy ;
+    
     public Margin(){
         
     }
@@ -47,6 +62,11 @@ public class Margin {
     public void setWeights(double[][] weightss){
         this.weights=weightss;
     }
+
+    public void setWeight(int index, double[] values){
+        this.weights[index]=values;
+    }    
+    
     public void updateWeights(double[][] weightss){
         for(int l=0; l< weightss.length;l++)
           this.weights[l]=Arrays.copyOf(weightss[l],weightss[l].length);
@@ -172,5 +192,145 @@ public class Margin {
             
         }
         return featIndexes;
+    }
+    
+    public List<Double> getOrWeights(){
+        
+        for(int i=0;i< weights.length;i++){
+            originalWeights0.add(new Double(weights[i][0]));
+        }
+        return originalWeights0;
+    }
+    
+    public List<Double> shuffleWeights(){
+        getOrWeights();
+        shuffleWeights = new ArrayList<>(originalWeights0);
+        Collections.shuffle(shuffleWeights);
+        //set the indexes
+        for(int i=0;i<shuffleWeights.size();i++){
+            shuffleAndOrFeatIdxMap.put(i,originalWeights0.indexOf(shuffleWeights.get(i)));
+        }        
+        return shuffleWeights;
+    }
+    
+    public void copySharedyInfoParallelGrad(Margin margin){
+        this.featsperInst=margin.featsperInst;
+        this.labelperInst=margin.labelperInst;
+        this.originalWeights0= margin.originalWeights0;
+        this.shuffleWeights=margin.shuffleWeights;
+        this.shuffleAndOrFeatIdxMap.putAll(margin.shuffleAndOrFeatIdxMap);
+          
+    }
+    
+    public List<Double> getShuffleWeights(){
+        return this.shuffleWeights;
+    }
+    
+    
+    public void setSubListOfShuffleFeats(int startIdx, int endIdx){
+        this.startIndex=startIdx;
+        if(endIdx>shuffleWeights.size())
+            endIdx=shuffleWeights.size();
+        subListOfFeatures = shuffleWeights.subList(startIdx, endIdx);
+        
+        
+    }
+    public void setSubListOfFeats(int startIdx, int endIdx){
+        this.startIndex=startIdx;
+        if(endIdx>originalWeights0.size())
+            endIdx=originalWeights0.size();
+        subListOfFeatures = originalWeights0.subList(startIdx, endIdx);
+        
+        
+    }    
+    public List<Double> getSubListOfFeats(){
+        return this.subListOfFeatures;
+    }
+    
+    public void copyOrWeightsBeforGradient(){
+        if(weights.length==0)
+            return;
+        
+        orWeightsCopy  = new double[weights.length][];
+        int nlabs=weights[0].length;
+        for(int i=0; i<weights.length; i++){
+            Arrays.copyOf(weights[i],nlabs );
+        }       
+    }
+    
+    public void updatingStocGradientStep(int subListIndex, double value){
+        int shuffledIndex= startIndex+subListIndex;
+        int index = shuffleAndOrFeatIdxMap.get(shuffledIndex);
+
+        weights[index][0]=value;
+        weights[index][1]=-weights[index][0]; 
+        
+        
+    }
+    
+    public void updatingGradientStep(int subListIndex, double value){
+        int index= startIndex+subListIndex;
+        
+        weights[index][0]=value;
+        weights[index][1]=-weights[index][0]; 
+        
+        
+    }    
+    public double[] getPartialShuffledWeight(int subListIndex){
+        int shuffledIndex= startIndex+subListIndex;
+        int index = shuffleAndOrFeatIdxMap.get(shuffledIndex);
+        return(weights[index]);
+       
+    }
+     public double[] getPartialWeight(int subListIndex){
+        int index= startIndex+subListIndex;
+        
+        return(weights[index]);
+       
+    }   
+    public double[][] getOriginalWeights(){
+        return orWeightsCopy;
+    }
+    
+    public int getOrIndexFromShuffled(int subListIndex){
+        int shuffledIndex= startIndex+subListIndex;
+        return this.shuffleAndOrFeatIdxMap.get(shuffledIndex);
+    }
+    public int getOrWeightIndex(int subListIndex){
+        int index= startIndex+subListIndex;
+        return index;
+    }    
+    public void setFeaturesPerInstance(List<List<Integer>> featspInst){
+        this.featsperInst = featspInst;
+    }
+    /**
+     * Return the features per instance associated 
+     * @param classifier
+     * @param instance
+     * @return 
+     */    
+    public List<Integer> getFeaturesPerInstance(Integer instance){
+      return this.featsperInst.get(instance);   
+    }
+    public List<List<Integer>> getFeaturesPerInstances(){
+      return this.featsperInst;   
+    }  
+    
+    public void setLabelPerInstance(List<Integer> lblPerInsts){
+        this.labelperInst=lblPerInsts;
+    }
+    
+    public Integer getLabelPerInstance(Integer instance){
+      return this.labelperInst.get(instance);   
+    }    
+    public List<Integer> getLabelPerInstances(){
+      return this.labelperInst;   
+    }       
+    
+    public void setBinaryFile(String filename){
+        this.classifierBinFile = filename;
+    }
+    public String getBinaryFile(){
+        return this.classifierBinFile;
     }
 }

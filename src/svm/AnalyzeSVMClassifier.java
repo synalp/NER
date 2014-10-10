@@ -36,6 +36,7 @@ import lex.Word;
 import linearclassifier.AnalyzeClassifier;
 import static linearclassifier.AnalyzeClassifier.isStopWord;
 import tools.CNConstants;
+import tools.GeneralConfig;
 import tools.Histoplot;
 import utils.ErrorsReporting;
 import tools.IntegerValueComparator;
@@ -54,7 +55,7 @@ public class AnalyzeSVMClassifier implements Serializable{
     public static String LISTTRAINFILES="esterParseTrainALL.xmll";//"esterParseTrainETB.xmll";//
     public static String LISTTESTFILES="esterParseTestALL.xmll";//"esterParseTestETB.xmll"; //
     public static String UTF8_ENCODING="UTF8";
-    public static String PROPERTIES_FILE="streek.props";
+    //public static String PROPERTIES_FILE="streek.props";
     public static String NUMFEATSINTRAINFILE="2-";
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
@@ -65,7 +66,10 @@ public class AnalyzeSVMClassifier implements Serializable{
     
     
     public AnalyzeSVMClassifier(){
-
+        GeneralConfig.loadProperties();
+        LISTTRAINFILES=GeneralConfig.listSVMTrain;
+        LISTTESTFILES=GeneralConfig.listSVMTest;
+        
     }
     public void saveFilesForLClassifierWords(String en, boolean istrain, boolean onlyVector, boolean isPOS) {
             try {

@@ -688,24 +688,24 @@ public class ESTER2EN {
 					nexinutt++;
 					
 					// calcul du label
-					String lab = "NO";
+					String lab = "O";
 					int[] groups = g.getGroups(j);
 					if (groups!=null)
 						for (int gr : groups) {
 							if (g.groupnoms.get(gr).equals(en)) {
 								int debdugroupe = g.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                                /*
-                                                                int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
+                                                                ///*
+                                                                int endgroupe = g.groups.get(gr).get(g.groups.get(gr).size()-1).getIndexInUtt()-1;
                                                                 if(debdugroupe==endgroupe){ 
-                                                                    lab=en+"E";
+                                                                    lab=en+"U";
                                                                 }else{
                                                                     if (debdugroupe==j) lab = en+"B";
-                                                                    else if(endgroupe==j) lab=en+"E";
-                                                                    //else lab = en+"I";
-                                                                }*/
-                                                                    if (debdugroupe==j) lab = en;//+"B";    
+                                                                    else if(endgroupe==j) lab=en+"L";
+                                                                    else lab = en+"I";
+                                                                }//*/
+                                                                 /*   if (debdugroupe==j) lab = en;//+"B";    
                                                                     else lab = en;//+"I";                                                                
-								
+								*/
 								break;
 							}
 						}
@@ -723,7 +723,7 @@ public class ESTER2EN {
 	public static void saveGroups(String xmllist, String en) {
 		try {
 			GraphIO gio = new GraphIO(null);
-			PrintWriter fout = FileUtils.writeFileUTF("groups."+en+".tab");
+			PrintWriter fout = FileUtils.writeFileUTF("groups."+en+".tab.crf");
 			BufferedReader fl = new BufferedReader(new FileReader(xmllist));
 			for (;;) {
 				String s = fl.readLine();
@@ -736,22 +736,23 @@ public class ESTER2EN {
 						nexinutt++;
 						
 						// calcul du label
-						String lab = "NO";
+						String lab = "O";
 						int[] groups = g.getGroups(j);
 						if (groups!=null)
 							for (int gr : groups) {
 								if (g.groupnoms.get(gr).startsWith(en)) {
 									int debdugroupe = g.groups.get(gr).get(0).getIndexInUtt()-1;
                                                                     /*
-                                                                    int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
+                                                                    int endgroupe = g.groups.get(gr).get(g.groups.get(gr).size()-1).getIndexInUtt()-1;
                                                                         
                                                                     if(debdugroupe==endgroupe){ 
-                                                                        lab=en+"E";
+                                                                        lab=en+"U";
                                                                     }else{
                                                                         if (debdugroupe==j) lab = en+"B";
-                                                                        else if(endgroupe==j) lab=en+"E";
-                                                                        //else lab = en+"I";
-                                                                    }//*/                                                                        
+                                                                        else if(endgroupe==j) lab=en+"L";
+                                                                        else lab = en+"I";
+                                                                    }//*/                        
+                                                                    
                                                                     if (debdugroupe==j) lab = en; //+"B";    
                                                                     else lab = en; //+"I";
 								    break;
@@ -781,7 +782,7 @@ public class ESTER2EN {
 			// pour debugging
 			int[] curline = new int[ens.length];
 			
-			for (int i=0;i<ens.length;i++) fens[i]=new BufferedReader(new FileReader("test."+ens[i]+".log"));
+			for (int i=0;i<ens.length;i++) fens[i]=new BufferedReader(new FileReader("analysis/CRF/test."+ens[i]+".log"));
    
                         //MAP: group stack
                         HashMap<String,Stack<String>> stackbyGroup = new HashMap<>();
@@ -791,6 +792,7 @@ public class ESTER2EN {
 			int nfiles=0, ngraphs=0, nwords=0;
 			for (;;) {
 				String gsfilename = fl.readLine();
+                                System.out.println("Processing file " +gsfilename);
 				if (gsfilename==null) break;
 				nfiles++;
 				List<DetGraph> gs = gio.loadAllGraphs(gsfilename);
@@ -805,28 +807,35 @@ public class ESTER2EN {
 						for (int k=0;k<ens.length;k++) {
 							// saute les lignes vides
 							String sen;
+                                                        int linenumber=0;
 							for (;;) {
 								sen = fens[k].readLine();
+                                                                if(sen==null)
+                                                                    continue;
+                                                                  
+                                                                linenumber++;
+                                                                
 								curline[k]++;
+                                                                //System.out.println(sen);
 								sen=sen.trim();
 								if (sen.length()>0) break;
 							}
-                                                        
+                                                    
 							String[] ss = sen.split("\t");
-                                                        if(ss[0].equalsIgnoreCase("Roussin"))
-                                                            System.out.println("found");
+                                              
                                                         //adds a group with only one word
                                                         if(ss[recol].startsWith(ens[k])){
-                                                            /*
-                                                             //only B and E
+                                                            ///*
+                                                             //only B and L
+                                                            if(ss[recol].equals(ens[k]+"U")){
                                                              Stack<String> stack = new Stack<>();
                                                               if(stackbyGroup.containsKey(ens[k])){
                                                                    stack= stackbyGroup.get(ens[k]);
                                                               }  
                                                               stack.push((j)+"_"+ss[recol]);
                                                               stackbyGroup.put(ens[k], stack);
-                                                             
-                                                             */
+                                                            } 
+                                                             //*/
                                                             
                                                             if(ss[recol].equals(ens[k]+"B")){
                                                                 Stack<String> stack = new Stack<>();
@@ -845,7 +854,7 @@ public class ESTER2EN {
                                                                 stackbyGroup.put(ens[k], stack);
                                                             } 
                                                             //put all the intermediate words in a temporary stack
-                                                            if(ss[recol].equals(ens[k]+"I"))
+                                                            if(ss[recol].equals(ens[k]+"I")||ss[recol].equals(ens[k]+"L"))
                                                                 interWords.push((j)+"_"+ss[recol]);
 
                                                             
@@ -905,6 +914,18 @@ public class ESTER2EN {
                                                         lastSolvedEnd=endPos;
                                                     }     
                                                 }
+                                                if(vals[1].equals(ens[k]+"U")){
+                                                      //System.out.println("Single word entity");
+                                                      //creates a group of one word 
+                                                      tmpgroup.addgroup(Integer.parseInt(vals[0]), Integer.parseInt(vals[0]), ens[k]);
+
+                                                } 
+                                                if(vals[1].equals(ens[k]+"L")){
+                                                      //System.out.println("Single word entity");
+                                                      //creates a group of one word 
+                                                      endLabels.push(vals[0]);
+
+                                                }                                                    
                                             }
                                             //solve the pending ends with the last span begin found
                                             while(!endLabels.isEmpty()){

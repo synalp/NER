@@ -31,7 +31,7 @@ public class GMM {
     final int nlabs;
     final LogMath logMath = new LogMath();
     protected double[] tmp;
-    protected String classifier;
+    //protected String classifier;
     
     public GMM(final int nclasses, final float priors[]) {
         this(nclasses,priors,true);
@@ -59,10 +59,10 @@ public class GMM {
             for (int i=0;i<nlabs;i++) logWeights[i] = priors[i];
         tmp = new double[nlabs];
     }
-    
+    /*
     public void setClassifier(String classifierGroup){
         this.classifier=classifierGroup;
-    }
+    }*/
     
     public double getVar(int y, int a, int b) {
         return vars[y].get(a, b);
@@ -82,11 +82,12 @@ public class GMM {
         return Double.NaN;
     }
 
-    public double getLoglike(AnalyzeClassifier analyzer, Margin margin) {
+    public double getLoglike(Margin margin) {
         final float[] z = new float[nlabs];
         double loglike=0;
-        for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
+        int numOfInstances= margin.getLabelPerInstances().size();
+        for (int instance=0;instance<numOfInstances;instance++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
             for (int lab=0;lab<nlabs;lab++){ 
                 if(Margin.GENERATEDDATA)
                     z[lab] = margin.getGenScore(instance, lab);
@@ -112,13 +113,14 @@ public class GMM {
     }
     
       
-    public void train1gauss(AnalyzeClassifier analyzer, Margin margin) {
+    public void train1gauss(Margin margin) {
         final float[] z = new float[nlabs];
         for (int i=0;i<nlabs;i++) {
             Arrays.fill(means[i], 0);
         }
-        for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
+        int numberOfInstances=margin.getLabelPerInstances().size();
+        for (int instance=0;instance<numberOfInstances;instance++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
             for (int lab=0;lab<nlabs;lab++) {
                 if(Margin.GENERATEDDATA)
                     z[lab] = margin.getGenScore(instance, lab);
@@ -130,12 +132,12 @@ public class GMM {
             }
         }
         for (int i=0;i<nlabs;i++) {
-            means[0][i]/=(float)analyzer.getNumberOfInstances();
+            means[0][i]/=(float)numberOfInstances;
             for (int j=1;j<nlabs;j++) means[j][i]=means[0][i];
         }
         vars[0]=new Matrix(nlabs, nlabs);
-        for (int instance=0;instance<analyzer.getNumberOfInstances();instance++) {
-            List<Integer> featuresByInstance = analyzer.getFeaturesPerInstance(classifier, instance);
+        for (int instance=0;instance<numberOfInstances;instance++) {
+            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
             for (int lab=0;lab<nlabs;lab++) {
                 if(Margin.GENERATEDDATA)
                     z[lab] = margin.getGenScore(instance, lab);
@@ -154,7 +156,7 @@ public class GMM {
         }
         for (int i=0;i<nlabs;i++) {
             for (int j=0;j<nlabs;j++) {
-                vars[0].set(i, j, vars[0].get(i,j)/(double)analyzer.getNumberOfInstances());
+                vars[0].set(i, j, vars[0].get(i,j)/(double)numberOfInstances);
             }
         }
         
@@ -175,7 +177,7 @@ public class GMM {
             System.exit(1);
         }
         
-        double loglike = getLoglike(analyzer, margin);
+        double loglike = getLoglike(margin);
         System.out.println("train1gauss loglike "+loglike);
     }
 

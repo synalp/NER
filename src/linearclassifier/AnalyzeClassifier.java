@@ -5,6 +5,7 @@
 package linearclassifier;
 
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -16,6 +17,8 @@ import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.Datum;
 
+
+import edu.stanford.nlp.util.Pair;
 import gmm.GMMDiag;
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,32 +33,32 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collection;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
-import java.text.DecimalFormat;
 import java.util.Random;
-import java.util.TreeMap;
 
 
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jsafran.DetGraph;
 import jsafran.GraphIO;
-import org.apache.commons.math3.analysis.integration.TrapezoidIntegrator;
+import optimization.MultiCoreCoordinateDescent;
+import optimization.MultiCoreStocCoordDescent;
 import resources.WikipediaAPI;
 import tools.CNConstants;
+import tools.GeneralConfig;
 import tools.Histoplot;
-import tools.IntegerValueComparator;
+
 import tools.PlotAPI;
 import utils.ErrorsReporting;
 import utils.FileUtils;
-import org.apache.commons.math3.ml.distance.EuclideanDistance;
-import tools.DoubleValueComparator;
+
 
 /**
  * This class process the instances and features by instance in the Stanford linear classifier 
@@ -66,14 +69,19 @@ public class AnalyzeClassifier {
     public static String MODELFILE="bin.%S.lc.mods";
     public static String TRAINFILE="groups.%S.tab.lc.train";
     public static String TESTFILE="groups.%S.tab.lc.test";
+    //public static String LISTTRAINFILES="esterTrain.xmll";
+    //public static String LISTTESTFILES="esterTest.xmll";
     public static String LISTTRAINFILES="esterTrain.xmll";
     public static String LISTTESTFILES="esterTest.xmll";
-    public static String PROPERTIES_FILE="slinearclassifier.props";
+    public static String PROPERTIES_FILE="slinearclassifier.props"; //slinearclassifier.props or slinearclassNOTNGRAM.props
     public static String NUMFEATSINTRAINFILE="2-";
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
     public static String ONLYONEMULTICLASS=CNConstants.ALL;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
+    public static String CURRENTSETCLASSIFIER=CNConstants.PRNOUN; //setted by default but you can change it 
     public static int TRAINSIZE=20;//Integer.MAX_VALUE; 
+    public static Margin CURRENTPARENTMARGIN=null;
+    
     //TRAINSIZE=20;  
     
     
@@ -81,14 +89,20 @@ public class AnalyzeClassifier {
     private HashMap<String,Margin> marginMAP = new HashMap<>();
     private int numInstances=0;
 
-    private HashMap<String, List<List<Integer>>> featInstMap = new HashMap<>();
-    private HashMap<String, List<Integer>> lblInstMap = new HashMap<>();
+    //private HashMap<String, List<List<Integer>>> featInstMap = new HashMap<>();
+    //private HashMap<String, List<Integer>> lblInstMap = new HashMap<>();
     private HashMap<Integer,List<String>> stLCDictTrainFeatures=new HashMap<>();
     private HashMap<Integer,List<String>> stLCDictTestFeatures=new HashMap<>();
     private long elapsedTime;
     
+    private HashMap<Integer,Margin> parallelGrad = new HashMap<>();
+    
+    
     public AnalyzeClassifier(){
-
+        GeneralConfig.loadProperties();
+        LISTTRAINFILES=GeneralConfig.listLCTrain;
+        LISTTESTFILES=GeneralConfig.listLCTest;
+        PROPERTIES_FILE=GeneralConfig.lcProps;
     }
     /**
      * Updates the properties files with the name of the training file
@@ -243,12 +257,26 @@ public class AnalyzeClassifier {
             }
     }   
     
+    public  LinearClassifier loadModelFromFile(String filename){
+        LinearClassifier model = null;
+        File mfile = new File(filename);     
+            Object object;
+            try {
+                object = IOUtils.readObjectFromFile(mfile);
+                model=(LinearClassifier)object;                  
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } 
+        return model;
+    }
+    
     public void trainOneClassifier(String sclassifier, boolean iswiki){
         LinearClassifier model = null;
         File mfile = new File(MODELFILE.replace("%S", sclassifier));
         if(!mfile.exists()){
             updatingPropFile(sclassifier, iswiki);
-            ColumnDataClassifier columnDataClass = new ColumnDataClassifier("slinearclassifier.props");                
+            ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);                
             GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", sclassifier));
             model = (LinearClassifier) columnDataClass.makeClassifier(data);
 
@@ -288,12 +316,18 @@ public class AnalyzeClassifier {
         }        
     }
         
+
     /**
      * Returns the different models for each type of NE,
      * save the models in a file, so there is no need to retrain each time
-     * @param labeled
-     * @return 
-     */    
+     * 
+     * @param model : type of classifier: "pn",  binary classifier for detecting proper nouns, <\br>
+     *                                     "all", multi-class classifier
+     *                                     other, implements different binary classifiers for different name entities (see attribute groupsOfNE)
+     * @param blsavegroups, generate first the train and test files
+     * @param iswiki, use the wikipedia binary feature (T, if found in wikipedia as entity, F otherwise)
+     * @param isLower, transform everything to lowercase for using with the ASR output
+     */
     public void trainAllLinearClassifier(String model,boolean blsavegroups, boolean iswiki, boolean isLower) {
         //TreeMap<String,Double> lcfeatsDict = new TreeMap<>();
         //TreeMap<String,Double> featsDict = new TreeMap<>();
@@ -333,6 +367,23 @@ public class AnalyzeClassifier {
             
                 
         
+    }
+    
+    public void properNounDetectionOnEster(){
+        //Not letter n-gram
+        
+        File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
+        mfile.delete();
+        PROPERTIES_FILE="slinearclassNOTNGRAM.props";
+        //LISTTRAINFILES="esterTrainALL.xmll";
+        //LISTTESTFILES="esterTestALL.xmll";
+        LISTTRAINFILES="esterTrain.xmll";
+        LISTTESTFILES="esterTest.xmll";
+        
+        //TRAINSIZE=Integer.MAX_VALUE; 
+        
+        trainAllLinearClassifier(CNConstants.PRNOUN,true,false,false);
+        testingClassifier(true, CNConstants.PRNOUN, false, false);
     }
     
     public static boolean isStopWord(String pos){
@@ -408,14 +459,14 @@ public class AnalyzeClassifier {
      */
     public void computeFThetaOfX(){
         
-        for(String key:lblInstMap.keySet()){
+        for(String key:marginMAP.keySet()){
             System.out.println("Analyzing classifier :"+key);
-                        
-            List<List<Integer>> featsperInst = featInstMap.get(key);
-            List<Integer> labelperInst = lblInstMap.get(key);
+            Margin margin= marginMAP.get(key);            
+            List<List<Integer>> featsperInst = margin.getFeaturesPerInstances();
+            List<Integer> labelperInst = margin.getLabelPerInstances();
             
             int nInst=labelperInst.size();
-            Margin margin= marginMAP.get(key);
+            
             List<List<Double>> rscoreperLabel = new ArrayList<>();
             List<List<Double>> wscoreperLabel= new ArrayList<>(); 
             //checking the data
@@ -495,27 +546,8 @@ public class AnalyzeClassifier {
         return null;
     }
     
-    /**
-     * Return the features per instance associated at one classifier
-     * @param classifier
-     * @param instance
-     * @return 
-     */
-    public List<Integer> getFeaturesPerInstance(String classifier, int instance){
-        if(featInstMap.containsKey(classifier)){
-            return featInstMap.get(classifier).get(instance);
-        }else
-            return new ArrayList<>();
-        
-    }
-    
-    public Integer getLabelsPerInstance(String classifier, int instance){
-        if(lblInstMap.containsKey(classifier)){
-            return lblInstMap.get(classifier).get(instance);
-        }else
-            return -1;
-        
-    }    
+
+
     /**
      * Verify most frequent instances according to a list of instances obtained from a histogram in octave.
      * @param modelKey 
@@ -576,11 +608,11 @@ public class AnalyzeClassifier {
        updatingPropFile(smodel,iswiki);
         try {
             //command
-            //String cmd="java -Xmx1g -cp  \"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\" edu.stanford.nlp.classify.ColumnDataClassifier -prop slinearclassifier.props groups.pers.tab.lc.train -testFile groups.pers.tab.lc.test > out.txt";
+            //String cmd="java -Xmx1g -cp  \"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\" edu.stanford.nlp.classify.ColumnDataClassifier -prop "+ PROPERTIES_FILE+" groups.pers.tab.lc.train -testFile groups.pers.tab.lc.test > out.txt";
 
-            //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
+            //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop", PROPERTIES_FILE, "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
             //Process process = Runtime.getRuntime().exec(call);
-            String cmd="java -Xmx1g -cp  /home/synalp/experiments/stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar edu.stanford.nlp.classify.ColumnDataClassifier -prop slinearclassifier.props "+TRAINFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
+            String cmd="java -Xmx1g -cp  /home/rojasbar/development/contnomina/stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar edu.stanford.nlp.classify.ColumnDataClassifier -prop "+ PROPERTIES_FILE+" "+TRAINFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
             Process process = Runtime.getRuntime().exec(cmd);
             InputStream stdout = process.getInputStream();
             
@@ -630,11 +662,11 @@ public class AnalyzeClassifier {
       
         try {
             //command
-            //String cmd="java -Xmx1g -cp  \"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\" edu.stanford.nlp.classify.ColumnDataClassifier -prop slinearclassifier.props groups.pers.tab.lc.train -testFile groups.pers.tab.lc.test > out.txt";
+            //String cmd="java -Xmx1g -cp  \"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\" edu.stanford.nlp.classify.ColumnDataClassifier -prop PROPERTIES_FILE groups.pers.tab.lc.train -testFile groups.pers.tab.lc.test > out.txt";
 
-            //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
+            //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","PROPERTIES_FILE", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
             //Process process = Runtime.getRuntime().exec(call);
-            String cmd="java -Xmx1g -cp  /home/synalp/experiments/stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar edu.stanford.nlp.classify.ColumnDataClassifier -prop slinearclassifier.props  -loadClassifier  "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
+            String cmd="java -Xmx1g -cp  /home/synalp/experiments/stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar edu.stanford.nlp.classify.ColumnDataClassifier -prop " + PROPERTIES_FILE+ " -loadClassifier  "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
             Process process = Runtime.getRuntime().exec(cmd);
             InputStream stdout = process.getInputStream();
             
@@ -717,9 +749,10 @@ public class AnalyzeClassifier {
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>();         
         getValues(TRAINFILE.replace("%S", sclassifier),model,featsperInst,labelperInst);
-        featInstMap.put(sclassifier,featsperInst);
-        lblInstMap.put(sclassifier, labelperInst);          
-        List<Integer> vals=lblInstMap.get(sclassifier);
+        Margin margin = marginMAP.get(sclassifier);
+        margin.setFeaturesPerInstance(featsperInst);
+        margin.setLabelPerInstance(labelperInst);             
+        List<Integer> vals=margin.getLabelPerInstances();
         int[] nTargetClass= new int[model.labels().size()];
         Arrays.fill(nTargetClass, 0);
         
@@ -857,14 +890,13 @@ public class AnalyzeClassifier {
 	    return risk;
 	}    
     
-    public float computeROfTheta(String sclassifier) {
-
+    public float computeROfTheta() {
+        String sclassifier=CURRENTSETCLASSIFIER;
         //final float[] priors = computePriors(sclassifier,model);
         final float[] priors = {0.9f,0.1f};
         // get scores
         GMMDiag gmm = new GMMDiag(2, priors);
-        gmm.setClassifier(sclassifier);
-        gmm.train(this, marginMAP.get(sclassifier));
+        gmm.train(marginMAP.get(sclassifier));
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
         System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
@@ -907,14 +939,13 @@ public class AnalyzeClassifier {
         return risk;
     }
 
-       public float computeROfThetaNumInt(String sclassifier, boolean isMC, int numIters) {
-
+       public float computeROfThetaNumInt( boolean isMC, int numIters) {
+        String sclassifier=CURRENTSETCLASSIFIER;
         //final float[] priors = computePriors(sclassifier,model);
         final float[] priors = {0.9f,0.1f};
         // get scores
         GMMDiag gmm = new GMMDiag(2, priors);
-        gmm.setClassifier(sclassifier);
-        gmm.train(this, marginMAP.get(sclassifier));
+        gmm.train(marginMAP.get(sclassifier));
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
         System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
@@ -934,6 +965,7 @@ public class AnalyzeClassifier {
         
     }   
     public  float checkingRNumInt( String sclassifier,double closedForm) {
+        CURRENTSETCLASSIFIER=sclassifier;
         try {
         OutputStreamWriter fout  = new OutputStreamWriter(new FileOutputStream("analysis/EMNLPExps/comparingIntR.m"),CNConstants.UTF8_ENCODING);
         
@@ -941,8 +973,7 @@ public class AnalyzeClassifier {
         final float[] py = {0.9f,0.1f};
         // get scores
         GMMDiag gmm = new GMMDiag(2, py);
-        gmm.setClassifier(sclassifier);
-        gmm.train(this, marginMAP.get(sclassifier));
+        gmm.train(marginMAP.get(sclassifier));
         System.out.println("mean 00 "+gmm.getMean(0, 0));
         System.out.println("mean 01 "+gmm.getMean(0, 1));
         System.out.println("mean 10 "+gmm.getMean(1, 0));
@@ -1004,13 +1035,12 @@ public class AnalyzeClassifier {
     }    
     public  void checkingMCTrapezoidNumInt( String sclassifier) {
   
-                
+        CURRENTSETCLASSIFIER=sclassifier;     
         //final float[] priors = computePriors(sclassifier,model);
         final float[] py = {0.9f,0.1f};
         // get scores
         GMMDiag gmm = new GMMDiag(2, py);
-        gmm.setClassifier(sclassifier);
-        gmm.train(this, marginMAP.get(sclassifier));
+        gmm.train(marginMAP.get(sclassifier));
         System.out.println("mean 00 "+gmm.getMean(0, 0));
         System.out.println("mean 01 "+gmm.getMean(0, 1));
         System.out.println("mean 10 "+gmm.getMean(1, 0));
@@ -1035,8 +1065,7 @@ public class AnalyzeClassifier {
         final float[] py = {0.9f,0.1f};
         // get scores
         GMMDiag gmm = new GMMDiag(2, py);
-        gmm.setClassifier(sclassifier);
-        gmm.train(this, marginMAP.get(sclassifier));
+        gmm.train(marginMAP.get(sclassifier));
         System.out.println("mean 00 "+gmm.getMean(0, 0));
         System.out.println("mean 01 "+gmm.getMean(0, 1));
         System.out.println("mean 10 "+gmm.getMean(1, 0));
@@ -1059,19 +1088,21 @@ public class AnalyzeClassifier {
     }
     
     public float testingRForCorpus(String sclass, boolean iswiki){
-                //train the classifier with a small set of train files
+        CURRENTSETCLASSIFIER=sclass;
+        //train the classifier with a small set of train files
         trainOneClassifier(sclass, iswiki);  
         LinearClassifier model = modelMap.get(sclass);
+        Margin margin = marginMAP.get(sclass);
         //scan the test instances for train the gmm
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>(); 
         getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-        featInstMap.put(sclass,featsperInst);
-        lblInstMap.put(sclass, labelperInst);        
+        margin.setFeaturesPerInstance(featsperInst);
+        margin.setLabelPerInstance(labelperInst);        
         
         
         System.out.println("Working with classifier "+sclass);
-        float estimr0 = computeROfTheta(sclass);
+        float estimr0 = computeROfTheta();
         System.out.println("init R "+estimr0);
         return estimr0;
         
@@ -1082,6 +1113,7 @@ public class AnalyzeClassifier {
      * @param sclass 
      */ 
    public void unsupervisedClassifier(String sclass, boolean closedForm) {
+       CURRENTSETCLASSIFIER=sclass;
         PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
         PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
         
@@ -1102,15 +1134,15 @@ public class AnalyzeClassifier {
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>(); 
         getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-        featInstMap.put(sclass,featsperInst);
-        lblInstMap.put(sclass, labelperInst);   
+        margin.setFeaturesPerInstance(featsperInst);
+        margin.setLabelPerInstance(labelperInst); 
         double[] scores= new double[featsperInst.size()];
         Arrays.fill(scores, 0.0);
         //Histoplot.showit(scorest,featsperInst.size());
         HashSet<String> emptyfeats = new HashSet<>();
         System.out.println("Working with classifier "+sclass);
         
-        float estimr0=(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+        float estimr0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
 
 
         System.out.println("init R "+estimr0);
@@ -1140,7 +1172,7 @@ public class AnalyzeClassifier {
                         System.out.println("after w0 + w0*delta= "+ (w0 + w0*delta));
                         System.out.println("after weight= "+weightsForFeat[featIdx][w]);
                         //TODO:updating the new weights in the gmm?
-                        float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+                        float estimr = (closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
 
 
                         System.out.println("For feat["+ i +"] weight["+ w +"] R estim ["+iter+"] = "+estimr0);    
@@ -1168,7 +1200,7 @@ public class AnalyzeClassifier {
                     weightsForFeat[1][w]= Math.random();
                 }*/
                 counter++;
-                estimr0 =(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass,isMC,numIntIters);
+                estimr0 =(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
                 System.out.println("*******************************"); 
                 System.out.println("R estim ["+iter+"] = "+estimr0);     
                 plotR.addPoint(counter, estimr0);
@@ -1198,6 +1230,7 @@ public class AnalyzeClassifier {
    }      
 
    public void wkSClassStochCoordGr(String sclass, boolean closedForm) {
+       CURRENTSETCLASSIFIER=sclass;
         PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
         PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
         
@@ -1216,15 +1249,15 @@ public class AnalyzeClassifier {
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>(); 
         getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-        featInstMap.put(sclass,featsperInst);
-        lblInstMap.put(sclass, labelperInst);   
+        margin.setFeaturesPerInstance(featsperInst);
+        margin.setLabelPerInstance(labelperInst); 
         double[] scores= new double[featsperInst.size()];
         Arrays.fill(scores, 0.0);
         //Histoplot.showit(scorest,featsperInst.size());
         HashSet<String> emptyfeats = new HashSet<>();
         System.out.println("Working with classifier "+sclass);
         
-        float estimr0=(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+        float estimr0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
 
 
         System.out.println("init R "+estimr0);
@@ -1257,7 +1290,7 @@ public class AnalyzeClassifier {
 
             weightsForFeat[featIdx][0] = w0 + w0*delta;
 
-            float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+            float estimr = (closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
 
             gradw[0] = (estimr-estimr0)/(w0*delta);
             System.out.println("grad "+gradw[0]);
@@ -1274,7 +1307,7 @@ public class AnalyzeClassifier {
             
 
             counter++;
-            estimr0 =(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass,isMC,numIntIters);
+            estimr0 =(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
             System.out.println("*******************************"); 
             System.out.println("R estim ["+iter+"] = "+estimr0);     
             plotR.addPoint(counter, estimr0);
@@ -1301,13 +1334,205 @@ public class AnalyzeClassifier {
             System.out.println(emptyW);
         }
         
-   }      
+   }  
+  /**
+    * The stochastic coordinate gradient 
+    * @param sclass  Type of Classifier (pn or [pers,org,loc,prod])
+    * @param closedForm used the closed form or trapezoid integration
+    */ 
+  public void wkSupConstrParallelStocCoordD(String sclass, boolean closedForm) {
+       CURRENTSETCLASSIFIER=sclass;
+ 
+        boolean isMC=false;
+        int numIntIters=100;
+        int numberOfThreads=1;
+
+        //train the classifier with a small set of train files
+        trainOneClassifier(sclass,false);  
+        LinearClassifier model = modelMap.get(sclass);
+        Margin margin = marginMAP.get(sclass);
+        CURRENTPARENTMARGIN=margin;
+        
+        //scan the test instances for train the gmm
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>(); 
+        getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
+        margin.setFeaturesPerInstance(featsperInst);
+        margin.setLabelPerInstance(labelperInst);  
+        double[] scores= new double[featsperInst.size()];
+        Arrays.fill(scores, 0.0);
+        //Histoplot.showit(scorest,featsperInst.size());
+        
+        System.out.println("Working with classifier "+sclass);
+        
+        float estimr0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
+
+        System.out.println("init R "+estimr0);
+        System.out.println("Number of features" + margin.getNfeats());
+        
+        List<Double> shuffleWeights=margin.shuffleWeights();       
+
+        
+        float partiSize = (float) shuffleWeights.size()/numberOfThreads;
+        int partSize= Math.round(partiSize);
+        MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(numberOfThreads, closedForm, isMC,numIntIters);
+        double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
+        
+        for(int i=0; i<margin.getNfeats(); i++)
+            Arrays.fill(allfeats[i], 0.0);
+        for(int i=0; i<numberOfThreads; i++){
+            try{
+            String binaryFile = MODELFILE;
+            binaryFile=binaryFile.replace("%S", sclass)+".Thread_"+i;
+            File mfile = new File(MODELFILE.replace("%S", sclass));
+            File thrfile = new File(binaryFile);
+            
+            Files.copy(mfile.toPath(), thrfile.toPath(),StandardCopyOption.REPLACE_EXISTING);
+            LinearClassifier modelThr = loadModelFromFile(binaryFile);   
+            Margin marginThr = new Margin(modelThr);
+            marginThr.setBinaryFile(binaryFile);
+            marginThr.setWeights(margin.getWeights());
+            marginThr.copySharedyInfoParallelGrad(margin);
+            
+            //copy the weights
+            int initPart=i*partSize;
+            marginThr.setSubListOfShuffleFeats(initPart, initPart+partSize);
+            parallelGrad.put(i,marginThr);
+            
+            mthread.getWrapper().put(new Pair<>(i, marginThr));
+                
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }
+        mthread.getWrapper().join();
+        while (mthread.getWrapper().peek()) {
+            Pair<Integer, Double> result = mthread.getWrapper().poll();   
+            //search for the margins and combine the features
+            int thrId = result.first();
+            Margin mThr=parallelGrad.get(thrId);
+            
+            for(int i=0; i<mThr.getSubListOfFeats().size();i++){
+                int orIdx = mThr.getOrIndexFromShuffled(i);
+                allfeats[orIdx]=mThr.getPartialShuffledWeight(i);
+            }
+        }
+        //Final weights
+        margin.setWeights(allfeats);
+        float estimrFinal=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
+        System.out.println("Final R : "+ estimrFinal);
+        double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
+        File mfile = new File(MODELFILE.replace("%S", sclass));
+        try {
+            IOUtils.writeObjectToFile(model, mfile);
+        } catch (IOException ex) {
+
+        }               
+        
+   }     
+  
+  /**
+    * The parallel sequence coordinate gradient 
+    * @param sclass  Type of Classifier (pn or [pers,org,loc,prod])
+    * @param closedForm used the closed form or trapezoid integration
+    */ 
+  public void wkSupConstrParallelCoordD(String sclass, boolean closedForm) {
+       CURRENTSETCLASSIFIER=sclass;
+ 
+        boolean isMC=false;
+        int numIntIters=100;
+        int numberOfThreads=1;
+
+        //train the classifier with a small set of train files
+        trainOneClassifier(sclass,false);  
+        LinearClassifier model = modelMap.get(sclass);
+        Margin margin = marginMAP.get(sclass);
+        CURRENTPARENTMARGIN=margin;
+        
+        //scan the test instances for train the gmm
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>(); 
+        getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
+        margin.setFeaturesPerInstance(featsperInst);
+        margin.setLabelPerInstance(labelperInst);  
+        double[] scores= new double[featsperInst.size()];
+        Arrays.fill(scores, 0.0);
+        //Histoplot.showit(scorest,featsperInst.size());
+        
+        System.out.println("Working with classifier "+sclass);
+        
+        float estimr0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
+
+        System.out.println("init R "+estimr0);
+        System.out.println("Number of features" + margin.getNfeats());
+        
+        List<Double> sameWeights=margin.getOrWeights();       
+
+        
+        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        int partSize= Math.round(partiSize);
+        MultiCoreCoordinateDescent mthread = new MultiCoreCoordinateDescent(numberOfThreads, closedForm, isMC,numIntIters);
+        double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
+        
+        for(int i=0; i<margin.getNfeats(); i++)
+            Arrays.fill(allfeats[i], 0.0);
+        for(int i=0; i<numberOfThreads; i++){
+            try{
+            String binaryFile = MODELFILE;
+            binaryFile=binaryFile.replace("%S", sclass)+".Thread_"+i;
+            File mfile = new File(MODELFILE.replace("%S", sclass));
+            File thrfile = new File(binaryFile);
+            
+            Files.copy(mfile.toPath(), thrfile.toPath(),StandardCopyOption.REPLACE_EXISTING);
+            LinearClassifier modelThr = loadModelFromFile(binaryFile);   
+            Margin marginThr = new Margin(modelThr);
+            marginThr.setBinaryFile(binaryFile);
+            marginThr.setWeights(margin.getWeights());
+            marginThr.copySharedyInfoParallelGrad(margin);
+            
+            //copy the weights
+            int initPart=i*partSize;
+            marginThr.setSubListOfFeats(initPart, initPart+partSize);
+            parallelGrad.put(i,marginThr);
+            
+            mthread.getWrapper().put(new Pair<>(i, marginThr));
+                
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }
+        mthread.getWrapper().join();
+        while (mthread.getWrapper().peek()) {
+            Pair<Integer, Double> result = mthread.getWrapper().poll();   
+            //search for the margins and combine the features
+            int thrId = result.first();
+            Margin mThr=parallelGrad.get(thrId);
+            
+            for(int i=0; i<mThr.getSubListOfFeats().size();i++){
+                allfeats[i]=mThr.getPartialWeight(i);
+            }
+        }
+        //Final weights
+        margin.setWeights(allfeats);
+        float estimrFinal=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
+        System.out.println("Final R : "+ estimrFinal);
+        double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
+        File mfile = new File(MODELFILE.replace("%S", sclass));
+        try {
+            IOUtils.writeObjectToFile(model, mfile);
+        } catch (IOException ex) {
+
+        }               
+        
+   }     
+  
    /**
      * The gradient method used ins the Finite Difference
      * f'(a) is approximately (f(a+h)-f(a))/h
      * @param sclass 
      */ 
    public void wkSupClassifierConstr(String sclass, boolean closedForm) {
+       CURRENTSETCLASSIFIER=sclass;
         PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
         PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
         
@@ -1328,15 +1553,15 @@ public class AnalyzeClassifier {
         List<List<Integer>> featsperInst = new ArrayList<>(); 
         List<Integer> labelperInst = new ArrayList<>(); 
         getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-        featInstMap.put(sclass,featsperInst);
-        lblInstMap.put(sclass, labelperInst);   
+        margin.setFeaturesPerInstance(featsperInst);
+        margin.setLabelPerInstance(labelperInst);
         double[] scores= new double[featsperInst.size()];
         Arrays.fill(scores, 0.0);
         //Histoplot.showit(scorest,featsperInst.size());
         HashSet<String> emptyfeats = new HashSet<>();
         System.out.println("Working with classifier "+sclass);
         
-        float estimr0=(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+        float estimr0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
 
 
         System.out.println("init R "+estimr0);
@@ -1362,7 +1587,7 @@ public class AnalyzeClassifier {
                         break;*/
 
                     weightsForFeat[featIdx][0] = w0 + w0*delta;
-                    float estimr = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+                    float estimr = (closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
 
 
                     System.out.println("For feat["+ i +"] weight["+ 0 +"] R estim ["+iter+"] = "+estimr0);    
@@ -1390,7 +1615,7 @@ public class AnalyzeClassifier {
                     weightsForFeat[1][w]= Math.random();
                 }*/
                 counter++;
-                estimr0 =(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass,isMC,numIntIters);
+                estimr0 =(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
                 System.out.println("*******************************"); 
                 System.out.println("R estim ["+iter+"] = "+estimr0);     
                 plotR.addPoint(counter, estimr0);
@@ -1440,8 +1665,8 @@ public class AnalyzeClassifier {
             List<List<Integer>> featsperInst = new ArrayList<>(); 
             List<Integer> labelperInst = new ArrayList<>(); 
             getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-            featInstMap.put(sclass,featsperInst);
-            lblInstMap.put(sclass, labelperInst);   
+            margin.setFeaturesPerInstance(featsperInst);
+            margin.setLabelPerInstance(labelperInst); 
             double[] scores= new double[featsperInst.size()];
             Arrays.fill(scores, 0.0);
             
@@ -1467,7 +1692,7 @@ public class AnalyzeClassifier {
                 //Histoplot.showit(scorest,featsperInst.size());
                 HashSet<String> emptyfeats = new HashSet<>();
                 System.out.println("Working with classifier "+sclass);
-                float estimr0=(closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,ninti);
+                float estimr0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,ninti);
 
                 double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
                 /*
@@ -1587,6 +1812,7 @@ public class AnalyzeClassifier {
     * @param closedForm 
     */
    public void checkingRvsTheta(String sclass, boolean closedForm) {
+       CURRENTSETCLASSIFIER=sclass;
         OutputStreamWriter fout = null;
         try {
 
@@ -1603,8 +1829,8 @@ public class AnalyzeClassifier {
             List<List<Integer>> featsperInst = new ArrayList<>();
             List<Integer> labelperInst = new ArrayList<>();
             getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-            featInstMap.put(sclass,featsperInst);
-            lblInstMap.put(sclass, labelperInst);
+            margin.setFeaturesPerInstance(featsperInst);
+            margin.setLabelPerInstance(labelperInst);
             double[] scores= new double[featsperInst.size()];
             Arrays.fill(scores, 0.0);
             
@@ -1623,14 +1849,14 @@ public class AnalyzeClassifier {
                 //for(int w=0;w < weightsForFeat[featIdx].length;w++){
                 float w0 = (float) weightsForFeat[featIdx][0];
                 wvec+=w0+";\n";
-                float r = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+                float r = (closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
                 rvec+=r+";\n";
                 for(int k=0;k<100;k++){
                     System.out.println("INCREASING w "+k);
                     float w=w0+0.05f;
                     weightsForFeat[featIdx][0]=w;
                     wvec+=w+";\n";
-                    r = (closedForm)?computeROfTheta(sclass):computeROfThetaNumInt(sclass, isMC,numIntIters);
+                    r = (closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
                     rvec+=r+";\n";
                     w0=w;
                 }    
@@ -1721,11 +1947,11 @@ public class AnalyzeClassifier {
    }
 
 
-    public void evaluationCLASSRESULTS(String filename){
+    public static void evaluationCLASSRESULTS(String goalClass,String filename){
 
         BufferedReader testFile = null;
         try {
-            testFile = new BufferedReader(new InputStreamReader(new FileInputStream("analysis/"+filename), CNConstants.UTF8_ENCODING));
+            testFile = new BufferedReader(new InputStreamReader(new FileInputStream(filename), CNConstants.UTF8_ENCODING));
             
             int tp=0, tn=0, fp=0, fn=0;
             
@@ -1740,17 +1966,18 @@ public class AnalyzeClassifier {
                 
                 String values[] = line.split("\\t");
                 
-                
+                if(values.length < 3)
+                    continue;
                 String label = values[1];
                 String recognizedLabel = values[2];
                 
-                if(recognizedLabel.equals(CNConstants.PRNOUN) && label.equals(CNConstants.PRNOUN))
+                if(recognizedLabel.equals(goalClass) && label.equals(goalClass))
                     tp++;
                 
-                if(recognizedLabel.equals(CNConstants.PRNOUN)&& label.equals(CNConstants.NOCLASS))
+                if(recognizedLabel.equals(goalClass)&& label.equals(CNConstants.NOCLASS))
                     fp++;
                 
-                if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.PRNOUN))
+                if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(goalClass))
                     fn++;
                 if(recognizedLabel.equals(CNConstants.NOCLASS)&&label.equals(CNConstants.NOCLASS))
                     tn++;
@@ -1777,6 +2004,9 @@ public class AnalyzeClassifier {
        
        
    }  
+    
+
+    
       public void evaluationKMEANS(){
         BufferedReader testFile = null;
         BufferedReader kmfile = null;
@@ -1836,13 +2066,7 @@ public class AnalyzeClassifier {
        
        
    }  
-   public void setFeaturesPerInst(HashMap<String, List<List<Integer>>>  fMap){
-       this.featInstMap=fMap;
-   }
-   
-   public void setLabelsPerInst(HashMap<String, List<Integer>> lMap){
-       this.lblInstMap=lMap;
-   }
+
    
    public void analyzingEvalFile(){
         try {
@@ -1886,33 +2110,32 @@ public class AnalyzeClassifier {
         }
    }
    
-   public void printingValuesInOctave(){
+   public void printingValuesInOctave(String filename){
     try {
-        HashMap<Integer, Double> f1cfFirstMap=readingF1FromFile("analysis/EMNLPExps/outlog_Mar062014_talc2_plot.txt",0);
-        HashMap<Integer, Double> rtrIntMap=readingRiskFromFile("analysis/EMNLPExps/outLogAgo292014_TrapezoidInt_To712UnsupIters.txt",0);
-        rtrIntMap.putAll(readingRiskFromFile("analysis/EMNLPExps/outLogSep42014_TrapezoidInt_From712UnsupIters.txt",712));
-        HashMap<Integer, Double> f1trIntMap=readingF1FromFile("analysis/EMNLPExps/outLogAgo292014_TrapezoidInt_To712UnsupIters.txt",0);
-        f1trIntMap.putAll(readingF1FromFile("analysis/EMNLPExps/outLogSep42014_TrapezoidInt_From712UnsupIters.txt",712));
-        PrintWriter fout = FileUtils.writeFileUTF("analysis/EMNLPExps/comparingValsTrInt.m");
+        HashMap<Integer, Double> rMap=readingRiskFromFile(filename,0);
+        HashMap<Integer, Double> f1Map=readingF1FromFile(filename,0);
+        //HashMap<Integer, Double> rtrIntMap=readingRiskFromFile("analysis/EMNLPExps/outLogAgo292014_TrapezoidInt_To712UnsupIters.txt",0);
+        //rtrIntMap.putAll(readingRiskFromFile("analysis/EMNLPExps/outLogSep42014_TrapezoidInt_From712UnsupIters.txt",712));
+        //HashMap<Integer, Double> f1trIntMap=readingF1FromFile("analysis/EMNLPExps/outLogAgo292014_TrapezoidInt_To712UnsupIters.txt",0);
+        //f1trIntMap.putAll(readingF1FromFile("analysis/EMNLPExps/outLogSep42014_TrapezoidInt_From712UnsupIters.txt",712));
+        PrintWriter fout = FileUtils.writeFileUTF("analysis/StochGrad/checkingRandF1.m");
         
-        String r="RCTrInt=[\n";
-        String f1="F1TrInt=[\n";
-        String fcf="FCF=[\n";
-        for(int i=0;i<f1cfFirstMap.size();i++){
-            if(i<1600){
-                r+=rtrIntMap.get(i)+";\n";
-                f1+=f1trIntMap.get(i)+";\n";
-            } 
-            fcf+=f1cfFirstMap.get(i)+";\n";
+        String r="r=[\n";
+        String f1="f1=[\n";
+        //String fcf="FCF=[\n";
+        for(int i=0;i<f1Map.size();i++){
+            r+=rMap.get(i)+";\n";
+            f1+=f1Map.get(i)+";\n";
+            //fcf+=f1cfFirstMap.get(i)+";\n";
             
         }
         r+="];";
         f1+="];";
-        fcf+="];";
+        //fcf+="];";
                 
         fout.println(r);
         fout.println(f1);
-        fout.println(fcf);
+        //fout.println(fcf);
         
         fout.println("");       
         fout.close();
@@ -1954,12 +2177,20 @@ private HashMap<Integer, Double> readingF1FromFile(String filename, int startIdx
  try {
            BufferedReader ifile = new BufferedReader(new FileReader(filename));
            
-           
+           int numOfEx=300;
            for (;;) {
                 String line = ifile.readLine();
                 if (line==null) break;
                 
+                if(line.contains(" examples in test set")){
+                    int idx=line.indexOf(" examples in test set");
+                    numOfEx= Integer.parseInt(line.substring(0, idx));
+                   
+                }
+                
                 if(line.startsWith("Cls pn")){
+                    if(numOfEx <300)
+                        continue;                    
                     int initF1=line.indexOf("F1 ");
                     try{
                         f1= Double.parseDouble(line.substring(initF1+3));
@@ -1969,7 +2200,7 @@ private HashMap<Integer, Double> readingF1FromFile(String filename, int startIdx
                     }
                 }
                 
-                if(!line.startsWith("R estim ["))
+                if(!line.startsWith("R["))
                     continue;
                 
                 int initIdx= line.indexOf("[");
@@ -2010,7 +2241,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
                     }
                 }
                 
-                if(!line.startsWith("R estim ["))
+                //if(!line.startsWith("R estim ["))
+                if(!line.startsWith("R["))
                     continue;
                 
                 int initIdx= line.indexOf("[");
@@ -2166,8 +2398,131 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             }
         }
     }
+    
+    public void organizingREPEREFiles(){
+        BufferedReader infile = null;
+        BufferedReader currTestList = null;
+        BufferedReader intrainlist = null;
+        BufferedReader intestlist = null;
+        OutputStreamWriter outFile=null;
+        HashMap<String,String> exactTest= new HashMap<>();
+        try{
+            
+            infile = new BufferedReader(new FileReader("exactRepereFiles.txt"));
+            String targetDir="";
+            for(;;){
+                String line=infile.readLine();
+                if(line == null)
+                    break;
+                if(line.equals(""))
+                    continue;
+                
+                if(line.startsWith("Dev"))
+                    targetDir="dev";
+                else if(line.startsWith("Test"))
+                    targetDir="test";                
+                else{
+                    if(targetDir.equals("test"))
+                        exactTest.put(line,line);
+                    String trainfile="/global/rojasbar/nasdata1/TALC/ExternalResources/NEW_RESOURCES/REPERE/data/reference/train/"+line+".trs";
+                    File file = new File(trainfile);
+                    File targetFile = new File(targetDir+"/"+line+".xml");
+                    if(file.exists()){
+                        System.out.println("File in "+targetDir +" == "+ line +" found in the train directory");
+                        //Files.move(file.toPath(), targetFile.toPath(),StandardCopyOption.ATOMIC_MOVE);
+                    }else{
+                        String testfile="/global/rojasbar/nasdata1/TALC/ExternalResources/NEW_RESOURCES/REPERE/data/reference/test/"+line+".trs";
+                        file = new File(testfile);
+                        if(file.exists()){
+                            System.out.println("File in "+targetDir +" == "+ line +" found in the test directory");
+                            //Files.move(file.toPath(), targetFile.toPath(),StandardCopyOption.ATOMIC_MOVE);                            
+                        }else{
+                            String devfile="/global/rojasbar/nasdata1/TALC/ExternalResources/NEW_RESOURCES/REPERE/data/reference/dev/"+line+".trs";
+                            file = new File(devfile);
+                            if(file.exists()){
+                                System.out.println("File in "+targetDir +" == "+ line +" found in the dev directory");
+                                //Files.move(file.toPath(), targetFile.toPath(),StandardCopyOption.ATOMIC_MOVE);                            
+                            }else                           
+                                System.out.println("File in "+targetDir +" == "+ line +" not found!!!");
+                        }    
+                    }
+                }
+                
+            }
+            currTestList = new BufferedReader(new FileReader("currtest.txt"));
+            HashMap<String,String> currTest = new HashMap<>();
+            for(;;){
+                String line=currTestList.readLine();
+                if(line == null)
+                    break;
+                if(line.equals(""))
+                    continue;  
+                currTest.put(line,line);
+                if(!exactTest.containsKey(line)){
+                  System.out.println("file "+ line +" in the current test is not in the exact test");  
+                }
+            }
+            
+            for(String key:exactTest.keySet()){
+                if(!currTest.containsKey(key)){
+                    System.out.println("file "+ key +" in the exact test is not in the current test");  
+                }
+            }
+            
+            intestlist = new BufferedReader(new FileReader("orReplist.xmll"));
+            intrainlist = new BufferedReader(new FileReader("reptrain.xmll"));
+            List<String> correctTrainFiles= new ArrayList<>();
+            /*
+            for(;;){
+                String line=intrainlist.readLine();
+                if(line == null)
+                    break;
+                if(line.equals(""))
+                    continue;                
+                correctTrainFiles.add(line);
+            }*/
+            int linenumber=0;
+            for(;;){
+                String line=intestlist.readLine();
+                if(line == null)
+                    break;
+                if(line.equals(""))
+                    continue; 
+                
+                //String trainfile=line.replace("reptest","reptrain");
+                String trainfile="/global/rojasbar/nasdata1/TALC/ExternalResources/NEW_RESOURCES/REPERE/data/reference/train/"+line.replace("reptest/", "");
+                File file = new File(trainfile); 
+                
+                if(file.exists()){
+                    correctTrainFiles.remove(trainfile);
+                    System.out.println("file "+ targetDir+"=="+line +" found in train:"+file.getAbsolutePath());
+                    //Files.delete(file.toPath());
+                }
+                linenumber++;
+                
+            }
+            /*
+            outFile = new OutputStreamWriter(new FileOutputStream("reptrain.xmll"),CNConstants.UTF8_ENCODING);
+            for(int i=0; i<correctTrainFiles.size();i++){
+                outFile.append(correctTrainFiles.get(i)+"\n");
+                outFile.flush();
+            }*/
+            outFile.close();
+            infile.close();
+            intrainlist.close();
+            intestlist.close();       
+                    
+        }catch(Exception ex){
 
+        }
+    }
 
+    public HashMap<Integer,Margin> getThreadPartitioning(){
+        return this.parallelGrad;
+    }
+
+ 
+    
    public static void main(String args[]) {
         AnalyzeClassifier analyzing = new AnalyzeClassifier();
         
@@ -2232,13 +2587,15 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
-        /*
+        ///* Checking WEAKLY SUPERVISED OPTIONS
         //File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
         //mfile.delete();
         Long beforeUnsup=System.currentTimeMillis();
         System.out.println("generated data:"+ Margin.GENERATEDDATA);
+        analyzing.wkSupConstrParallelCoordD(CNConstants.PRNOUN, true);
+        //analyzing.wkSupConstrParallelStocCoordD(CNConstants.PRNOUN, true);
         //analyzing.wkSupClassifierConstr(CNConstants.PRNOUN,true);
-        analyzing.wkSClassStochCoordGr(CNConstants.PRNOUN,true);
+        //analyzing.wkSClassStochCoordGr(CNConstants.PRNOUN,true);
         //analyzing.unsupervisedClassifier(CNConstants.PRNOUN,false);
         //analyzing.chekingUnsupClassifierNInt(CNConstants.PRNOUN,false);
         //analyzing.checkingRvsTheta(CNConstants.PRNOUN,false);
@@ -2252,8 +2609,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         */
 
         /* 
-				//Debuggin the Stanford Classifier
-            ColumnDataClassifier columnDataClass = new ColumnDataClassifier("slinearclassifier.props");                
+		//Debugging the Stanford Classifier
+            ColumnDataClassifier columnDataClass = new ColumnDataClassifier("PROPERTIES_FILE");                
             GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", "pn"));
             LinearClassifier model = (LinearClassifier) columnDataClass.makeClassifier(data);        
          
@@ -2294,11 +2651,16 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //analyzing.comparingNumIntVsClosedF();
         //analyzing.checkingMCTrapezoidNumInt(sclass);
 
-        //analyzing.printingValuesInOctave();
+        //analyzing.printingValuesInOctave("analysis/StochGrad/outLogOct32014_NOTNGRAMS.txt");
+        //analyzing.printingValuesInOctave("analysis/StochGrad/outLogOct062014_NOTNGRAMS.txt");
+        //analyzing.organizingREPEREFiles();
         
         //analyzing.generatingArffData(true);
         //analyzing.evaluationKMEANS();
-
+        //AnalyzeClassifier.evaluationCLASSRESULTS(CNConstants.PERS,"repereOut.txt");
+        //AnalyzeClassifier.evaluationCLASSRESULTS(CNConstants.PERS,"analysis/CRF/test.pers.log.repere");
+        //analyzing.properNounDetectionOnEster();
+ 
         
 
     }

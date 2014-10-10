@@ -10,10 +10,14 @@ This software implements several experiments by using the following toolkits
 
 In addition it access external ressources, namely a database with the wikipedia pages until Feb 2014
 
-We also implemented a weakly supervised algorithm that is first initialized with the weights given by the stanford linear classifier.
+We also implemented a weakly supervised algorithm that is first initialized with the weights given by the stanford linear classifier trained on little data.
 
 The following packages and classes interface with these utilities
-Package:
+--------
+Packages
+-----------------------------------------
+Interface with Stanford Linear Classifier
+-----------------------------------------
 -src/linearclassifier
 	AnalyzeClassifier.java : -interfaces with Stanford Linear Classifier 
  				 -implements a weakly supervised algorithm based on risk minimisation.
@@ -36,12 +40,17 @@ Package:
         NumericalIntegration.java, implements the numerical  approximation to the risk
 -src/gmm : All classes for the gmm-training
 
+----------------------------------------
+Interface with Stanford CRF
+----------------------------------------
 -src/CRFClassifier
 	AnalyzeCRFClassifier.java, interfaces with stanford NER
 					You can use gazetters, by using file  gazettes/gazette.txt or gazettelcase.txt (all in lowercase)
 	Margin.java, class that stores the weights, features and instances of the CRF classifier
         AnalyzeSemiCRF.java, intefaces with a semi-crf implementation
-
+-----------------------------------------
+Interface with SVMLight
+-----------------------------------------
 -src/svm
        AnalyzeSVMClassifier.java, interfaces to SVMLight, prepares the input and evaluates the output.
 			There are several input files, it generates dependency trees for using tree kernel, polynomial kerner or linear kernel, it can even use
@@ -49,7 +58,9 @@ Package:
 
 -src/lex , necessary classes for storing utterances, words, lexical unix, postags and dependency trees
 
-
+-----------------------------------------
+External Resources
+-----------------------------------------
 -src/resources
        WikipediaAPI.java, access to wikipedia pages in French all stored in a mysql database, up to feb 2104
        For the database configuration, in a mysql database, create an user "contonmina/contnomina" in localhost, 
@@ -58,6 +69,11 @@ Package:
 -src/labelpropagation
 	LabelPropagation.java, prepares the input for the JUNTO label propagation toolit and evaluates its output file
        
-
+-----------------------------------------
+Using the output of the ASR
+-----------------------------------------
+-src/reco
+	ASROut.java  Alignment of the ASR output, calls the Linera Classifier and CRF
+	Capitalization.java CRF for automic capitalizing the output of the ASR
 Classification tasks:
 
