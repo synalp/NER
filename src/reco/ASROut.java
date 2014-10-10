@@ -48,7 +48,7 @@ public class ASROut {
     private String developmentDir = "dev";
     private String testDir="test";
     public static String  DEVFILE="groups.%S.tab.lc.reco.dev";
-    public static String  TESTFILE="groups.%S.tab.lc..reco.test";    
+    public static String  TESTFILE="groups.%S.tab.lc.reco.test";    
     public static String  LISTDEVFILES="esterRecoDev.xmll";
     public static String  LISTTESTFILES="esterRecoTest.xmll";
     
@@ -60,7 +60,7 @@ public class ASROut {
     }
     
 
-    public void processingASROutputToLC(String en, boolean istrain, boolean iswiki){
+    public void processingASROutputToLC(String entity, boolean istrain, boolean iswiki){
         
         
         GraphIO gio = new GraphIO(null);
@@ -68,10 +68,10 @@ public class ASROut {
                 OutputStreamWriter outFile =null;
                 String xmllist=LISTDEVFILES;
                 if(istrain)
-                    outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", entity)),CNConstants.UTF8_ENCODING);
                 else{
                     xmllist=LISTTESTFILES;
-                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity)),CNConstants.UTF8_ENCODING);
                 }            
             BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
             
@@ -104,23 +104,23 @@ public class ASROut {
                                 if (groups!=null)
                                     for (int gr : groups) {
 
-                                        if(en.equals(AnalyzeClassifier.ONLYONEPNOUNCLASS)){
+                                        if(entity.equals(AnalyzeClassifier.ONLYONEPNOUNCLASS)){
                                             //all the groups are proper nouns pn
                                             for(String str:AnalyzeClassifier.groupsOfNE){
                                                 if (group.groupnoms.get(gr).startsWith(str)) {
-                                                    lab=en;
+                                                    lab=entity;
                                                     break;
                                                 }
                                             }
                                         }else{
-                                             if (group.groupnoms.get(gr).startsWith(en)) {
+                                             if (group.groupnoms.get(gr).startsWith(entity)) {
                                                 //int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                //if (debdugroupe==j) lab = en+"B";    
-                                                //else lab = en+"I";
-                                                lab=en;
+                                                //if (debdugroupe==j) lab = entity+"B";    
+                                                //else lab = entity+"I";
+                                                lab=entity;
                                                 break;
                                             }else{
-                                                if (en.equals(AnalyzeClassifier.ONLYONEMULTICLASS)) {
+                                                if (entity.equals(AnalyzeClassifier.ONLYONEMULTICLASS)) {
                                                     String groupName=group.groupnoms.get(gr);
                                                     groupName=groupName.substring(0, groupName.indexOf("."));
                                                     //if(!Arrays.asList(groupsOfNE).toString().contains(groupName))
@@ -235,7 +235,7 @@ public class ASROut {
                     e.printStackTrace();
             }
     }   
-      public void processingASROutputToCRF(String en, boolean istrain, boolean iswiki){
+      public void processingASROutputToCRF(String entity, boolean istrain, boolean iswiki){
         
         
         GraphIO gio = new GraphIO(null);
@@ -243,10 +243,10 @@ public class ASROut {
                 OutputStreamWriter outFile =null;
                 String xmllist=LISTDEVFILES;
                 if(istrain)
-                    outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", entity)),CNConstants.UTF8_ENCODING);
                 else{
                     xmllist=LISTTESTFILES;
-                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity)),CNConstants.UTF8_ENCODING);
                 }            
             BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
             
@@ -279,23 +279,23 @@ public class ASROut {
                                 if (groups!=null)
                                     for (int gr : groups) {
 
-                                        if(en.equals(AnalyzeClassifier.ONLYONEPNOUNCLASS)){
+                                        if(entity.equals(AnalyzeClassifier.ONLYONEPNOUNCLASS)){
                                             //all the groups are proper nouns pn
                                             for(String str:AnalyzeClassifier.groupsOfNE){
                                                 if (group.groupnoms.get(gr).startsWith(str)) {
-                                                    lab=en;
+                                                    lab=entity;
                                                     break;
                                                 }
                                             }
                                         }else{
-                                             if (group.groupnoms.get(gr).startsWith(en)) {
+                                             if (group.groupnoms.get(gr).startsWith(entity)) {
                                                 //int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                //if (debdugroupe==j) lab = en+"B";    
-                                                //else lab = en+"I";
-                                                lab=en;
+                                                //if (debdugroupe==j) lab = entity+"B";    
+                                                //else lab = entity+"I";
+                                                lab=entity;
                                                 break;
                                             }else{
-                                                if (en.equals(AnalyzeClassifier.ONLYONEMULTICLASS)) {
+                                                if (entity.equals(AnalyzeClassifier.ONLYONEMULTICLASS)) {
                                                     String groupName=group.groupnoms.get(gr);
                                                     groupName=groupName.substring(0, groupName.indexOf("."));
                                                     //if(!Arrays.asList(groupsOfNE).toString().contains(groupName))
@@ -473,8 +473,8 @@ public class ASROut {
 
         AnalyzeClassifier.MODELFILE="bin.%S.lc.mods.reco";
         
-        processingASROutputToLC(CNConstants.PRNOUN, true, iswiki);
-        processingASROutputToLC(CNConstants.PRNOUN, false, iswiki);
+        processingASROutputToLC(sclass, true, iswiki);
+        processingASROutputToLC(sclass, false, iswiki);
         AnalyzeClassifier.LISTTRAINFILES="esterTrainALL.xmll";
         AnalyzeClassifier.TRAINSIZE   =Integer.MAX_VALUE; 
         lclass.trainAllLinearClassifier(sclass,true,iswiki,true);
@@ -493,8 +493,8 @@ public class ASROut {
      public void callStanfordNER(String sclass){
         AnalyzeCRFClassifier.MODELFILE="en.%S.crf.mods.reco";
         /*
-        processingASROutputToCRF(CNConstants.PRNOUN, true, false);
-        processingASROutputToCRF(CNConstants.PRNOUN, false, false);
+        processingASROutputToCRF(sclass, true, false);
+        processingASROutputToCRF(sclass, false, false);
         //*/
         crfclass.trainAllCRFClassifier(true,true,false);
         

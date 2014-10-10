@@ -33,6 +33,8 @@ package tools;
     public static String DEFLISTTEST="esterTestALL.xmll";
     public static String LCPROPS="lcProps";
     public static String DEFLCPROPS="slinearclassifier.props";
+    public static String NTHREADSPROP="nthreads";
+    public static String DEFNTHREADS="1";
     //StanfordCRF
     public static String LISTCRFTRAINPROP="listCRFTrain";
     public static String LISTCRFTESTPROP="listCRFTest";
@@ -62,6 +64,12 @@ package tools;
     public static String DEFWIKIDBUSER="contnomina";
     public static String WIKIDBPASSPROP="wikiDBPassword";    
     public static String DEFWIKIDBPASS="contnomina";  
+    
+    //CoNLL03 config
+    public static String CONLL03TRAINPROP="conll03Train";
+    public static String CONLL03DEVPROP="conll03Dev";
+    public static String CONLL03TESTPROP="conll03Test";
+    public static String CONLL03DIRPROP="conll03Dir";     
     
     //General Constants
     public static final String  CHAR_NULL = "--";

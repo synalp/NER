@@ -5,7 +5,6 @@
 package linearclassifier;
 
 
-import edu.emory.mathcs.backport.java.util.Collections;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -147,7 +146,7 @@ public class AnalyzeClassifier {
 
     }
         
-    public void saveFilesForLClassifier(String en, boolean bltrain, boolean iswiki, boolean isLower) {
+    public void saveFilesForLClassifier(String entity, boolean bltrain, boolean iswiki, boolean isLower) {
             try {
                 //if(bltrain&iswiki)
                 //WikipediaAPI.loadWiki();
@@ -155,10 +154,10 @@ public class AnalyzeClassifier {
                 OutputStreamWriter outFile =null;
                 String xmllist=LISTTRAINFILES;
                 if(bltrain)
-                    outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity)),CNConstants.UTF8_ENCODING);
                 else{
                     xmllist=LISTTESTFILES;
-                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", en)),CNConstants.UTF8_ENCODING);
+                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity)),CNConstants.UTF8_ENCODING);
                 }
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
                 int uttCounter=0,wordcount=0;
@@ -179,23 +178,23 @@ public class AnalyzeClassifier {
                                     if (groups!=null)
                                         for (int gr : groups) {
                                             
-                                            if(en.equals(ONLYONEPNOUNCLASS)){
+                                            if(entity.equals(ONLYONEPNOUNCLASS)){
                                                 //all the groups are proper nouns pn
                                                 for(String str:groupsOfNE){
                                                     if (group.groupnoms.get(gr).startsWith(str)) {
-                                                        lab=en;
+                                                        lab=entity;
                                                         break;
                                                     }
                                                 }
                                             }else{
-                                                 if (group.groupnoms.get(gr).startsWith(en)) {
+                                                 if (group.groupnoms.get(gr).startsWith(entity)) {
                                                     //int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                    //if (debdugroupe==j) lab = en+"B";    
-                                                    //else lab = en+"I";
-                                                    lab=en;
+                                                    //if (debdugroupe==j) lab = entity+"B";    
+                                                    //else lab = entity+"I";
+                                                    lab=entity;
                                                     break;
                                                 }else{
-                                                    if (en.equals(ONLYONEMULTICLASS)) {
+                                                    if (entity.equals(ONLYONEMULTICLASS)) {
                                                         String groupName=group.groupnoms.get(gr);
                                                         groupName=groupName.substring(0, groupName.indexOf("."));
                                                         //if(!Arrays.asList(groupsOfNE).toString().contains(groupName))
@@ -257,7 +256,8 @@ public class AnalyzeClassifier {
             }
     }   
     
-    public  LinearClassifier loadModelFromFile(String filename){
+ 
+    public static LinearClassifier loadModelFromFile(String filename){
         LinearClassifier model = null;
         File mfile = new File(filename);     
             Object object;
@@ -271,13 +271,13 @@ public class AnalyzeClassifier {
         return model;
     }
     
-    public void trainOneClassifier(String sclassifier, boolean iswiki){
+    public void trainOneClassifier(String entity, boolean iswiki){
         LinearClassifier model = null;
-        File mfile = new File(MODELFILE.replace("%S", sclassifier));
+        File mfile = new File(MODELFILE.replace("%S", entity));
         if(!mfile.exists()){
-            updatingPropFile(sclassifier, iswiki);
+            updatingPropFile(entity, iswiki);
             ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);                
-            GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", sclassifier));
+            GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", entity));
             model = (LinearClassifier) columnDataClass.makeClassifier(data);
 
             //model.
@@ -303,15 +303,15 @@ public class AnalyzeClassifier {
             /*List<List<Integer>> featsperInst = new ArrayList<>(); 
             List<Integer> labelperInst = new ArrayList<>(); */
             //train data
-            modelMap.put(sclassifier,model);
+            modelMap.put(entity,model);
             Margin margin = new Margin(model);
-            marginMAP.put(sclassifier,margin);  
+            marginMAP.put(entity,margin);  
             
             //compute the values for instances in the trainset
-            /*getValues(TRAINFILE.replace("%S", sclassifier),model,featsperInst,labelperInst);
+            /*getValues(TRAINFILE.replace("%S", entity),model,featsperInst,labelperInst);
             System.out.println("Total number of features: "+ model.features().size());
-            featInstMap.put(sclassifier,featsperInst);
-            lblInstMap.put(sclassifier, labelperInst);*/
+            featInstMap.put(entity,featsperInst);
+            lblInstMap.put(entity, labelperInst);*/
     
         }        
     }
@@ -1229,7 +1229,7 @@ public class AnalyzeClassifier {
         
    }      
 
-   public void wkSClassStochCoordGr(String sclass, boolean closedForm) {
+   public void wkSClassStochCoordGr(String sclass, boolean closedForm){
        CURRENTSETCLASSIFIER=sclass;
         PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
         PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
@@ -1345,7 +1345,10 @@ public class AnalyzeClassifier {
  
         boolean isMC=false;
         int numIntIters=100;
-        int numberOfThreads=1;
+        if(GeneralConfig.nthreads==CNConstants.INT_NULL){
+            GeneralConfig.loadProperties();
+        }
+        int numberOfThreads=GeneralConfig.nthreads;
 
         //train the classifier with a small set of train files
         trainOneClassifier(sclass,false);  
@@ -1441,7 +1444,10 @@ public class AnalyzeClassifier {
  
         boolean isMC=false;
         int numIntIters=100;
-        int numberOfThreads=1;
+        if(GeneralConfig.nthreads==CNConstants.INT_NULL){
+            GeneralConfig.loadProperties();
+        }
+        int numberOfThreads=GeneralConfig.nthreads;
 
         //train the classifier with a small set of train files
         trainOneClassifier(sclass,false);  

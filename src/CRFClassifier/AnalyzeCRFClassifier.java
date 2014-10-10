@@ -201,7 +201,20 @@ public class AnalyzeCRFClassifier {
             ex.printStackTrace();
         }
    }     
-        
+    public void updatingMappingPropFile(String nameEntity,String mapping){
+       
+
+        Properties prop = new Properties();
+        try {
+            prop.load(new FileInputStream(PROPERTIES_FILE)); // FileInputStream
+            prop.setProperty("trainFile", TRAINFILE.replace("%S", nameEntity));
+            prop.setProperty("serializeTo",MODELFILE.replace("%S", nameEntity));
+            prop.setProperty("map",mapping);
+            prop.store(new FileOutputStream(PROPERTIES_FILE),""); // FileOutputStream 
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+   }          
    public  void saveGroups(boolean ispn,boolean bltrain, boolean isLower){
        //only one proper noun classifier
        String[] classStr={ONLYONEPNOUNCLASS};
