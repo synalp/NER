@@ -212,7 +212,7 @@ public class NumericalIntegration {
 //        return points;
 //    }      
     /**
-     * 
+     * MonteCarlo Integration of R for the multiclass with  the constrain that the scores sum to 1
      * @param gmm
      * @return 
      */
@@ -344,7 +344,16 @@ public class NumericalIntegration {
         return integral;
     
     }
-
+    /**
+     * MonteCarlo Integration of the risk function for the binary constrained case
+     * @param gmm
+     * @param k
+     * @param proposal
+     * @param metropolis
+     * @param isplot
+     * @param numTrials
+     * @return 
+     */
     public double integrateBinaryCase(GMMDiag gmm, int k, String proposal, boolean metropolis, boolean isplot, int numTrials){
          
         /*ScatterPlotAPI plotPoints = null;
@@ -430,7 +439,7 @@ public class NumericalIntegration {
        return integral; 
     }
     /**
-     * Checks the integrals for the function f(x)=x^2
+     * MonteCarlo Integration of the function f(x)=x^2
      * @param gmm
      * @param k
      * @param proposal
@@ -518,6 +527,13 @@ public class NumericalIntegration {
         
        return integral; 
     } 
+    /**
+     * Trapezoidal Integration, uses the class TrapezoidIntegrator of the library commons.math
+     * @param gmm
+     * @param k
+     * @param numTrials
+     * @return 
+     */
     public double trapezoidIntegration(final GMMDiag gmm, final int k, int numTrials){
                                
             Pair<Double,Double> pair= gmm.getInterval(MAXVAL);
@@ -544,6 +560,13 @@ public class NumericalIntegration {
        return integral; 
     }
     
+    /**
+     * Implements the trapezium Method in order to control the number of segments 
+     * @param gmm
+     * @param k
+     * @param n
+     * @return 
+     */
     public  double trapeziumMethod(final GMMDiag gmm, final int k,  int n){
         
         Pair<Double,Double> pair= gmm.getInterval(MAXVAL);
@@ -561,6 +584,13 @@ public class NumericalIntegration {
         sum += (getBinaryConstrFunction(gmm,(float) lo,k) + getBinaryConstrFunction(gmm,(float) hi,k)) / 2.0;
         return sum * range / nFloat;
     }    
+    
+    /**
+     * Trapezoidal method used for solving the product of gaussians
+     * @param gmm
+     * @param n
+     * @return 
+     */
     public  double trapeziumMethodNSquared(final GMMDiag gmm,  int n){
         
         Pair<Double,Double> pair= gmm.getInterval(MAXVAL);
@@ -586,6 +616,14 @@ public class NumericalIntegration {
         sum += (getNSquareTerm(gmm,(float) lo) + getNSquareTerm(gmm,(float) hi)) / 2.0;
         return sum * range / nFloat;
     }     
+    
+    /**
+     * Function to solve for the binary constrained case
+     * @param gmm
+     * @param x
+     * @param k
+     * @return 
+     */
     public double getBinaryConstrFunction(GMMDiag gmm, float x, int k){
             
         

@@ -33,8 +33,8 @@ import lex.DependencyTree;
 import lex.Segment;
 import lex.Utterance;
 import lex.Word;
-import linearclassifier.AnalyzeClassifier;
-import static linearclassifier.AnalyzeClassifier.isStopWord;
+import linearclassifier.AnalyzeLClassifier;
+import static linearclassifier.AnalyzeLClassifier.isStopWord;
 import tools.CNConstants;
 import tools.GeneralConfig;
 import tools.Histoplot;
@@ -1276,7 +1276,7 @@ public class AnalyzeSVMClassifier implements Serializable{
    } 
     
     public void addStanfordLCFeatures(boolean istrain){
-        AnalyzeClassifier analyzing = new AnalyzeClassifier();
+        AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
         stdictTrainFeatures=analyzing.deserializingFeatures(istrain);
         
     }

@@ -59,10 +59,10 @@ public class GeneralConfig {
     public static String capProps;
     
     //CoNLL03
-    public static String conll03Train;
-    public static String conll03Dev;
-    public static String conll03Test;
-    public static String conll03Dir;   
+    public static String corpusTrain;
+    public static String corpusDev;
+    public static String corpusTest;
+    public static String corpusDir;   
 	   
 
 	/**
@@ -116,10 +116,10 @@ public class GeneralConfig {
            capProps=properties.getProperty(CNConstants.CAPPROPS,CNConstants.DEFCAPPROPS);      
            
            //CoNLL03 config
-           conll03Train=properties.getProperty(CNConstants.CONLL03TRAINPROP);
-           conll03Dev=properties.getProperty(CNConstants.CONLL03DEVPROP);
-           conll03Test=properties.getProperty(CNConstants.CONLL03TESTPROP);
-           conll03Dir=properties.getProperty(CNConstants.CONLL03DIRPROP);
+           corpusTrain=properties.getProperty(CNConstants.CORPUSTRAINPROP);
+           corpusDev=properties.getProperty(CNConstants.CORPUSDEVPROP);
+           corpusTest=properties.getProperty(CNConstants.CORPUSTESTPROP);
+           corpusDir=properties.getProperty(CNConstants.CORPUSDIRPROP);
 	       
 	}
 

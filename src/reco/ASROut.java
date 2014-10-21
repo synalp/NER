@@ -29,8 +29,8 @@ import lex.Utterance;
 import lex.Word;
 
 
-import linearclassifier.AnalyzeClassifier;
-import static linearclassifier.AnalyzeClassifier.isStopWord;
+import linearclassifier.AnalyzeLClassifier;
+import static linearclassifier.AnalyzeLClassifier.isStopWord;
 import resources.WikipediaAPI;
 import tools.CNConstants;
 import tools.GeneralConfig;
@@ -43,7 +43,7 @@ import utils.SuiteDeMots;
  */
 public class ASROut {
     
-    private AnalyzeClassifier lclass= new AnalyzeClassifier();
+    private AnalyzeLClassifier lclass= new AnalyzeLClassifier();
     private AnalyzeCRFClassifier crfclass=new AnalyzeCRFClassifier();
     private String developmentDir = "dev";
     private String testDir="test";
@@ -104,9 +104,9 @@ public class ASROut {
                                 if (groups!=null)
                                     for (int gr : groups) {
 
-                                        if(entity.equals(AnalyzeClassifier.ONLYONEPNOUNCLASS)){
+                                        if(entity.equals(AnalyzeLClassifier.ONLYONEPNOUNCLASS)){
                                             //all the groups are proper nouns pn
-                                            for(String str:AnalyzeClassifier.groupsOfNE){
+                                            for(String str:AnalyzeLClassifier.groupsOfNE){
                                                 if (group.groupnoms.get(gr).startsWith(str)) {
                                                     lab=entity;
                                                     break;
@@ -120,7 +120,7 @@ public class ASROut {
                                                 lab=entity;
                                                 break;
                                             }else{
-                                                if (entity.equals(AnalyzeClassifier.ONLYONEMULTICLASS)) {
+                                                if (entity.equals(AnalyzeLClassifier.ONLYONEMULTICLASS)) {
                                                     String groupName=group.groupnoms.get(gr);
                                                     groupName=groupName.substring(0, groupName.indexOf("."));
                                                     //if(!Arrays.asList(groupsOfNE).toString().contains(groupName))
@@ -279,9 +279,9 @@ public class ASROut {
                                 if (groups!=null)
                                     for (int gr : groups) {
 
-                                        if(entity.equals(AnalyzeClassifier.ONLYONEPNOUNCLASS)){
+                                        if(entity.equals(AnalyzeLClassifier.ONLYONEPNOUNCLASS)){
                                             //all the groups are proper nouns pn
-                                            for(String str:AnalyzeClassifier.groupsOfNE){
+                                            for(String str:AnalyzeLClassifier.groupsOfNE){
                                                 if (group.groupnoms.get(gr).startsWith(str)) {
                                                     lab=entity;
                                                     break;
@@ -295,7 +295,7 @@ public class ASROut {
                                                 lab=entity;
                                                 break;
                                             }else{
-                                                if (entity.equals(AnalyzeClassifier.ONLYONEMULTICLASS)) {
+                                                if (entity.equals(AnalyzeLClassifier.ONLYONEMULTICLASS)) {
                                                     String groupName=group.groupnoms.get(gr);
                                                     groupName=groupName.substring(0, groupName.indexOf("."));
                                                     //if(!Arrays.asList(groupsOfNE).toString().contains(groupName))
@@ -471,21 +471,21 @@ public class ASROut {
     }     
     public void callLClassifier(String sclass, boolean iswiki){
 
-        AnalyzeClassifier.MODELFILE="bin.%S.lc.mods.reco";
+        AnalyzeLClassifier.MODELFILE="bin.%S.lc.mods.reco";
         
         processingASROutputToLC(sclass, true, iswiki);
         processingASROutputToLC(sclass, false, iswiki);
-        AnalyzeClassifier.LISTTRAINFILES="esterTrainALL.xmll";
-        AnalyzeClassifier.TRAINSIZE   =Integer.MAX_VALUE; 
+        AnalyzeLClassifier.LISTTRAINFILES="esterTrainALL.xmll";
+        AnalyzeLClassifier.TRAINSIZE   =Integer.MAX_VALUE; 
         lclass.trainAllLinearClassifier(sclass,true,iswiki,true);
         System.out.println("===============trained ==================");
         //testing on dev
-        AnalyzeClassifier.TESTFILE=DEVFILE;        
+        AnalyzeLClassifier.TESTFILE=DEVFILE;        
         lclass.testingClassifier(false,sclass,iswiki,true);
         LinearClassifier model = lclass.getModel(sclass);
         double f1=lclass.testingClassifier(model,TESTFILE.replace("%S", sclass));        
         //testing on test
-        AnalyzeClassifier.TESTFILE=TESTFILE;        
+        AnalyzeLClassifier.TESTFILE=TESTFILE;        
         lclass.testingClassifier(false,sclass,iswiki,true);
         f1=lclass.testingClassifier(model,TESTFILE.replace("%S", sclass));
             
@@ -496,23 +496,23 @@ public class ASROut {
         processingASROutputToCRF(sclass, true, false);
         processingASROutputToCRF(sclass, false, false);
         //*/
-        crfclass.trainAllCRFClassifier(true,true,false);
+        crfclass.trainAllCRFClassifier(CNConstants.PRNOUN,true,false);
         
         AnalyzeCRFClassifier.TESTFILE=DEVFILE;
         if(sclass.equals(CNConstants.PRNOUN)){
-            crfclass.testingClassifier(true,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
+            crfclass.testingClassifier(CNConstants.PRNOUN,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
             AnalyzeCRFClassifier.TESTFILE=TESTFILE;  
-            crfclass.testingClassifier(true,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");             
+            crfclass.testingClassifier(CNConstants.PRNOUN,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");             
         }else{
-            crfclass.testingClassifier(false,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
+            crfclass.testingClassifier(CNConstants.PRNOUN,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
             AnalyzeCRFClassifier.TESTFILE=TESTFILE;  
-            crfclass.testingClassifier(false,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");             
+            crfclass.testingClassifier(CNConstants.PRNOUN,false,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");             
         }    
        
             
     }
     public void evaluatingResults(String fileName){
-        AnalyzeClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,fileName);
+        AnalyzeLClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,fileName);
         
     }
     public static void  main(String[] args){

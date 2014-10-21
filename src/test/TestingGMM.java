@@ -10,8 +10,8 @@ import gmm.GMMDiag;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import linearclassifier.AnalyzeClassifier;
-import static linearclassifier.AnalyzeClassifier.TESTFILE;
+import linearclassifier.AnalyzeLClassifier;
+import static linearclassifier.AnalyzeLClassifier.TESTFILE;
 import linearclassifier.Margin;
 import tools.CNConstants;
 
@@ -22,14 +22,14 @@ import tools.CNConstants;
 public class TestingGMM {
 
         public TestingGMM(){
-            AnalyzeClassifier analyzing = new AnalyzeClassifier();
+            AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
             //final float[] priors = computePriors(sclassifier,model);
             List<List<Integer>> featsperInst = new ArrayList<>(); 
             List<Integer> labelperInst = new ArrayList<>();        
             final float[] priors = {0.9f,0.1f};
             String sclass=CNConstants.PRNOUN;
 
-            analyzing.trainOneClassifier(sclass,false);
+            analyzing.trainOneNERClassifier(sclass,false);
             
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
@@ -45,7 +45,7 @@ public class TestingGMM {
             //analyzing.setNumberOfInstances(numinst);
             
             Margin.GENERATEDDATA=true;
-            margin.generateRandomScore(numinst);
+            margin.generateBinaryRandomScore(numinst);
             /*
             System.out.println("x=[");
             for(int i=0;i<numinst;i++){

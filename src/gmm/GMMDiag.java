@@ -3,6 +3,7 @@ package gmm;
 
 
 import edu.stanford.nlp.util.Pair;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import linearclassifier.Margin;
@@ -17,6 +18,8 @@ import linearclassifier.Margin;
  * 
  * 
  * taken from the GMM class implemented by Christophe Cerisara.
+ * 
+ * Changed trainViterbi, to compute the parameters based on the posterior probability
  * 
  * @author xtof
  * <!--
@@ -104,9 +107,11 @@ public class GMMDiag extends GMM {
     public double getLoglike(Margin margin) {
         final float[] z = new float[nlabs];
         double loglike=0;
-        int numInstances = margin.getLabelPerInstances().size();
+        int numInstances = margin.getNumberOfInstances();
         for (int instance=0;instance<numInstances;instance++) {
-            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
+            List<Integer> featuresByInstance = new ArrayList<>();
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(instance);
             for (int lab=0;lab<nlabs;lab++){
                 if(Margin.GENERATEDDATA)
                     z[lab] = margin.getGenScore(instance, lab);
@@ -134,7 +139,7 @@ public class GMMDiag extends GMM {
         }
         int[] nex = new int[nlabs];
         Arrays.fill(nex, 0);
-        int numInstances = margin.getLabelPerInstances().size();
+        int numInstances = margin.getNumberOfInstances();
         for (int ex=0;ex<numInstances;ex++) {
             List<Integer> instance = margin.getFeaturesPerInstance(ex);
             for (int lab=0;lab<nlabs;lab++) {
@@ -197,7 +202,7 @@ public class GMMDiag extends GMM {
     
     
 
-    public void trainViterbi0(Margin margin) {
+    public void trainViterbiOLD(Margin margin) {
         final float[] z = new float[nlabs];
         final GMMDiag gmm0 = this.clone();
         for (int i=0;i<nlabs;i++) {
@@ -207,11 +212,13 @@ public class GMMDiag extends GMM {
         int[] nex = new int[nlabs];
         
         Arrays.fill(nex, 0);
-        int numInstances = margin.getLabelPerInstances().size();
+        int numInstances = margin.getNumberOfInstances();
         int[] ex2lab = new int[numInstances];
         
         for (int inst=0;inst<numInstances;inst++) {
-            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(inst);
+            List<Integer> featuresByInstance = new ArrayList<>();
+            if(!Margin.GENERATEDDATA)                        
+                featuresByInstance = margin.getFeaturesPerInstance(inst);
             for (int lab=0;lab<nlabs;lab++) {
                 z[lab] = margin.getScore(featuresByInstance,lab);
             }
@@ -248,7 +255,9 @@ public class GMMDiag extends GMM {
         }
             
         for (int inst=0;inst<numInstances;inst++) {
-            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(inst);
+            List<Integer> featuresByInstance = new ArrayList<>();
+            if(!Margin.GENERATEDDATA)                        
+                featuresByInstance = margin.getFeaturesPerInstance(inst);
             for (int i=0;i<nlabs;i++) {
                 z[i] = margin.getScore(featuresByInstance,i);
             }
@@ -311,9 +320,11 @@ public class GMMDiag extends GMM {
         Arrays.fill(nex, 0);
         Arrays.fill(nk, 0.0);
         
-        int numInstances = margin.getLabelPerInstances().size();       
+        int numInstances = margin.getNumberOfInstances();       
         for (int inst=0;inst<numInstances;inst++) {
-            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(inst);
+            List<Integer> featuresByInstance = new ArrayList<>();
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(inst);
             for (int lab=0;lab<nlabs;lab++) {
                 if(Margin.GENERATEDDATA)
                     z[lab] = margin.getGenScore(inst, lab);
@@ -345,6 +356,7 @@ public class GMMDiag extends GMM {
                 }
             }
             //System.out.println(" instance "+inst + "\n normConst = "+ normConst +"  sum mean ["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"]  nk="+Arrays.toString(nk) );
+
         }
         
         for (int y=0;y<nlabs;y++) {
@@ -360,7 +372,9 @@ public class GMMDiag extends GMM {
         }
         //System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
         for (int inst=0;inst<numInstances;inst++) {
-            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(inst);
+            List<Integer> featuresByInstance = new ArrayList<>();
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(inst);
             for (int i=0;i<nlabs;i++) {
                 if(Margin.GENERATEDDATA)
                     z[i] = margin.getGenScore(inst, i);
@@ -409,20 +423,24 @@ public class GMMDiag extends GMM {
             gconst[y]=co;
             //System.out.println("diagvar["+y+"]="+Arrays.toString(diagvar[y]));
         }
+        //System.out.println("trainviterbi");
+        //printMean();
+        //printVariace();   
     }
     
     /**
      * Assuming all mixtures are initially equal, moves away in opposite directions every mixture
      */
     public void split() {
-        final double ratio = 0.1;
+        
         for (int y=1;y<nlabs;y++) {
             for (int i=0;i<nlabs;i++) {
                 means[y][i]=means[0][i];
                 diagvar[y][i]=diagvar[0][i];
             }
         }
-        
+        /*
+        //This code is constrained for the binary case
         for (int y=0;y<nlabs;y++) {
             if (y%2==0){
                 means[y][0]+=Math.sqrt(diagvar[y][0])*ratio;
@@ -432,7 +450,39 @@ public class GMMDiag extends GMM {
                 means[y][1]=-means[y][0];
             }    
         }
-        //System.out.println("split means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
+        //*/
+        /*
+        for(int y=0;y<nlabs;y++){
+            if (y%nlabs==0){
+                for (int i=0;i<nlabs;i++)
+                    means[y][i]+=Math.sqrt(diagvar[y][i])*ratio;
+            }else{
+                for (int i=0;i<nlabs;i++)
+                    means[y][i]-=Math.sqrt(diagvar[y][i])*(ratio+y%nlabs);            
+            }    
+        }
+        //*/
+        double ratio=0.1;
+        int nSigma=0;
+        for(int y=0;y<nlabs;y++){
+             if (y%2==0){
+                 nSigma++;
+                //double delta=Math.sqrt(diagvar[y][0])*nSigma;
+                for (int l=0;l<nlabs;l++){
+                    double sign=(means[y][l]<0)?-1:1;
+                    means[y][l]= sign*(Math.abs(means[y][l])+Math.sqrt(diagvar[y][l])*nSigma*ratio);        
+                }
+             }else{
+                 //double delta=Math.sqrt(diagvar[y][0])*nSigma;
+                 for (int l=0;l<nlabs;l++){
+                    double sign=(means[y][l]<0)?-1:1;
+                    means[y][l]= sign*(Math.abs(means[y][l])-Math.sqrt(diagvar[y][l])*nSigma*ratio);
+                 }   
+             }
+        }
+        //System.out.println("split ");
+        //printMean();
+        //printVariace();
         
     }
     /**
@@ -451,9 +501,11 @@ public class GMMDiag extends GMM {
         for (int i=0;i<nlabs;i++) {
             Arrays.fill(means[i], 0);
         }
-        int numInstances = margin.getLabelPerInstances().size();
+        int numInstances = margin.getNumberOfInstances();
         for (int ex=0;ex<numInstances;ex++) {
-            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(ex);
+            List<Integer> featuresByInstance = new ArrayList<>();
+            if(!Margin.GENERATEDDATA)
+                featuresByInstance = margin.getFeaturesPerInstance(ex);
             for (int lab=0;lab<nlabs;lab++) {
                 if(Margin.GENERATEDDATA)
                     z[lab] = margin.getGenScore(ex, lab);
@@ -472,7 +524,9 @@ public class GMMDiag extends GMM {
         }
         Arrays.fill(diagvar[0], 0);
         for (int ex=0;ex<numInstances;ex++) {
-            List<Integer> featuresByInstance = margin.getFeaturesPerInstance(ex);
+            List<Integer> featuresByInstance = new ArrayList<>();
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(ex);
             for (int i=0;i<nlabs;i++) {
                 if(Margin.GENERATEDDATA)
                     z[i] = margin.getGenScore(ex, i);
@@ -512,25 +566,35 @@ public class GMMDiag extends GMM {
         System.out.println("train1gauss means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
         System.out.println("train1gauss var=["+diagvar[0][0]+","+diagvar[0][1]+";\n"+diagvar[1][0]+","+diagvar[1][1]+"]");
         System.out.println("train1gauss var=["+gconst[0]+","+gconst[1]+"]");
-        */
+        //*/
+        //System.out.println("train1gauss");
+        //printMean();
+        //printVariace();    
     }
     
     
     public void train(Margin margin) {
-        final int niters=15;
+        final int niters=1000;
+        double epsilon=0.0004; //2e-05;
         train1gauss(margin);
         double loglike = getLoglike(margin);
         assert !Double.isNaN(loglike);
         double sqerr = Double.NaN;
-        if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-        System.out.println("train1gauss loglike "+loglike+" nex "+margin.getLabelPerInstances().size()+ "sqerr "+sqerr);
+        //if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
+        System.out.println("train1gauss loglike "+loglike+" nex "+margin.getNumberOfInstances()+ "sqerr "+sqerr);
         split();
+        double previousLogLike=loglike;
         for (int iter=0;iter<niters;iter++) {
             trainViterbi(margin);
             loglike = getLoglike(margin);
-            sqerr = Double.NaN;
-            if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-            //System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+analyzer.getNumberOfInstances()+ " sqerr "+sqerr);
+            if(Math.abs(loglike-previousLogLike)<epsilon)
+                break;
+            
+            previousLogLike=loglike;
+            //sqerr = Double.NaN;
+            //if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
+            
+            System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+margin.getNumberOfInstances()+ " sqerr "+sqerr);
         }
     }
     
@@ -569,5 +633,32 @@ public class GMMDiag extends GMM {
         return this.maxSigma;
     }
 
-
+    public void printMean(){
+            String mean="mean=[";
+            for(int i=0; i<  nlabs;i++){
+                for(int j=0; j<  nlabs;j++){
+                    mean+= means[i][j];
+                    if(j<nlabs-1)
+                        mean+=" , ";
+                } 
+                if(i<nlabs-1)
+                    mean+=";";
+            }    
+            mean+="]";
+            System.out.println(mean);        
+    }
+    public void printVariace(){
+            String var="var=[";
+            for(int i=0; i<  nlabs;i++){
+                for(int j=0; j<  nlabs;j++){
+                    var+= diagvar[i][j];
+                    if(j<nlabs-1)
+                        var+=" , ";
+                } 
+                if(i<nlabs-1)
+                    var+=";";
+            }    
+            var+="]";
+            System.out.println(var);        
+    }    
 }

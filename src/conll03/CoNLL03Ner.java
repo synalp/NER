@@ -7,15 +7,19 @@ package conll03;
 import CRFClassifier.AnalyzeCRFClassifier;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
+import edu.stanford.nlp.ie.crf.CRFClassifier;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.Datum;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
-import linearclassifier.AnalyzeClassifier;
+import linearclassifier.AnalyzeLClassifier;
 import tools.CNConstants;
 import tools.GeneralConfig;
 
@@ -44,16 +48,16 @@ public class CoNLL03Ner {
    
    public CoNLL03Ner(){
        GeneralConfig.loadProperties();
-       corpusTrain= GeneralConfig.conll03Train;
-       corpusDev=GeneralConfig.conll03Dev;
-       corpusTest=GeneralConfig.conll03Test;
-       corpusDir=GeneralConfig.conll03Dir;
+       corpusTrain= GeneralConfig.corpusTrain;
+       corpusDev=GeneralConfig.corpusDev;
+       corpusTest=GeneralConfig.corpusTest;
+       corpusDir=GeneralConfig.corpusDir;
    }
    public CoNLL03Ner(String[] validDirectories){
        GeneralConfig.loadProperties();
-       corpusTrain= GeneralConfig.conll03Train;
-       corpusDev=GeneralConfig.conll03Dev;
-       corpusTest=GeneralConfig.conll03Test;
+       corpusTrain= GeneralConfig.corpusTrain;
+       corpusDev=GeneralConfig.corpusDev;
+       corpusTest=GeneralConfig.corpusTest;
           
        String dir="";
        for(int i=0; i< validDirectories.length; i++){
@@ -73,24 +77,38 @@ public class CoNLL03Ner {
             switch(dataset){
                 case "train":
                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTrain)); 
-                    outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+                    
                     if(isCRF)
                         outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);
+                    else
+                        outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
                     break;
                 case "dev":
                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusDev)); 
-                    outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+                    
                     if(isCRF)
                         outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);  
+                    else
+                        outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
                     break;
                 case "test":
                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTest)); 
-                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+                    
                     if(isCRF)
                         outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);                      
+                    else
+                        outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
                     break;
             }
-            
+            if(isCRF){
+                AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
+                if(!wSupModelFile.equals(CNConstants.CHAR_NULL))
+                    crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,cluster=3,answer=4 ");     
+                else
+                    crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");
+                
+            }
+                
             int uttCount=CNConstants.INT_NULL;
             for(;;){
                String line = inFile.readLine();
@@ -101,7 +119,7 @@ public class CoNLL03Ner {
                    continue;
                //utterance breaking
                if(line.equals("")){
-                   if(dataset.equals("train") &&  uttCount>AnalyzeClassifier.TRAINSIZE)
+                   if(dataset.equals("train") && (!isCRF) &&  uttCount>AnalyzeLClassifier.TRAINSIZE)
                        break;                   
                    uttCount++;
                    continue;
@@ -114,20 +132,19 @@ public class CoNLL03Ner {
                     label = CNConstants.PRNOUN;
                }
                if(label.equals("O"))
-                   label=CNConstants.NOCLASS;
+                   label=CNConstants.OUTCLASS;
                if(isCRF){
                    if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
-                        AnalyzeClassifier.MODELFILE=wSupModelFile;
+                        AnalyzeLClassifier.MODELFILE=wSupModelFile;
                         
-                        LinearClassifier wsupModel = AnalyzeClassifier.loadModelFromFile(wSupModelFile);
-                        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeClassifier.PROPERTIES_FILE);
+                        LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
+                        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
                         Datum<String, String> datum = columnDataClass.makeDatumFromLine(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\n", 0);
                         String outClass = (String) wsupModel.classOf(datum);
-                        AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
-                        crf.updatingMappingPropFile(entity,"word=0, tag=1, chunk=2, cluster=3");
-                        outFile.append(cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+outClass+label);
+                        outFile.append(cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+outClass+label+"\n");
                    }else
-                        outFile.append(cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+label);
+                        outFile.append(cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+label+"\n");
+                        
                }else
                    outFile.append(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\n");
 
@@ -144,38 +161,52 @@ public class CoNLL03Ner {
     }
     
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize){
-        AnalyzeClassifier.TRAINSIZE=trainSize;
+        AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
             generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
             generatingStanfordInputFiles(entity, "dev", false,CNConstants.CHAR_NULL);
         }
-        AnalyzeClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
-        AnalyzeClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
-        AnalyzeClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
+        AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
         //if exist recreates the binary file
-        File mfile = new File(AnalyzeClassifier.MODELFILE);
-        mfile.delete();
-        AnalyzeClassifier lcclass= new AnalyzeClassifier();
+        File mfile = new File(AnalyzeLClassifier.MODELFILE);
+        File mfile2 = new File(AnalyzeLClassifier.MODELFILE+"_COPY");
+        if(mfile.exists()){
+            try {
+                Files.copy(mfile.toPath(), mfile2.toPath(),StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
         lcclass.trainAllLinearClassifier(entity, false, false, false);
         lcclass.testingClassifier(false, entity, false, false);
-            
-        lcclass.wkSupConstrParallelCoordD(entity, true);
+        if(!entity.equals(CNConstants.ALL)){
+            float[] priors = {0.9f,0.1f};
+            lcclass.setPriors(priors);
+        }else{
+            float[] priors = {0.3f,0.2f,0.2f,0.15f,0.15f};
+            lcclass.setPriors(priors);           
+        }    
+        //lcclass.wkSupConstrParallelCoordD(entity, true);
+        lcclass.wkSupConstrParallelFSCoordD(entity, true);
     }
     
     public void evaluateOnlyStanfordLC(String entity){
-        AnalyzeClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
-        AnalyzeClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
-        AnalyzeClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
-        AnalyzeClassifier lcclass = new AnalyzeClassifier();
+        AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
+        AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
         lcclass.testingClassifier(false, entity, false, false);        
     }
     
     public void trainingOnlyWeaklySup(String entity){
-        AnalyzeClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
-        AnalyzeClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
-        AnalyzeClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
-        AnalyzeClassifier lcclass = new AnalyzeClassifier();
+        AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
+        AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
         lcclass.testingClassifier(false, entity, false, false); 
         
         lcclass.wkSupConstrParallelCoordD(entity, true);
@@ -198,14 +229,82 @@ public class CoNLL03Ner {
         File mfile = new File(AnalyzeCRFClassifier.MODELFILE);
         mfile.delete();
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
-        crfclass.trainAllCRFClassifier(true, false, false);
-        crfclass.testingClassifier(entity, false, false, "/analysis/conll03/");
+
+        crfclass.trainAllCRFClassifier(entity, false, false);
+        AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
+        crfclass.testingClassifier(entity, "../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
+        evaluatingCRFResults(entity);
     }
     
+    public void evaluatingCRFResults(String entity){
+        AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier(); 
+        CRFClassifier crf=crfclass.loadModel(MODELFILE.replace("%S", entity).replace("%CLASS", "CRF"));
+                
+        for(Object label:crf.labels()){
+            crfclass.evaluationCONLLBIOCLASSRESULTS((String) label,"analysis/CRF/test.all.log");
+            
+        }
+        
+    }
+     public void onlyEvaluatingCRFResults(String entity){
+        AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
+        AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
+        AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
+        crfclass.testingClassifier(entity, "../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
+        evaluatingCRFResults(entity);
+        
+    }   
+    public void relationFAndR(String entity){
+        AnalyzeLClassifier.TRAINSIZE=20;
+
+        generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
+        generatingStanfordInputFiles(entity, "dev", false,CNConstants.CHAR_NULL);
+               
+        
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);    
+        for(int i=0; i<20;i++){
+            System.out.println("********** Corpus size (#utts)"+AnalyzeLClassifier.TRAINSIZE);
+           
+            File mfile = new File(AnalyzeLClassifier.MODELFILE);
+            File mfile2 = new File(AnalyzeLClassifier.MODELFILE+"_COPY");
+            if(mfile.exists()){
+                try {
+                    Files.copy(mfile.toPath(), mfile2.toPath(),StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }  
+                mfile.delete();
+            }
+            generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
+            AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
+            AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
+            lcclass.trainAllLinearClassifier(entity,false,false,false);
+            lcclass.testingClassifier(false,entity,false,false);
+            LinearClassifier model = lcclass.getModel(entity);
+            double f1=lcclass.testingClassifier(model,TESTFILE.replace("%S", entity).replace("%CLASS", "LC"));
+            if(!entity.equals(CNConstants.ALL)){
+                float[] priors = {0.9f,0.1f};
+                lcclass.setPriors(priors);
+            }else{
+                float[] priors = {0.3f,0.2f,0.2f,0.15f,0.15f};
+                lcclass.setPriors(priors);           
+            }             
+            lcclass.testingRForCorpus(entity,false);
+            AnalyzeLClassifier.TRAINSIZE+=50;
+            
+            
+        }        
+    }
     
     public static void main(String[] args){
         CoNLL03Ner conll = new CoNLL03Ner();
+        //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
+        //conll.trainStanfordCRF(CNConstants.ALL, true, false);
+        //conll.evaluatingCRFResults(CNConstants.ALL);
         conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,20);
+        //conll.relationFAndR(CNConstants.PRNOUN);
+        //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
         //conll.evaluateOnlyStanfordLC();
         //conll.trainingOnlyWeaklySup(CNConstants.PRNOUN);
     }

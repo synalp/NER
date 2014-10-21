@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Properties;
 import jsafran.DetGraph;
 import jsafran.GraphIO;
-import linearclassifier.AnalyzeClassifier;
+import linearclassifier.AnalyzeLClassifier;
 import tools.CNConstants;
 import utils.ErrorsReporting;
 
@@ -48,11 +48,11 @@ public class Capitalization {
                 //WikipediaAPI.loadWiki();
                 GraphIO gio = new GraphIO(null);
                 OutputStreamWriter outFile =null;
-                String xmllist=AnalyzeClassifier.LISTTRAINFILES;
+                String xmllist=AnalyzeLClassifier.LISTTRAINFILES;
                 if(bltrain)
                     outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE),CNConstants.UTF8_ENCODING);
                 else{
-                    xmllist=AnalyzeClassifier.LISTTESTFILES;
+                    xmllist=AnalyzeLClassifier.LISTTESTFILES;
                     outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE),CNConstants.UTF8_ENCODING);
                 }
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
@@ -264,8 +264,8 @@ public class Capitalization {
     public static void main(String[] args){
         Capitalization cap = new Capitalization();
         /*
-        AnalyzeClassifier.LISTTRAINFILES="esterTrainALL.xmll";
-        AnalyzeClassifier.LISTTESTFILES="esterTestALL.xmll";
+        AnalyzeLClassifier.LISTTRAINFILES="esterTrainALL.xmll";
+        AnalyzeLClassifier.LISTTESTFILES="esterTestALL.xmll";
         cap.saveFilesForClassifier(true);
         cap.saveFilesForClassifier(false);
         cap.trainCRF();*/

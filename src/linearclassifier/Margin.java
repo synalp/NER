@@ -43,10 +43,11 @@ public class Margin {
     private List<Double> originalWeights0 = new ArrayList<>();
     List<Double> shuffleWeights = new ArrayList<>();
     private int startIndex=0;
-    
+    private int endIndex=0;
     private List<Double> subListOfFeatures= new ArrayList<>();
     private HashMap<Integer,Integer> shuffleAndOrFeatIdxMap = new HashMap<>();
     double[][] orWeightsCopy ;
+    private int numInstances=0;
     
     public Margin(){
         
@@ -74,6 +75,20 @@ public class Margin {
     
     public double[][] getWeights(){
         return this.weights;
+    }
+    
+    public boolean areSameWeights(double[][] otherWeights){
+        boolean areSame=true;
+        for(int i=0; i< weights.length;i++){
+            for(int j=0; j< weights[i].length;j++){
+                if(weights[i][j]!=otherWeights[i][j]){
+                    areSame=false;
+                    break;
+                }    
+            }
+        }
+        return areSame;
+        
     }
     
     /**
@@ -122,7 +137,16 @@ public class Margin {
     public float getGenScore(int instance, int label){
         return generatedScores[instance][label];
     }
-       
+    public double[][] getGenScore(){
+        double[][] scores = new double[generatedScores.length][generatedScores[0].length];
+        
+        for(int i=0;i<generatedScores.length;i++)
+            for(int j=0;j<generatedScores[i].length;j++)
+               scores[i][j]= generatedScores[i][j];
+        
+        return scores;
+    }       
+    
     public float getScore(int[] features, int label) {
         float sumWeightsOf1Features = 0;
         for (int j=0;j<features.length;j++) {
@@ -131,7 +155,7 @@ public class Margin {
         return sumWeightsOf1Features;
     }
     
-    public void generateRandomScore(int ninst){
+    public void generateBinaryRandomScore(int ninst){
         /*double[] scores0= new double[ninst];
         double[] scores1= new double[ninst];
         Arrays.fill(scores0, 0.0);
@@ -152,7 +176,68 @@ public class Margin {
         //Histoplot.showit(scores0, ninst);
         //Histoplot.showit(scores1, ninst);
     }
+    public void generateRandomScore(int ninst, float[] priors){
+        double[] scores= new double[ninst];
+        Arrays.fill(scores, 0.0);
+        
+        float[][] genScores= new float[ninst][priors.length];
+        List<NormalDistribution> distrs = new ArrayList(); 
+        int k=0;
+        int initialMean=8;
+        for(int p=0; p<priors.length;p++){
+            int mean=initialMean+k;
+            double std= 0.5/(double) (p+1);
+            distrs.add(new NormalDistribution(mean,std));
+            System.out.println("Gaussian No. " + p + " mean " + mean + "  variance "+ std*std );
+            if(p%2==0)
+                k+=4*(p+1);
+            else
+                k-=4*(p+1);
+        }
+        
+        List<Double> priorList = new ArrayList<>();
+        List<Double> sortedList = new ArrayList<>();
+        for(int p=0; p<priors.length;p++){
+            priorList.add(new Double(priors[p]));
+            sortedList.add(new Double(priors[p]));
+        }
+        Collections.sort(sortedList);
+        Random r = new Random();
+        
+        for(int i=0; i<ninst; i++){
+            
+            float rnd=r.nextFloat();
+            Arrays.fill(genScores[i], 0f);
+            for(int p=sortedList.size()-1; p>=0;p--){
+                if(rnd<sortedList.get(p)){
+                    int idx=priorList.indexOf(sortedList.get(p));
+                    genScores[i][idx]=(float) distrs.get(idx).sample();
+                    scores[i]= genScores[i][idx];
+                    break;
+                }else
+                    rnd-=sortedList.get(p);
+     
+            }
+            
+            float sumNonZeroVars=0f;
+            List<Integer> zeroIds=new ArrayList<>();
+            for(int l=0; l<priors.length;l++){
+                if(genScores[i][l]==0)
+                    zeroIds.add(l);
+                else
+                    sumNonZeroVars+=genScores[i][l];
+            }
+            for(int l=0; l<zeroIds.size();l++){
+                genScores[i][zeroIds.get(l)]= (1-sumNonZeroVars)/ (float) zeroIds.size();
+            }
 
+        } 
+        
+        generatedScores=genScores;
+        System.out.println(AnalyzeLClassifier.printMatrix(getGenScore()));
+        Histoplot.showit(scores, ninst);
+        
+    }
     public double[] getScoreForAllInstancesLabel0(List<List<Integer>> features,double[] scores){
         for(int i=0; i< features.size();i++){
             scores[i]=getScore(features.get(i),0);
@@ -229,6 +314,7 @@ public class Margin {
     
     public void setSubListOfShuffleFeats(int startIdx, int endIdx){
         this.startIndex=startIdx;
+        this.endIndex=endIdx;
         if(endIdx>shuffleWeights.size())
             endIdx=shuffleWeights.size();
         subListOfFeatures = shuffleWeights.subList(startIdx, endIdx);
@@ -237,6 +323,7 @@ public class Margin {
     }
     public void setSubListOfFeats(int startIdx, int endIdx){
         this.startIndex=startIdx;
+        this.endIndex=endIdx;
         if(endIdx>originalWeights0.size())
             endIdx=originalWeights0.size();
         subListOfFeatures = originalWeights0.subList(startIdx, endIdx);
@@ -299,7 +386,24 @@ public class Margin {
     public int getOrWeightIndex(int subListIndex){
         int index= startIndex+subListIndex;
         return index;
-    }    
+    } 
+    public boolean isIndexInSubset(int orFeatIdx){
+        if(startIndex <= orFeatIdx && orFeatIdx < this.endIndex)
+            return true;
+        return false;
+    }
+    
+    public int getSubSetIndex(int orFeatIdx){
+        int subSetIdx=-1;
+        if(isIndexInSubset(orFeatIdx)){
+            subSetIdx=orFeatIdx-this.startIndex;
+        }
+        return subSetIdx;
+            
+    }
+    public int getNumberOfInstances(){
+        return this.numInstances;
+    }
     public void setFeaturesPerInstance(List<List<Integer>> featspInst){
         this.featsperInst = featspInst;
     }
@@ -318,6 +422,7 @@ public class Margin {
     
     public void setLabelPerInstance(List<Integer> lblPerInsts){
         this.labelperInst=lblPerInsts;
+        this.numInstances=lblPerInsts.size();
     }
     
     public Integer getLabelPerInstance(Integer instance){
@@ -333,4 +438,7 @@ public class Margin {
     public String getBinaryFile(){
         return this.classifierBinFile;
     }
+    public void setNumberOfInstances(int numInst){
+        this.numInstances=numInst;
+    }    
 }

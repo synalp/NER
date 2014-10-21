@@ -102,7 +102,7 @@ public class GMMD1Diag extends GMMD1 {
     public double getLoglike(Margin margin) {
        float z = 0f;
         double loglike=0;
-        int numInstances = margin.getLabelPerInstances().size();
+        int numInstances = margin.getNumberOfInstances();
         for (int instance=0;instance<numInstances;instance++) {
             List<Integer> featuresByInstance = margin.getFeaturesPerInstance(instance);
             if(Margin.GENERATEDDATA)
@@ -131,7 +131,7 @@ public class GMMD1Diag extends GMMD1 {
         }
         int[] nex = new int[ngauss];
         Arrays.fill(nex, 0);
-        int numInstances = margin.getLabelPerInstances().size();
+        int numInstances = margin.getNumberOfInstances();
         for (int ex=0;ex<numInstances;ex++) {
             List<Integer> instance = margin.getFeaturesPerInstance(ex);
             
@@ -219,7 +219,7 @@ public class GMMD1Diag extends GMMD1 {
         Arrays.fill(nex, 0);
         Arrays.fill(nk, 0.0);
         
-        int numInstances = margin.getLabelPerInstances().size();       
+        int numInstances = margin.getNumberOfInstances();       
         for (int inst=0;inst<numInstances;inst++) {
             List<Integer> featuresByInstance = margin.getFeaturesPerInstance(inst);
             
@@ -347,7 +347,7 @@ public class GMMD1Diag extends GMMD1 {
         float z = 0f;
         
         Arrays.fill(means, 0);
-        int numInstances = margin.getLabelPerInstances().size();
+        int numInstances = margin.getNumberOfInstances();
         for (int ex=0;ex<numInstances;ex++) {
             List<Integer> featuresByInstance = margin.getFeaturesPerInstance(ex);
             
@@ -415,7 +415,7 @@ public class GMMD1Diag extends GMMD1 {
         double loglike = getLoglike(margin);
         assert !Double.isNaN(loglike);
         double sqerr = Double.NaN;
-        int numInstances = margin.getLabelPerInstances().size();
+        int numInstances = margin.getNumberOfInstances();
         if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
         System.out.println("train1gauss loglike "+loglike+" nex "+numInstances+ "sqerr "+sqerr);
         split();

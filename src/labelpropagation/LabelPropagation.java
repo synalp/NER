@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
-import linearclassifier.AnalyzeClassifier;
+import linearclassifier.AnalyzeLClassifier;
 import tools.CNConstants;
 
 /**
@@ -27,7 +27,7 @@ import tools.CNConstants;
  */
 public class LabelPropagation {
     
-    private AnalyzeClassifier analiz = new AnalyzeClassifier();
+    private AnalyzeLClassifier analiz = new AnalyzeLClassifier();
     
     public void generatingLabelPropGraph(){
         

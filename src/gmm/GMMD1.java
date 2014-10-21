@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import Jama.Matrix;
 import java.util.List;
-import linearclassifier.AnalyzeClassifier;
+import linearclassifier.AnalyzeLClassifier;
 import linearclassifier.Margin;
 
 /**
@@ -19,7 +19,7 @@ import linearclassifier.Margin;
  * <!--
  * Modifications History
  * Date             Author   	Description
- * Feb 11, 2014     rojasbar  	Changing the class corpus by AnalyzeClassifier and adapting classes to new project
+ * Feb 11, 2014     rojasbar  	Changing the class corpus by AnalyzeLClassifier and adapting classes to new project
  * -->
  */
 public class GMMD1 {
