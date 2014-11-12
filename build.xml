@@ -6,7 +6,7 @@
         <echo level="info">copying files</echo>
         <mkdir dir="etc"/>
         <copy includeemptydirs="false" todir="etc">
-                <fileset dir="templates"/>
+                <fileset dir="templates" includes="**/*"/>
     
         </copy>
 	        
