@@ -384,10 +384,10 @@ public class CoNLL03Ner {
         CoNLL03Ner conll = new CoNLL03Ner();
         //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);
         //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
-        //conll.trainStanfordCRF(CNConstants.ALL, true, false);
-        //conll.evaluatingCRFResults(CNConstants.ALL);
+        conll.trainStanfordCRF(CNConstants.ALL, true, false);
+        CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
         //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,1000);
-        conll.relationFAndR(CNConstants.PRNOUN);
+        // conll.relationFAndR(CNConstants.PRNOUN);
         //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
         //conll.evaluateOnlyStanfordLC();
         //conll.trainingOnlyWeaklySup(CNConstants.PRNOUN);
