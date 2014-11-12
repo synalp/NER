@@ -2958,7 +2958,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
      * @param isWiki
      * @param isLower 
      */
-    public void allweightsKeepingOnlyTrain(String entity, boolean isSavingFiles, boolean isWiki, boolean isLower){
+    public void allweightsKeepingOnlyTrain(String entity, int trainSize, boolean isSavingFiles, boolean isWiki, boolean isLower){
         File listTrainSet = new File(AnalyzeLClassifier.LISTTRAINFILES);
         File listTestSet = new File(AnalyzeLClassifier.LISTTESTFILES);
         String allTrainAndTest="listTrainTest.xmll".replace("%S", entity);
@@ -2982,11 +2982,16 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         AnalyzeLClassifier.LISTTRAINFILES=allTrainAndTest;
         AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
         AnalyzeLClassifier.TRAINFILE=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
+        //delete the files if they exist
+        File file = new File(AnalyzeLClassifier.MODELFILE);
+        file.delete();
+        file = new File(AnalyzeLClassifier.TRAINFILE);
+        file.delete();
         trainAllLinearClassifier(entity,isSavingFiles,isWiki,isLower);
         LinearClassifier modelAllFeats = modelMap.get(entity);
         Margin           marginAllFeats = marginMAP.get(entity);
         //train only train data
-        AnalyzeLClassifier.TRAINSIZE=20;
+        AnalyzeLClassifier.TRAINSIZE=trainSize;
         AnalyzeLClassifier.LISTTRAINFILES=realTrainList;
         AnalyzeLClassifier.MODELFILE=realTrainModel;
         AnalyzeLClassifier.TRAINFILE=tmpRealTrain;
@@ -3033,7 +3038,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             mfile.delete();
             mfile = new File(TESTFILE.replace("%S", sclass));
             mfile.delete();
-            trainAllLinearClassifier(sclass,true,false,false);
+            //trainAllLinearClassifier(sclass,true,false,false);
+            allweightsKeepingOnlyTrain(sclass,AnalyzeLClassifier.TRAINSIZE, true,false,false);
             testingClassifier(true,sclass,false,false);
             LinearClassifier model = getModel(sclass);
             double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
@@ -3092,7 +3098,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
-        //analyzing.evalutatingF1AndR();
+        analyzing.evalutatingF1AndR();
         /*
         // Checking WEAKLY SUPERVISED OPTIONS
         //File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
@@ -3180,7 +3186,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
          * Train on all data, train and test but keep only the weights of the little data, the weights for all the other features
          * are set to zero
          */
-        analyzing.allweightsKeepingOnlyTrain(CNConstants.PRNOUN, true, false, false);
+        //analyzing.allweightsKeepingOnlyTrain(CNConstants.PRNOUN,20, true, false, false);
+        
     }
   
 }
