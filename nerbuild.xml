@@ -66,6 +66,10 @@
 	<pathelement location="${libs}/StanfordNER.jar"/>
 	<pathelement location="${libs}/trove.jar"/>
     </path>
+    <path id="run.classpath">
+	<path refid="ner.classpath"/>
+	<pathelement path="${build}"/>
+    </path>
 	
     <target name="init">
         <mkdir dir="${build}"/>
@@ -89,6 +93,15 @@
 		<attribute name="Main-Class" value="conll03.CoNLL03Ner"/>
 	</manifest>
 	<jar destfile="ner.jar" basedir="bin" manifest="MANIFEST.MF"/>
+    </target>
+
+    <target name="run" depends="compile" description="run" >
+	<java classname="conll03.CoNLL03Ner"
+	   fork="true"
+           failonerror="true"
+           maxmemory="1g">
+	   <classpath refid="run.classpath" />
+       </java>
     </target>
 
     <target name="clean" description="clean up" >
