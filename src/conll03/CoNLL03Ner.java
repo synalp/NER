@@ -52,7 +52,7 @@ public class CoNLL03Ner {
    public static String  TESTFILE="conll.%S.tab.%CLASS.test"; 
    public static String  MODELFILE="ner.%S.%CLASS.conll";
    public static String  WKSUPMODEL="bin.%S.lc.wsupmods";
-   private String outputTestResults="test.all.log";
+   
    
    
    public CoNLL03Ner(){
@@ -285,8 +285,14 @@ public class CoNLL03Ner {
         
         lcclass.wkSupParallelCoordD(entity, true,2000);
     }
-    
-    public void trainStanfordCRF(String entity, boolean savingFiles, boolean wSupFeat){
+    /**
+     * 
+     * @param entity  classifier "all" for all the entities "pn" for the binary classification : proper noun/ not proper noun
+     * @param savingFiles, true if it must generate the input files to StanfordNER
+     * @param wSupFeat, true if it uses the weakly supervised model as feature "NOT WORKING YET"
+     * @param useExistingModel , true if it uses an existing binary model file
+     */
+    public void trainStanfordCRF(String entity, boolean savingFiles, boolean wSupFeat, boolean useExistingModel){
         if(savingFiles){
             String wsupModel=CNConstants.CHAR_NULL;
             
@@ -300,22 +306,27 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF");
         AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
         //if exist recreates the binary file
-        File mfile = new File(AnalyzeCRFClassifier.MODELFILE);
-        // mfile.delete();
+        if(!useExistingModel){
+            File mfile = new File(AnalyzeCRFClassifier.MODELFILE);
+            mfile.delete();
+        }
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
 
         crfclass.trainAllCRFClassifier(entity, false, false);
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
         crfclass.testingClassifier(entity, "lib/StanfordNER.jar");
-        evaluatingCRFResults(entity,outputTestResults);
+        AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
+        evaluatingCRFResults(entity);
+        conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
     }
     
-    public static void evaluatingCRFResults(String entity, String outputFile){
+    public static void evaluatingCRFResults(String entity){
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier(); 
         CRFClassifier crf=crfclass.loadModel(MODELFILE.replace("%S", entity).replace("%CLASS", "CRF"));
-                
+        AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);        
         for(Object label:crf.labels()){
-            crfclass.evaluationCONLLBIOCLASSRESULTS((String) label,outputFile);
+            
+            crfclass.evaluationCONLLBIOCLASSRESULTS((String) label,AnalyzeCRFClassifier.OUTFILE);
             
         }
         
@@ -328,10 +339,9 @@ public class CoNLL03Ner {
         try {
             //command
             String cmd="./bin/evalconll.sh "+results;
-            String[] commands=new String[] {"perl", "conlleval", "-r", "-d","'\\t'"," < " , results};
-            //String[] args = cmd.split("\\s");
+            
             System.out.println(cmd);
-            System.out.println(Arrays.toString(commands));
+            
             Process process = Runtime.getRuntime().exec(cmd);
             InputStream stdout = process.getInputStream();
             
@@ -369,7 +379,8 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
         crfclass.testingClassifier(entity, "../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
-        evaluatingCRFResults(entity,outputTestResults);
+        AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
+        evaluatingCRFResults(entity);
         
     }   
     public void relationFAndR(String entity){
@@ -430,9 +441,9 @@ public class CoNLL03Ner {
         CoNLL03Ner conll = new CoNLL03Ner();
         //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);
         //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
-        //conll.trainStanfordCRF(CNConstants.ALL, true, false);
-        //CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
-        conll.conllEvaluation("/home/rojasbar/development/contnomina/NER/analysis/CRF/test.all.log");
+        conll.trainStanfordCRF(CNConstants.ALL, false, false,true);
+        CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL);
+        //conll.conllEvaluation("test.all.log");
         //conll.trainStanfordCRF(CNConstants.ALL, true, false);
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
         //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,1000);

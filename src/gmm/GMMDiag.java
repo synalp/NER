@@ -424,7 +424,7 @@ public class GMMDiag extends GMM {
             gconst[y]=co;
             
             //change logWeights
-            logWeights[y]=nk[y]/nex[y];
+            //logWeights[y]=nk[y]/nex[y];
            
         }
          System.out.println("priors: "+ Arrays.toString(logWeights));

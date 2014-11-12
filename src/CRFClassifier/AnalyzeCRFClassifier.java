@@ -61,7 +61,7 @@ public class AnalyzeCRFClassifier {
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
     public static int TRAINSIZE=Integer.MAX_VALUE;
     
-    public static String OUTFILE="test.%S.log";
+    public static String OUTFILE="analysis/CRF/test.%S.log";
     public static boolean POSFILTER=true;
     
     
@@ -534,7 +534,10 @@ public class AnalyzeCRFClassifier {
         for(String smodel:classStr){          
                updatingPropFile(smodel);
                OutputStreamWriter   outFile= null;
-               try{               
+               try{  
+                    File outdir = new File("analysis/CRF/");
+                    if(!outdir.exists())
+                        outdir.mkdirs();
                     outFile=new OutputStreamWriter(new FileOutputStream(OUTFILE.replace("%S", smodel)));
                 
                     //command
@@ -592,7 +595,10 @@ public class AnalyzeCRFClassifier {
             
            updatingPropFile(smodel);
            OutputStreamWriter   outFile= null;
-           try{               
+           try{ 
+                File outdir = new File("analysis/CRF/");
+                if(!outdir.exists())
+                    outdir.mkdirs();
                 outFile=new OutputStreamWriter(new FileOutputStream(OUTFILE.replace("%S", smodel)));
 
                 //command
@@ -647,9 +653,12 @@ public class AnalyzeCRFClassifier {
             
            updatingPropFile(smodel);
            OutputStreamWriter   outFile= null;
-           try{               
+           try{ 
+                File outdir = new File("analysis/CRF/");
+                if(!outdir.exists())
+                    outdir.mkdirs();
                 outFile=new OutputStreamWriter(new FileOutputStream(OUTFILE.replace("%S", smodel)));
-
+                
                 //command
                 //String cmd="java -Xmx1g -cp  \"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\" edu.stanford.nlp.classify.ColumnDataClassifier -prop slinearclassifier.props groups.pers.tab.lc.train -testFile groups.pers.tab.lc.test > out.txt";
 
