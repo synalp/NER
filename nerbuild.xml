@@ -99,7 +99,7 @@
 	<java classname="conll03.CoNLL03Ner"
 	   fork="true"
            failonerror="true"
-           maxmemory="1g">
+           maxmemory="7g">
 	   <classpath refid="run.classpath" />
        </java>
     </target>
