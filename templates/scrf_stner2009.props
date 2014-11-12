@@ -1,5 +1,5 @@
 #
-#Wed Nov 12 15:04:56 CET 2014
+#Wed Nov 12 15:31:21 CET 2014
 usePrevSequences=true
 useQN=true
 useObservedSequencesOnly=true
@@ -16,21 +16,21 @@ disjunctionWidth=4
 wordShape=dan2useLC
 saveFeatureIndexToDisk=true
 distSimLexicon=bin/egw.bnc.200.pruned
-QNsize=25
 useTypeySequences=true
+QNsize=25
 useDisjunctive=true
 noMidNGrams=true
 sigma=20
 serializeTo=ner.all.CRF.conll
-normalize=true
 useNGrams=true
-readerAndWriter=edu.stanford.nlp.sequences.ColumnDocumentReaderAndWriter
+normalize=true
 usePrev=true
-useNext=true
+readerAndWriter=edu.stanford.nlp.sequences.ColumnDocumentReaderAndWriter
 maxLeft=1
+useNext=true
 trainFile=conll.all.tab.CRF.train
 useLongSequences=true
 useOccurrencePatterns=true
 map=word\=0,tag\=1,chunk\=2,answer\=3
-useTypeSeqs=true
 useWord=true
+useTypeSeqs=true
