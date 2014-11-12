@@ -120,7 +120,7 @@ public class CoNLL03Ner {
                     crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");
                 
             }else{
-                BufferedReader distSemFile = new BufferedReader(new FileReader("bin/egw.bnc.200.pruned"));
+                BufferedReader distSemFile = new BufferedReader(new FileReader("scripts/egw.bnc.200.pruned"));
                 while(true){
                     String line=distSemFile.readLine();
                     if(line==null)
@@ -338,7 +338,7 @@ public class CoNLL03Ner {
     public void conllEvaluation(String results){
         try {
             //command
-            String cmd="./bin/evalconll.sh "+results;
+            String cmd="./scripts/evalconll.sh "+results;
             
             System.out.println(cmd);
             

@@ -1,0 +1,25 @@
+#
+#Tue Oct 14 16:33:17 CEST 2014
+usePrevSequences=true
+maxRight=2
+backgroundSymbol=O
+useClassFeature=true
+useTypeSeqs2=true
+useSequences=true
+wordShape=chris2useLC
+useTypeySequences=true
+useDisjunctive=true
+noMidNGrams=true
+serializeTo=ner.all.CRF.conll
+useChunks=true
+maxNGramLeng=6
+useTags=true
+useNGrams=true
+usePrev=true
+tolerance=0.01
+useNext=true
+maxLeft=2
+trainFile=groups.all.tab.crf.train
+map=word\=0,tag\=1,chunk\=2,answer\=3
+useTypeSeqs=true
+useWord=true

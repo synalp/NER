@@ -1,0 +1,25 @@
+#
+#Thu Nov 06 18:13:34 CET 2014
+useQN=true
+2.useString=true
+1.wordShape=dan2useLC
+1.binnedLengths=2,4,6,10
+3.useString=true
+1.minNGramLeng=1
+intern=true
+goldAnswerColumn=0
+displayedColumn=1
+printClassifierParam=200
+1.useNGrams=true
+5.useSplitWordNGrams=true
+QNsize=15
+5.maxWordNGramLeng=5
+sigma=3
+serializeTo=tmp.model
+tolerance=1e-3
+trainFile=groups.pn.tab.lc.train
+1.usePrefixSuffixNGrams=true
+1.maxNGramLeng=4
+4.useString=true
+5.splitWordsRegexp=\\s+
+5.minWordNGramLeng=1

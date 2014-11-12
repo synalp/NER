@@ -1,7 +1,16 @@
 
 <project name="NER" default="compile" basedir=".">
-    <description>Builds, tests, and runs the project ESBIRL.</description>
+    <description>Builds, tests, and runs the project NER.</description>
     <import file="nbproject/build-impl.xml"/>    
+    <target name="-pre-init">
+        <echo level="info">copying files</echo>
+        <mkdir dir="etc"/>
+        <copy includeemptydirs="false" todir="etc">
+                <fileset dir="templates"/>
+    
+        </copy>
+	        
+    </target>    
     <!--property name="src" location="src"/>
     <property name="build" location="bin"/>
     <property name="dist"  location="dist"/>
