@@ -433,7 +433,7 @@ public class CoNLL03Ner {
         //conll.trainStanfordCRF(CNConstants.ALL, true, false);
         //CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
         conll.conllEvaluation("/home/rojasbar/development/contnomina/NER/analysis/CRF/test.all.log");
-        conll.trainStanfordCRF(CNConstants.ALL, true, false);
+        //conll.trainStanfordCRF(CNConstants.ALL, true, false);
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
         //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,1000);
         // conll.relationFAndR(CNConstants.PRNOUN);
