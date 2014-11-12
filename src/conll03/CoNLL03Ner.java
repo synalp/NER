@@ -16,6 +16,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -318,6 +320,50 @@ public class CoNLL03Ner {
         }
         
     }
+    /**
+     * Problems when executing command, probably because of \t
+     * @param results 
+     */
+    public void conllEvaluation(String results){
+        try {
+            //command
+            String cmd="perl conlleval -r -d '\\t' < "+results;
+            String[] commands=new String[] {"perl", "conlleval", "-r", "-d","'\\t'"," < " , results};
+            //String[] args = cmd.split("\\s");
+            System.out.println(cmd);
+            System.out.println(Arrays.toString(commands));
+            Process process = Runtime.getRuntime().exec(commands);
+            InputStream stdout = process.getInputStream();
+            
+            BufferedReader input = new BufferedReader (new InputStreamReader(stdout)); 
+            while(true){
+                String line=input.readLine();
+                if(line == null)
+                    break;
+                
+                
+                System.out.println(line);
+                 
+            }
+        
+            InputStream stderr = process.getErrorStream();
+            input = new BufferedReader (new InputStreamReader(stderr)); 
+            while(true){
+                String line=input.readLine();
+                if(line == null)
+                    break;
+                
+                System.out.println("EVAL: "+line);
+                 
+            }          
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+       System.out.println("ok");
+       
+    }     
      public void onlyEvaluatingCRFResults(String entity){
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
         AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
@@ -384,8 +430,9 @@ public class CoNLL03Ner {
         CoNLL03Ner conll = new CoNLL03Ner();
         //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);
         //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
-        conll.trainStanfordCRF(CNConstants.ALL, true, false);
-        CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
+        //conll.trainStanfordCRF(CNConstants.ALL, true, false);
+        //CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
+        conll.conllEvaluation("/home/rojasbar/development/contnomina/NER/analysis/CRF/test.all.log");
         //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,1000);
         // conll.relationFAndR(CNConstants.PRNOUN);
         //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
