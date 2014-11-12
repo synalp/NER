@@ -327,12 +327,12 @@ public class CoNLL03Ner {
     public void conllEvaluation(String results){
         try {
             //command
-            String cmd="perl conlleval -r -d '\\t' < "+results;
+            String cmd="./bin/evalconll.sh "+results;
             String[] commands=new String[] {"perl", "conlleval", "-r", "-d","'\\t'"," < " , results};
             //String[] args = cmd.split("\\s");
             System.out.println(cmd);
             System.out.println(Arrays.toString(commands));
-            Process process = Runtime.getRuntime().exec(commands);
+            Process process = Runtime.getRuntime().exec(cmd);
             InputStream stdout = process.getInputStream();
             
             BufferedReader input = new BufferedReader (new InputStreamReader(stdout)); 
