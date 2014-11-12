@@ -5,6 +5,7 @@
 package conll03;
 
 import CRFClassifier.AnalyzeCRFClassifier;
+import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.ie.crf.CRFClassifier;
@@ -18,10 +19,15 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import linearclassifier.AnalyzeLClassifier;
 import tools.CNConstants;
 import tools.GeneralConfig;
+import tools.PlotAPI;
 
 /**
  * Reads the CoNLL03 corpus
@@ -44,6 +50,7 @@ public class CoNLL03Ner {
    public static String  TESTFILE="conll.%S.tab.%CLASS.test"; 
    public static String  MODELFILE="ner.%S.%CLASS.conll";
    public static String  WKSUPMODEL="bin.%S.lc.wsupmods";
+   private String outputTestResults="analysis/CRF/test.all.log";
    
    
    public CoNLL03Ner(){
@@ -73,6 +80,9 @@ public class CoNLL03Ner {
     public void generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, String wSupModelFile){
         BufferedReader inFile = null;
         OutputStreamWriter outFile =null;
+        HashMap<String,String> wordclasses = new HashMap<>();
+        List<String> lines = new ArrayList<>();
+        List<String> wordInLine= new ArrayList<>();
         try{
             switch(dataset){
                 case "train":
@@ -107,9 +117,20 @@ public class CoNLL03Ner {
                 else
                     crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");
                 
+            }else{
+                BufferedReader distSemFile = new BufferedReader(new FileReader("bin/egw.bnc.200.pruned"));
+                while(true){
+                    String line=distSemFile.readLine();
+                    if(line==null)
+                        break;
+                    String[] cols=line.split("\\s");
+                    wordclasses.put(cols[0], cols[1]);
+                }
             }
                 
             int uttCount=CNConstants.INT_NULL;
+            String previousWords="";
+            String nextWords="";
             for(;;){
                String line = inFile.readLine();
                
@@ -130,8 +151,12 @@ public class CoNLL03Ner {
                    String prefix=label.substring(0,label.indexOf("-")+1);
                    if(!prefix.isEmpty())
                     label = CNConstants.PRNOUN;
+               }else if(entity.equals(CNConstants.ALL)){
+                   String prefix=label.substring(0,label.indexOf("-")+1);
+                   if(!prefix.isEmpty())
+                       label = label.replace(prefix, "");
                }
-               if(label.equals("O"))
+               if(label.equals(CNConstants.OUTCLASS))
                    label=CNConstants.OUTCLASS;
                if(isCRF){
                    if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
@@ -142,15 +167,45 @@ public class CoNLL03Ner {
                         Datum<String, String> datum = columnDataClass.makeDatumFromLine(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\n", 0);
                         String outClass = (String) wsupModel.classOf(datum);
                         outFile.append(cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+outClass+label+"\n");
+                        
                    }else
                         outFile.append(cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+label+"\n");
                         
-               }else
-                   outFile.append(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\n");
-
+               }else{
+                   String wordClass="";
+                   if(wordclasses.containsKey(cols[0]))
+                     wordClass=wordclasses.get(cols[0])+"|DISTSIM";
+                   else
+                     wordClass= CNConstants.CHAR_NULL+"|DISTSIM";
+                   
+                   lines.add(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+wordClass);
+                   wordInLine.add(cols[0]);
+                   //outFile.append(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+wordClass+"\n");    
+               }
                
 
            }
+            
+           if(!isCRF){
+               
+               for(int i=0; i<lines.size();i++){
+                   String context="";
+                   if(i-2 >= 0)
+                       context+=wordInLine.get(i-2)+" "+wordInLine.get(i-1)+" "+wordInLine.get(i)+" ";
+                   else if(i-1 >0)
+                       context+=wordInLine.get(i-1)+" "+wordInLine.get(i)+" ";
+                   else
+                       context+=wordInLine.get(i)+" ";
+                   if(i+2< lines.size())
+                       context+=wordInLine.get(i+1)+" "+wordInLine.get(i+2);
+                   else if(i+1 < lines.size())
+                       context+=wordInLine.get(i+1);
+                   
+                  outFile.append(lines.get(i)+"\t"+context+"\n"); 
+               }
+                  
+           }
+            
             outFile.flush();
             outFile.close();
             inFile.close();            
@@ -183,15 +238,32 @@ public class CoNLL03Ner {
         AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
         lcclass.trainAllLinearClassifier(entity, false, false, false);
         lcclass.testingClassifier(false, entity, false, false);
+        HashMap<String,Double> priorsMap = new HashMap<>();
+        
         if(!entity.equals(CNConstants.ALL)){
-            float[] priors = {0.9f,0.1f};
-            lcclass.setPriors(priors);
+            priorsMap.put("O", new Double(0.8));
+            priorsMap.put(CNConstants.PRNOUN, new Double(0.2));
+
         }else{
-            float[] priors = {0.3f,0.2f,0.2f,0.15f,0.15f};
-            lcclass.setPriors(priors);           
-        }    
-        //lcclass.wkSupConstrParallelCoordD(entity, true);
-        lcclass.wkSupConstrParallelFSCoordD(entity, true);
+            priorsMap.put("O", new Double(0.76));
+            priorsMap.put("PER", new Double(0.1)); 
+            priorsMap.put(CNConstants.ORG.toUpperCase(), new Double(0.05)); 
+            priorsMap.put(CNConstants.LOC.toUpperCase(), new Double(0.06)); 
+            priorsMap.put("MISC", new Double(0.03)); 
+            
+        } 
+        
+        /*
+        float[] priors=lcclass.computePriors(entity, lcclass.getModel(entity));
+        System.out.println(lcclass.getPriorsMap().toString());
+        System.out.println(Arrays.toString(priors));
+        */
+        lcclass.setPriors(priorsMap);  
+       
+        //lcclass.wkSupParallelCoordD(entity, true);
+        //lcclass.wkSupParallelFSCoordD(entity, true,2000);
+        //lcclass.wkSupParallelStocCoordD(entity, true,10000);
+				lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     
     public void evaluateOnlyStanfordLC(String entity){
@@ -209,7 +281,7 @@ public class CoNLL03Ner {
         AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
         lcclass.testingClassifier(false, entity, false, false); 
         
-        lcclass.wkSupConstrParallelCoordD(entity, true);
+        lcclass.wkSupParallelCoordD(entity, true,2000);
     }
     
     public void trainStanfordCRF(String entity, boolean savingFiles, boolean wSupFeat){
@@ -233,15 +305,15 @@ public class CoNLL03Ner {
         crfclass.trainAllCRFClassifier(entity, false, false);
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
         crfclass.testingClassifier(entity, "../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
-        evaluatingCRFResults(entity);
+        evaluatingCRFResults(entity,outputTestResults);
     }
     
-    public void evaluatingCRFResults(String entity){
+    public static void evaluatingCRFResults(String entity, String outputFile){
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier(); 
         CRFClassifier crf=crfclass.loadModel(MODELFILE.replace("%S", entity).replace("%CLASS", "CRF"));
                 
         for(Object label:crf.labels()){
-            crfclass.evaluationCONLLBIOCLASSRESULTS((String) label,"analysis/CRF/test.all.log");
+            crfclass.evaluationCONLLBIOCLASSRESULTS((String) label,outputFile);
             
         }
         
@@ -251,19 +323,33 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
         crfclass.testingClassifier(entity, "../stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
-        evaluatingCRFResults(entity);
+        evaluatingCRFResults(entity,outputTestResults);
         
     }   
     public void relationFAndR(String entity){
         AnalyzeLClassifier.TRAINSIZE=20;
-
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);  
+        AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
+        PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
+        PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");
         generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
         generatingStanfordInputFiles(entity, "dev", false,CNConstants.CHAR_NULL);
-               
-        
-        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
-        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);    
-        for(int i=0; i<20;i++){
+        HashMap<String,Double> priorsMap = new HashMap<>();
+        if(!entity.equals(CNConstants.ALL)){
+            priorsMap.put("O", new Double(0.8));
+            priorsMap.put(CNConstants.PRNOUN, new Double(0.2));
+
+        }else{
+            priorsMap.put("O", new Double(0.8));
+            priorsMap.put("I-"+CNConstants.PERS.toUpperCase(), new Double(0.06)); 
+            priorsMap.put("I-"+CNConstants.ORG.toUpperCase(), new Double(0.04)); 
+            priorsMap.put("I-"+CNConstants.LOC.toUpperCase(), new Double(0.07)); 
+            priorsMap.put("I-MISC", new Double(0.03)); 
+        }     
+        lcclass.setPriors(priorsMap);                   
+   
+        for(int i=0,k=0; i<20;i++){
             System.out.println("********** Corpus size (#utts)"+AnalyzeLClassifier.TRAINSIZE);
            
             File mfile = new File(AnalyzeLClassifier.MODELFILE);
@@ -278,19 +364,16 @@ public class CoNLL03Ner {
             }
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
             AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
-            AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
+            
             lcclass.trainAllLinearClassifier(entity,false,false,false);
             lcclass.testingClassifier(false,entity,false,false);
             LinearClassifier model = lcclass.getModel(entity);
             double f1=lcclass.testingClassifier(model,TESTFILE.replace("%S", entity).replace("%CLASS", "LC"));
-            if(!entity.equals(CNConstants.ALL)){
-                float[] priors = {0.9f,0.1f};
-                lcclass.setPriors(priors);
-            }else{
-                float[] priors = {0.3f,0.2f,0.2f,0.15f,0.15f};
-                lcclass.setPriors(priors);           
-            }             
-            lcclass.testingRForCorpus(entity,false);
+            
+
+            float r=lcclass.testingRForCorpus(entity,false);
+            plotR.addPoint(k, r);
+            plotF1.addPoint(k, f1);k++;
             AnalyzeLClassifier.TRAINSIZE+=50;
             
             
@@ -299,13 +382,15 @@ public class CoNLL03Ner {
     
     public static void main(String[] args){
         CoNLL03Ner conll = new CoNLL03Ner();
+        //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);
         //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
         //conll.trainStanfordCRF(CNConstants.ALL, true, false);
         //conll.evaluatingCRFResults(CNConstants.ALL);
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,20);
-        //conll.relationFAndR(CNConstants.PRNOUN);
+        //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,1000);
+        conll.relationFAndR(CNConstants.PRNOUN);
         //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
         //conll.evaluateOnlyStanfordLC();
         //conll.trainingOnlyWeaklySup(CNConstants.PRNOUN);
+        
     }
 }

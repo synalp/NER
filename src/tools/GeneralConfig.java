@@ -63,6 +63,10 @@ public class GeneralConfig {
     public static String corpusDev;
     public static String corpusTest;
     public static String corpusDir;   
+    
+    //Random Indexing
+    public static String wvdir;
+    
 	   
 
 	/**
@@ -93,7 +97,7 @@ public class GeneralConfig {
            treetaggerDir = properties.getProperty(CNConstants.TAGGERDIRPROP, CNConstants.DEFTAGGERDIR);
            //Stanford Linear Classifier
            listLCTrain = properties.getProperty(CNConstants.LISTLCTRAINPROP, CNConstants.DEFLISTTRAIN);
-           listLCTest= properties.getProperty(CNConstants.LISTLCTRAINPROP, CNConstants.DEFLISTTEST);
+           listLCTest= properties.getProperty(CNConstants.LISTLCTESTPROP, CNConstants.DEFLISTTEST);
            lcProps= properties.getProperty(CNConstants.LCPROPS, CNConstants.DEFLCPROPS);
            nthreads=Integer.parseInt(properties.getProperty(CNConstants.NTHREADSPROP, CNConstants.DEFNTHREADS));
            //Stanford CRF
@@ -120,6 +124,7 @@ public class GeneralConfig {
            corpusDev=properties.getProperty(CNConstants.CORPUSDEVPROP);
            corpusTest=properties.getProperty(CNConstants.CORPUSTESTPROP);
            corpusDir=properties.getProperty(CNConstants.CORPUSDIRPROP);
+           wvdir=properties.getProperty(CNConstants.WVDIR,CNConstants.DEFWVDIR);
 	       
 	}
 

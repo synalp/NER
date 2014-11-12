@@ -40,12 +40,15 @@ public class Margin {
     private List<Integer> labelperInst = new ArrayList<>();    
     
     //paralell coordinate gradient
-    private List<Double> originalWeights0 = new ArrayList<>();
-    List<Double> shuffleWeights = new ArrayList<>();
+    
+    private List<List<Double>> originalWeights = new ArrayList<>();
+    List<List<Double>> shuffleWeights = new ArrayList<>();
     private int startIndex=0;
     private int endIndex=0;
-    private List<Double> subListOfFeatures= new ArrayList<>();
+    
+    private List<List<Double>> subListOfFeatures= new ArrayList<>();
     private HashMap<Integer,Integer> shuffleAndOrFeatIdxMap = new HashMap<>();
+    private HashMap<Integer,Integer> orAndShuffleFeatIdxMap = new HashMap<>();
     double[][] orWeightsCopy ;
     private int numInstances=0;
     
@@ -194,6 +197,14 @@ public class Margin {
             else
                 k-=4*(p+1);
         }
+//        for(int i=0; i<ninst; i++){
+//            for(int p=0; p<priors.length; p++){
+//                genScores[i][p]=(float) distrs.get(p).sample();
+//                
+//            }
+//            scores[i]=genScores[i][1];
+//        }
+        
         
         List<Double> priorList = new ArrayList<>();
         List<Double> sortedList = new ArrayList<>();
@@ -207,6 +218,7 @@ public class Margin {
         for(int i=0; i<ninst; i++){
             
             float rnd=r.nextFloat();
+            
             Arrays.fill(genScores[i], 0f);
             for(int p=sortedList.size()-1; p>=0;p--){
                 if(rnd<sortedList.get(p)){
@@ -216,6 +228,7 @@ public class Margin {
                     break;
                 }else
                     rnd-=sortedList.get(p);
+                    
      
             }
             
@@ -228,7 +241,11 @@ public class Margin {
                     sumNonZeroVars+=genScores[i][l];
             }
             for(int l=0; l<zeroIds.size();l++){
+                //genScores[i][zeroIds.get(l)]= (1-sumNonZeroVars)*((priors[l]*priors.length)/ (float) zeroIds.size());
                 genScores[i][zeroIds.get(l)]= (1-sumNonZeroVars)/ (float) zeroIds.size();
+                
+                
+                
             }
 
         } 
@@ -262,12 +279,12 @@ public class Margin {
         return bestlab;
     }    
     
-    public int[] getTopWeights(){
-        int[] featIndexes = new int[50];
-        List<Triple<String,String,Double>> topFeatures = stanfordModel.getTopFeatures(0.5, true, 50);
+    public int[] getTopWeights(double threshold,int numFeats){
+        int[] featIndexes = new int[numFeats];
+        List<Triple<String,String,Double>> topFeatures = stanfordModel.getTopFeatures(threshold, true, numFeats);
         int i=0;
         for(Triple obj:topFeatures){
-            System.out.println(obj.first.toString());
+            //System.out.println(obj.first.toString());
             featIndexes[i] =featureIdx.indexOf(obj.first.toString());
             i++;
             //label
@@ -279,59 +296,97 @@ public class Margin {
         return featIndexes;
     }
     
-    public List<Double> getOrWeights(){
-        
-        for(int i=0;i< weights.length;i++){
-            originalWeights0.add(new Double(weights[i][0]));
+    /**
+     * The inner list contains all the weights for a given column of the matrix of weights
+     */
+    public void setOrWeights(){
+       
+        for(int col=0; col<weights[0].length; col++){
+            List<Double> dim = new ArrayList<>();
+            for(int i=0;i< weights.length;i++){
+                dim.add(weights[i][col]);
+            }
+            originalWeights.add(dim);
         }
-        return originalWeights0;
+    }
+    
+    public List<Double> getOrWeights(int dimension){
+        if(originalWeights.isEmpty())
+            setOrWeights();
+        
+        return originalWeights.get(dimension);
     }
     
     public List<Double> shuffleWeights(){
-        getOrWeights();
-        shuffleWeights = new ArrayList<>(originalWeights0);
-        Collections.shuffle(shuffleWeights);
+        List<Double> shuffledW0 = new ArrayList<>(getOrWeights(0));
+        
+        Collections.shuffle(shuffledW0);
+        shuffleWeights.add(shuffledW0);
         //set the indexes
-        for(int i=0;i<shuffleWeights.size();i++){
-            shuffleAndOrFeatIdxMap.put(i,originalWeights0.indexOf(shuffleWeights.get(i)));
-        }        
-        return shuffleWeights;
+        for(int i=0;i<shuffledW0.size();i++){
+            shuffleAndOrFeatIdxMap.put(i,getOrWeights(0).indexOf(shuffledW0.get(i)));
+            orAndShuffleFeatIdxMap.put(getOrWeights(0).indexOf(shuffledW0.get(i)), i);
+        }  
+        for(int col=1;col<getNlabs();col++){
+            List<Double> shuffleWeightsDim= new ArrayList<>();
+            for(int sIdx=0;sIdx<shuffledW0.size();sIdx++){
+               int orIdx=this.shuffleAndOrFeatIdxMap.get(sIdx);
+               shuffleWeightsDim.add(weights[orIdx][col]);              
+            }
+            shuffleWeights.add(shuffleWeightsDim);
+        }
+        
+        return shuffleWeights.get(0);
     }
     
     public void copySharedyInfoParallelGrad(Margin margin){
         this.featsperInst=margin.featsperInst;
         this.labelperInst=margin.labelperInst;
-        this.originalWeights0= margin.originalWeights0;
+        this.originalWeights= margin.originalWeights;
         this.shuffleWeights=margin.shuffleWeights;
         this.shuffleAndOrFeatIdxMap.putAll(margin.shuffleAndOrFeatIdxMap);
-          
+        this.orAndShuffleFeatIdxMap.putAll(margin.orAndShuffleFeatIdxMap); 
     }
     
     public List<Double> getShuffleWeights(){
-        return this.shuffleWeights;
+        return this.shuffleWeights.get(0);
     }
     
-    
-    public void setSubListOfShuffleFeats(int startIdx, int endIdx){
+    public List<Double> getShuffleWeights(int dimension){
+        return this.shuffleWeights.get(dimension);
+    }   
+    public void setSubListOfShuffleFeats(int dimension, int startIdx, int endIdx){
         this.startIndex=startIdx;
         this.endIndex=endIdx;
-        if(endIdx>shuffleWeights.size())
-            endIdx=shuffleWeights.size();
-        subListOfFeatures = shuffleWeights.subList(startIdx, endIdx);
+        if(endIdx>shuffleWeights.get(0).size())
+            endIdx=shuffleWeights.get(0).size();        
+ 
+
+        subListOfFeatures.add(dimension,shuffleWeights.get(dimension).subList(startIdx, endIdx));
         
         
     }
-    public void setSubListOfFeats(int startIdx, int endIdx){
+    public void setSubListOfFeats(int dimension, int startIdx, int endIdx){
         this.startIndex=startIdx;
         this.endIndex=endIdx;
-        if(endIdx>originalWeights0.size())
-            endIdx=originalWeights0.size();
-        subListOfFeatures = originalWeights0.subList(startIdx, endIdx);
+        if(endIdx>originalWeights.get(dimension).size())
+            endIdx=originalWeights.get(dimension).size();
+        subListOfFeatures.add(originalWeights.get(dimension).subList(startIdx, endIdx));
         
         
-    }    
-    public List<Double> getSubListOfFeats(){
-        return this.subListOfFeatures;
+    } 
+    public void setSubListOfFeats(int dimension){
+        if(this.endIndex==0)
+            return;
+
+        if(endIndex>originalWeights.get(dimension).size())
+            endIndex=originalWeights.get(dimension).size();
+        subListOfFeatures.add(originalWeights.get(dimension).subList(startIndex, endIndex));
+        
+        
+    }      
+    public List<Double> getSubListOfFeats(int dimension){
+        return this.subListOfFeatures.get(dimension);
     }
     
     public void copyOrWeightsBeforGradient(){
@@ -345,22 +400,28 @@ public class Margin {
         }       
     }
     
-    public void updatingStocGradientStep(int subListIndex, double value){
+    public void updatingStocGradientStep(int dimension,int subListIndex, double value){
         int shuffledIndex= startIndex+subListIndex;
         int index = shuffleAndOrFeatIdxMap.get(shuffledIndex);
 
-        weights[index][0]=value;
-        weights[index][1]=-weights[index][0]; 
+        if(dimension == 2){
+            weights[index][0]=value;
+            weights[index][1]=-weights[index][0]; 
+        }else{
+            weights[index][dimension]=value;
+        }
         
         
     }
     
-    public void updatingGradientStep(int subListIndex, double value){
+    public void updatingGradientStep(int dimension,int subListIndex, double value){
         int index= startIndex+subListIndex;
-        
-        weights[index][0]=value;
-        weights[index][1]=-weights[index][0]; 
-        
+        if(dimension == 2){
+            weights[index][0]=value;
+            weights[index][1]=-weights[index][0]; 
+        }else{
+            weights[index][dimension]=value;
+        }
         
     }    
     public double[] getPartialShuffledWeight(int subListIndex){
@@ -383,10 +444,17 @@ public class Margin {
         int shuffledIndex= startIndex+subListIndex;
         return this.shuffleAndOrFeatIdxMap.get(shuffledIndex);
     }
+    public int getShuffledIndexFromOriginal(int orgIndex){
+        return this.orAndShuffleFeatIdxMap.get(orgIndex);
+    }    
     public int getOrWeightIndex(int subListIndex){
         int index= startIndex+subListIndex;
         return index;
     } 
+    
+    public int getSubSetStartIndex(){
+        return this.startIndex;
+    }
     public boolean isIndexInSubset(int orFeatIdx){
         if(startIndex <= orFeatIdx && orFeatIdx < this.endIndex)
             return true;
@@ -402,6 +470,9 @@ public class Margin {
             
     }
     public int getNumberOfInstances(){
+        if(numInstances==0){
+            numInstances = getLabelPerInstances().size();
+        }    
         return this.numInstances;
     }
     public void setFeaturesPerInstance(List<List<Integer>> featspInst){

@@ -392,6 +392,7 @@ public class GMMDiag extends GMM {
             }
             for (int y=0;y<nlabs;y++){ 
                 double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                
                 for (int i=0;i<nlabs;i++){ 
                     double mudiff = z[i]-means[y][i];
                     diagvar[y][i]+=posterior*(mudiff*mudiff);
@@ -421,8 +422,12 @@ public class GMMDiag extends GMM {
             double co=(double)nlabs*logMath.linearToLog(2.0*Math.PI) + logdet;
             co/=2.0;
             gconst[y]=co;
-            //System.out.println("diagvar["+y+"]="+Arrays.toString(diagvar[y]));
+            
+            //change logWeights
+            logWeights[y]=nk[y]/nex[y];
+           
         }
+         System.out.println("priors: "+ Arrays.toString(logWeights));
         //System.out.println("trainviterbi");
         //printMean();
         //printVariace();   
@@ -480,10 +485,11 @@ public class GMMDiag extends GMM {
                  }   
              }
         }
-        //System.out.println("split ");
-        //printMean();
-        //printVariace();
-        
+        ///*
+        System.out.println("split ");
+        printMean();
+        printVariace();
+        //*/
     }
     /**
      * after splitting by trainViterbi
@@ -562,19 +568,18 @@ public class GMMDiag extends GMM {
             for (int i=0;i<nlabs;i++) gconst[i]=co; 
             //double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y][l]);
             //co/=2.0;
-        /*    
-        System.out.println("train1gauss means=["+means[0][0]+","+means[0][1]+";\n"+means[1][0]+","+means[1][1]+"]");
-        System.out.println("train1gauss var=["+diagvar[0][0]+","+diagvar[0][1]+";\n"+diagvar[1][0]+","+diagvar[1][1]+"]");
+
+        ///*
+        System.out.println("train1gauss");
+        printMean();
+        printVariace(); 
         System.out.println("train1gauss var=["+gconst[0]+","+gconst[1]+"]");
         //*/
-        //System.out.println("train1gauss");
-        //printMean();
-        //printVariace();    
     }
     
     
     public void train(Margin margin) {
-        final int niters=1000;
+        final int niters=20;
         double epsilon=0.0004; //2e-05;
         train1gauss(margin);
         double loglike = getLoglike(margin);
@@ -594,7 +599,7 @@ public class GMMDiag extends GMM {
             //sqerr = Double.NaN;
             //if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
             
-            System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+margin.getNumberOfInstances()+ " sqerr "+sqerr);
+            //System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+margin.getNumberOfInstances()+ " sqerr "+sqerr);
         }
     }
     

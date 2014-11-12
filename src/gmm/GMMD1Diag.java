@@ -238,7 +238,6 @@ public class GMMD1Diag extends GMMD1 {
                     normConst=  logMath.addAsLinear(normConst,(float)tmp[y]);
                 
             }
-            
              
             for (int y=0;y<ngauss;y++){ 
                 nex[y]++;
@@ -247,7 +246,8 @@ public class GMMD1Diag extends GMMD1 {
                 means[y]+=posterior*z;  
                 
             }
-            //System.out.println(" instance "+inst + "\n normConst = "+ normConst +"  sum mean ["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"]  nk="+Arrays.toString(nk) );
+            //System.out.println(" instance "+inst + "\n normConst = "+ normConst nk="+Arrays.toString(nk));
+            //System.out.println("sum mean ["+ means[0]+","+means[1]+";\n"+ -means[0]+","+-means[1]+"]" );
         }
         
         for (int y=0;y<ngauss;y++) {
@@ -291,22 +291,22 @@ public class GMMD1Diag extends GMMD1 {
         for (int y=0;y<ngauss;y++) {
             
             if (nk[y]==0)
-                 diagvar[y] = minvar;
-                    
+                 diagvar[y] = minvar;                   
                 
             else{
-                    diagvar[y] /= nk[y];
-                    
-                    if (diagvar[y] < minvar) 
-                        diagvar[y]=minvar;
-                    
-                    
+                diagvar[y] /= nk[y];                    
+                if (diagvar[y] < minvar) 
+                    diagvar[y]=minvar;
+       
             }
             double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y]);
             co/=2.0;
             gconst[y]=co;
-            //System.out.println("diagvar["+y+"]="+Arrays.toString(diagvar[y]));
+            //change logWeights
+            //logWeights[y]=nk[y]/nex[y];
+            
         }
+        //System.out.println("diagvar["+y+"]="+Arrays.toString(diagvar[y]));
     }
     
     /**
@@ -330,7 +330,7 @@ public class GMMD1Diag extends GMMD1 {
             }    
         }
         System.out.println("split means=["+means[0]+","+-means[0]+";\n"+means[1]+","+-means[1]+"]");
-        
+        System.out.println("split var=["+diagvar[0]+","+diagvar[0]+";\n"+diagvar[1]+","+diagvar[1]+"]");
     }
     /**
      * after splitting by trainViterbi
@@ -404,7 +404,7 @@ public class GMMD1Diag extends GMMD1 {
             //co/=2.0;
             
         System.out.println("train1gauss means=["+means[0]+","+-means[0]+";\n"+means[1]+","+-means[1]+"]");
-        System.out.println("train1gauss var=["+diagvar[0]+","+-diagvar[0]+";\n"+diagvar[1]+","+-diagvar[1]+"]");
+        System.out.println("train1gauss var=["+diagvar[0]+","+diagvar[0]+";\n"+diagvar[1]+","+diagvar[1]+"]");
         System.out.println("train1gauss var=["+gconst[0]+","+gconst[1]+"]");
     }
     
@@ -463,5 +463,6 @@ public class GMMD1Diag extends GMMD1 {
         return this.maxSigma;
     }
 
+  
 
 }

@@ -43,7 +43,7 @@ public class NumericalIntegration {
     private Random randomVar = new Random(); 
     float MAXVAL=6;//sixsigma , montecarlo method is sensitive to this value when evaluating the function
     
-    public void errorAnalysis(GMMDiag gmm,float[] py,int dim){
+    public void errorAnalysis(GMMDiag gmm,float[] py,int dim, int ntrials){
         
         int numRuns=10;
         double sumRisk=0.0;
@@ -51,7 +51,7 @@ public class NumericalIntegration {
         for(int r=1;r<=numRuns;r++){
             float risk=0f;
             for(int k=0; k< dim; k++){
-                    risk+=py[k]*integrate(gmm,k,CNConstants.UNIFORM, true,false);
+                    risk+=py[k]*integrate(gmm,k,CNConstants.UNIFORM, true,false,ntrials);
             }
             sumRisk+=risk;
             sumRiskSq+=risk*risk;
@@ -216,11 +216,10 @@ public class NumericalIntegration {
      * @param gmm
      * @return 
      */
-    public double integrate(GMMDiag gmm, int k, String proposal, boolean metropolis, boolean isplot){
+    public double integrate(GMMDiag gmm, int k, String proposal, boolean metropolis, boolean isplot, int ntrials){
         //ScatterPlotAPI plotPoints = new ScatterPlotAPI("Sampled Points");
         
         int dim = gmm.getDimension();
-        int ntrials=50000;
         float minMean=Float.MAX_VALUE;
         float maxMean=Float.MIN_VALUE;
         float maxSigma=Float.MIN_VALUE;

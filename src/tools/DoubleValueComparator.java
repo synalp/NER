@@ -41,7 +41,7 @@ public class DoubleValueComparator /* implements Comparator*/ {
                 new Comparator<Map.Entry<K,V>>() {
                     @Override public int compare(Map.Entry<K,V> e1, Map.Entry<K,V> e2) {
                         int res = e1.getValue().compareTo(e2.getValue());
-                        if (e1.getKey().equals(e2.getKey())) {
+                        if (e1.getValue().equals(e2.getValue())) {
                             return res; // Code will now handle equality properly
                         } else {
                             return res != 0 ? res : 1; // While still adding all entries

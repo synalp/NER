@@ -8,6 +8,7 @@ import edu.stanford.nlp.classify.LinearClassifier;
 import gmm.GMMD1Diag;
 import gmm.GMMDiag;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import linearclassifier.AnalyzeLClassifier;
@@ -18,6 +19,7 @@ import org.apache.commons.math3.distribution.MultivariateNormalDistribution;
 import org.apache.commons.math3.distribution.fitting.MultivariateNormalMixtureExpectationMaximization;
 import org.apache.commons.math3.util.Pair;
 import tools.CNConstants;
+import tools.Histoplot;
 
 /**
  *
@@ -41,17 +43,20 @@ public class TestingMultiGMM {
             Margin margin = analyzing.getMargin(sclass);
             margin.setFeaturesPerInstance(featsperInst);
             margin.setLabelPerInstance(labelperInst);
-    
+            double[] scores= new double[featsperInst.size()];
+            Arrays.fill(scores, 0.0);            
+            Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
             
             
             int numinst=labelperInst.size();
             //Margin margin = new Margin();
+            /*
             numinst=10;
             margin.setNumberOfInstances(numinst);
             
             Margin.GENERATEDDATA=true;
             margin.generateRandomScore(numinst,priors);
-            
+            */
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
             GMMDiag gmmMD = new GMMDiag(priors.length, priors);
             gmmMD.train(margin);

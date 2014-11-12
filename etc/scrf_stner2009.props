@@ -1,5 +1,5 @@
 #
-#Tue Oct 14 18:15:02 CEST 2014
+#Fri Oct 31 15:05:59 CET 2014
 usePrevSequences=true
 useQN=true
 useObservedSequencesOnly=true
@@ -21,14 +21,14 @@ QNsize=25
 useDisjunctive=true
 noMidNGrams=true
 sigma=20
-serializeTo=ner.all.CRF.conll
+serializeTo=ner.pn.CRF.conll
 useNGrams=true
 normalize=true
 usePrev=true
 readerAndWriter=edu.stanford.nlp.sequences.ColumnDocumentReaderAndWriter
 maxLeft=1
 useNext=true
-trainFile=conll.all.tab.CRF.train
+trainFile=conll.pn.tab.CRF.train
 useLongSequences=true
 useOccurrencePatterns=true
 map=word\=0,tag\=1,chunk\=2,answer\=3

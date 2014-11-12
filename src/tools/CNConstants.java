@@ -69,7 +69,11 @@ package tools;
     public static String CORPUSTRAINPROP="corpusTrain";
     public static String CORPUSDEVPROP="corpusDev";
     public static String CORPUSTESTPROP="corpusTest";
-    public static String CORPUSDIRPROP="corpusDir";     
+    public static String CORPUSDIRPROP="corpusDir";   
+    
+    //RI
+    public static String WVDIR="wvdir";
+    public static String DEFWVDIR="wordvects";
     
     //General Constants
     public static final String  CHAR_NULL = "--";
