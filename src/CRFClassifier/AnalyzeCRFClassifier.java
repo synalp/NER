@@ -61,7 +61,7 @@ public class AnalyzeCRFClassifier {
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
     public static int TRAINSIZE=Integer.MAX_VALUE;
     
-    public static String OUTFILE="analysis/CRF/test.%S.log";
+    public static String OUTFILE="test.%S.log";
     public static boolean POSFILTER=true;
     
     
