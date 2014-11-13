@@ -1,6 +1,8 @@
 package gigaword;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +28,9 @@ import opennlp.tools.tokenize.TokenizerModel;
 public class Conll03Preprocess {
 	
 	public static void main(String[] args) {
+		
+	}
+	public static void tagGigaword(String[] args) {
 		Conll03Preprocess m = new Conll03Preprocess();
 		GigawordEn c = new GigawordEn();
 		List<String> utts = m.sentDetect(c.getChunk(0));
@@ -39,6 +44,64 @@ public class Conll03Preprocess {
 		}
 		List<String[]> tags = m.postagger(toks);
 		m.saveConll03("giga.conll03",toks,tags);
+	}
+	
+	/**
+	 * retag the original Conll03 corpus with the openNLP tagger
+	 * For now, reuse the original Conll03 tokenization: if it's not good, then we may want to resegment/retokenize as well !
+	 */
+	public static void retagConll03() {
+		Conll03Preprocess m = new Conll03Preprocess();
+		final String[] conllfiles = {"corpus/CoNLL-2003/eng.testa","corpus/CoNLL-2003/eng.testb","corpus/CoNLL-2003/eng.train"};
+		for (String cofile : conllfiles) {
+			try {
+				String prefix;
+				ArrayList<String[]> wordsAndTags = new ArrayList<String[]>();
+				ArrayList<String[]> justwords = new ArrayList<String[]>();
+				ArrayList<String> oneutt = new ArrayList<String>();
+				BufferedReader f = new BufferedReader(new FileReader(cofile));
+				{
+					String s=f.readLine(); // DOCSTART
+					prefix=s;
+					s=f.readLine(); // empty line
+				}
+				for (;;) {
+					String s=f.readLine();
+					if (s==null) break;
+					s=s.trim();
+					if (s.length()==0) {
+						String[] lines = oneutt.toArray(new String[oneutt.size()]);
+						wordsAndTags.add(lines);
+						String[] words = new String[lines.length];
+						justwords.add(words);
+						for (int i=0;i<lines.length;i++) {
+							int k=lines[i].indexOf(' ');
+							words[i]=lines[i].substring(0, k);
+						}
+						oneutt.clear();
+					} else {
+						oneutt.add(s);
+					}
+				}
+				f.close();
+				List<String[]> newtags = m.postagger(justwords);
+				PrintWriter g = new PrintWriter(new FileWriter(cofile+".openNLP"));
+				g.println(prefix);
+				g.println();
+				for (int i=0;i<wordsAndTags.size();i++) {
+					String[] lines=wordsAndTags.get(i);
+					for (int w=0;w<lines.length;w++) {
+						int k=lines[w].indexOf(' ')+1;
+						int l=lines[w].indexOf(' ', k);
+						g.println(justwords.get(i)[w]+" "+newtags.get(i)[w]+lines[w].substring(l));
+					}
+					g.println();
+				}
+				g.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	void saveConll03(String file, List<String[]> toks, List<String[]> tags) {

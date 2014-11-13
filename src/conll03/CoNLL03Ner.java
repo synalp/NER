@@ -524,7 +524,7 @@ public class CoNLL03Ner {
     }
     
     public static final String[] TASKS = {
-    	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat"
+    	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags"
     };
     
     public static void main(String[] args){
@@ -539,11 +539,13 @@ public class CoNLL03Ner {
         CoNLL03Ner conll = new CoNLL03Ner();
         switch(task) {
         case 0:
+        	// train and test the baseline CRF
         	conll.trainStanfordCRF(CNConstants.ALL, true, false,false);
         	break;
 
         case 1:
-        	Conll03Preprocess.main(null);
+        	// segment, tokenize and tag the Gigaword corpus; this shall be done only once !
+        	Conll03Preprocess.tagGigaword(null);
         	break;
         case 2:
                 conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
@@ -551,8 +553,13 @@ public class CoNLL03Ner {
         case 3:
                 conll.trainStanfordCRF(CNConstants.ALL, true, true,false);
                 break;            
-            
+        case 4:
+        	// retag the Conll03 corpus with openNLP: this'll be used to run weakly supervised training of the linear classifier on it
+        	Conll03Preprocess.retagConll03();
+        	break;
         }
+        
+        // PLEASE DONT UNCOMMENT ANY LINE BELOW! rather add a task and arg on the command-line  
         
         //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);
         //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
@@ -569,7 +576,7 @@ public class CoNLL03Ner {
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
         //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
 
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
+        // conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
 
         //conll.relationFAndR(CNConstants.PRNOUN);
         //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
