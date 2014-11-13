@@ -84,6 +84,7 @@ public class AnalyzeLClassifier {
     public static Margin CURRENTPARENTMARGIN=null;
     public static float  CURRENTPARENTESTIMR0=0f;
     public static double  CURENTPARENTF10=0f;
+    private Random rnd = new Random();
     
     private String typeofClass="I0";  //possible values "IO","BIO","BILOU";
     //TRAINSIZE=20;  
@@ -3002,6 +3003,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         Index<String> allfeatIdxs = modelAllFeats.featureIndex();
         List<String> trainFeats = featIdxs.objectsList();
         List<String> testFeats = new ArrayList(allfeatIdxs.objectsList());
+        List<Integer>testIdx=new ArrayList<>();
         testFeats.removeAll(trainFeats);
         double[][] weightsAllFeats = marginAllFeats.getWeights();
         //set all the features in the testset to 0.0
@@ -3010,16 +3012,94 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             for(int i=0; i<weightsAllFeats[featIdx].length;i++){
                 weightsAllFeats[featIdx][i]=0.0;
             }
+            testIdx.add(featIdx);
         }
         //saves the model as train
         try {
             IOUtils.writeObjectToFile(modelTrainFeats, realTrainModel);
         } catch (IOException ex) {
 
-        }        
+        }  
+        List<Integer> trainIdx=new ArrayList<>();
+        for(String feat:trainFeats){
+            int featIdx=allfeatIdxs.indexOf(feat);
+            trainIdx.add(featIdx);
+        }    
+        
+        marginAllFeats.setTrainFeatureIndexes(trainIdx);
+        marginAllFeats.setTestFeatureIndexes(testIdx);
+        modelMap.put(entity, modelAllFeats);
+        marginMAP.put(entity, marginAllFeats);        
         
     }
-    
+      public void allweightsKeepingOnlyTrain(String entity, int trainSize){
+        File trainSet = new File(AnalyzeLClassifier.TRAINFILE.replace("%S", entity));
+        File testSet = new File(AnalyzeLClassifier.TESTFILE.replace("%S", entity));
+        String allTrainAndTest=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
+        File trainAndTest = new File(allTrainAndTest);        
+        try {
+            String file1Str = org.apache.commons.io.FileUtils.readFileToString(trainSet);
+            String file2Str = org.apache.commons.io.FileUtils.readFileToString(testSet);
+            // Write the file
+            org.apache.commons.io.FileUtils.write(trainAndTest, file1Str);
+            org.apache.commons.io.FileUtils.write(trainAndTest, file2Str, true); // true for append
+            
+            
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        //Train all train and test data
+        AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
+        String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", entity);
+        String realTrainModel=MODELFILE.replace("%S", entity);
+        AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
+        AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
+        
+        //delete the files if they exist
+        File file = new File(AnalyzeLClassifier.MODELFILE);
+        file.delete();
+        trainAllLinearClassifier(entity,false,false,false);
+        LinearClassifier modelAllFeats = modelMap.get(entity);
+        Margin           marginAllFeats = marginMAP.get(entity);
+        //train only train data
+        AnalyzeLClassifier.TRAINSIZE=trainSize;
+        AnalyzeLClassifier.MODELFILE=realTrainModel;
+        AnalyzeLClassifier.TRAINFILE=tmpRealTrain;
+        trainAllLinearClassifier(entity,false,false,false);
+        LinearClassifier modelTrainFeats = modelMap.get(entity);
+                
+        Index<String> featIdxs = modelTrainFeats.featureIndex();
+        Index<String> allfeatIdxs = modelAllFeats.featureIndex();
+        List<String> trainFeats = featIdxs.objectsList(); 
+        List<String> testFeats = new ArrayList(allfeatIdxs.objectsList());
+        List<Integer>testIdx=new ArrayList<>();
+        testFeats.removeAll(trainFeats);
+        double[][] weightsAllFeats = marginAllFeats.getWeights();
+        //set all the features in the testset to 0.0
+        for(String feat:testFeats){
+            int featIdx=allfeatIdxs.indexOf(feat);
+            for(int i=0; i<weightsAllFeats[featIdx].length;i++){
+                weightsAllFeats[featIdx][i]=0.0;
+            }
+            testIdx.add(featIdx);
+        }
+        //saves the model as train
+        try {
+            IOUtils.writeObjectToFile(modelTrainFeats, realTrainModel);
+        } catch (IOException ex) {
+
+        }  
+        List<Integer> trainIdx=new ArrayList<>();
+        for(String feat:trainFeats){
+            int featIdx=allfeatIdxs.indexOf(feat);
+            trainIdx.add(featIdx);
+        }    
+        
+        marginAllFeats.setTrainFeatureIndexes(trainIdx);
+        marginAllFeats.setTestFeatureIndexes(testIdx);
+        modelMap.put(entity, modelAllFeats);
+        marginMAP.put(entity, marginAllFeats);
+    }  
     public void evalutatingF1AndR(){
         PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
         PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");        

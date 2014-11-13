@@ -33,8 +33,7 @@ public class Margin {
     private Index<String> labelIdx, featureIdx;
     private LinearClassifier stanfordModel;
     private String classifierBinFile;
-    //private int numInstances;
-    //private double[] sumfeatsPerInst;
+    private int numInstances=0;
     private float[][] generatedScores;
     private List<List<Integer>> featsperInst = new ArrayList<>();
     private List<Integer> labelperInst = new ArrayList<>();    
@@ -50,7 +49,10 @@ public class Margin {
     private HashMap<Integer,Integer> shuffleAndOrFeatIdxMap = new HashMap<>();
     private HashMap<Integer,Integer> orAndShuffleFeatIdxMap = new HashMap<>();
     double[][] orWeightsCopy ;
-    private int numInstances=0;
+    
+    //list of features in the labeled and unlabeled datasets
+    private List<Integer> trainFeatIndx = new ArrayList<>();
+    private List<Integer> testFeatIndx = new ArrayList<>();
     
     public Margin(){
         
@@ -511,5 +513,18 @@ public class Margin {
     }
     public void setNumberOfInstances(int numInst){
         this.numInstances=numInst;
-    }    
+    } 
+    
+    public void setTrainFeatureIndexes(List<Integer> fIdx){
+        this.trainFeatIndx=fIdx;
+    }
+    public List<Integer> getTrainFeatureIndexes(){
+        return this.trainFeatIndx;
+    }
+     public void setTestFeatureIndexes(List<Integer> fIdx){
+        this.testFeatIndx=fIdx;
+    }
+    public List<Integer> getTestFeatureIndexes(){
+        return this.testFeatIndx;
+    }   
 }

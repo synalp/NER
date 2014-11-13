@@ -217,6 +217,8 @@ public class CoNLL03Ner {
         }
     }
     
+   
+    
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize){
         AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
@@ -238,7 +240,9 @@ public class CoNLL03Ner {
             }
         }
         AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
-        lcclass.trainAllLinearClassifier(entity, false, false, false);
+        
+        //lcclass.trainAllLinearClassifier(entity, false, false, false);
+        lcclass.allweightsKeepingOnlyTrain(entity,trainSize);
         lcclass.testingClassifier(false, entity, false, false);
         HashMap<String,Double> priorsMap = new HashMap<>();
         
@@ -264,8 +268,8 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        //lcclass.wkSupParallelStocCoordD(entity, true,10000);
-				lcclass.wkSupClassifierConstr(entity, true,2000);
+        lcclass.wkSupParallelStocCoordD(entity, true,10000);
+	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     
     public void evaluateOnlyStanfordLC(String entity){
@@ -441,13 +445,13 @@ public class CoNLL03Ner {
         CoNLL03Ner conll = new CoNLL03Ner();
         //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);
         //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
-        conll.trainStanfordCRF(CNConstants.ALL, true, false,false);
-        CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL);
+        //conll.trainStanfordCRF(CNConstants.ALL, true, false,false);
+        //CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL);
         //conll.conllEvaluation("test.all.log");
         //conll.trainStanfordCRF(CNConstants.ALL, true, false);
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
-        //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,1000);
-        // conll.relationFAndR(CNConstants.PRNOUN);
+        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
+        //conll.relationFAndR(CNConstants.PRNOUN);
         //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
         //conll.evaluateOnlyStanfordLC();
         //conll.trainingOnlyWeaklySup(CNConstants.PRNOUN);

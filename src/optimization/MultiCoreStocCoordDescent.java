@@ -243,12 +243,22 @@ public class MultiCoreStocCoordDescent  {
                 dimIdx = rnd.nextInt(nLabels);
             }
             List<Double> weightsForFeat= margin.getSubListOfFeats(dimIdx);
-            int selectedFeats[] = margin.getTopWeights(0.3,50);
-            List<Integer> selFeatsInSubSet = new ArrayList<>();
-            for(int index=0; index<selectedFeats.length;index++){
-                int shIdx=margin.getShuffledIndexFromOriginal(selectedFeats[index]);
+            //int selectedFeats[] = margin.getTopWeights(0.3,50);
+            List<Integer> trainFeats = margin.getTrainFeatureIndexes();
+            List<Integer> testFeats = margin.getTestFeatureIndexes();
+            List<Integer> trainFeatsInSubSet = new ArrayList<>();
+            for(int index=0; index<trainFeats.size();index++){
+                int shIdx=margin.getShuffledIndexFromOriginal(testFeats.get(index));
                 if(margin.isIndexInSubset(shIdx))
-                    selFeatsInSubSet.add(shIdx);
+                    trainFeatsInSubSet.add(shIdx);
+                    
+                    
+            }            
+            List<Integer> testFeatsInSubSet = new ArrayList<>();
+            for(int index=0; index<testFeats.size();index++){
+                int shIdx=margin.getShuffledIndexFromOriginal(testFeats.get(index));
+                if(margin.isIndexInSubset(shIdx))
+                    testFeatsInSubSet.add(shIdx);
                     
                     
             }
@@ -256,9 +266,13 @@ public class MultiCoreStocCoordDescent  {
             final double[] gradw = new double[weightsForFeat.size()];
             double rndVal = rnd.nextDouble();   
             int featIdx=rnd.nextInt(weightsForFeat.size());
-            if(rndVal<0.9 && !selFeatsInSubSet.isEmpty()){
-                int selfeatIdx=rnd.nextInt(selFeatsInSubSet.size());
-                featIdx=selFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
+            if(rndVal<0.9 && !testFeatsInSubSet.isEmpty()){
+                int selfeatIdx=rnd.nextInt(testFeatsInSubSet.size());
+                featIdx=testFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
+      
+            }else if(rndVal<0.1 && !trainFeatsInSubSet.isEmpty()){
+                int selfeatIdx=rnd.nextInt(trainFeatsInSubSet.size());
+                featIdx=trainFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
       
             }
             
