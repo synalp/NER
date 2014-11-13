@@ -442,7 +442,7 @@ public class CoNLL03Ner {
         //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);
         //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
         conll.trainStanfordCRF(CNConstants.ALL, true, false,false);
-        CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL);
+        // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL);
         //conll.conllEvaluation("test.all.log");
         //conll.trainStanfordCRF(CNConstants.ALL, true, false);
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
