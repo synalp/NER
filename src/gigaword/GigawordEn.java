@@ -29,6 +29,8 @@ public class GigawordEn {
 		System.out.println("found nchunks "+chunkPaths.size());
 	}
 
+	public int getNchunks() {return chunkPaths.size();}
+	
 	// no segmentation in sentences is done. But punctuation is preserved.
 	// basic tokenization is done.
 	public List<String> getChunk(int chunk) {
@@ -39,102 +41,104 @@ public class GigawordEn {
 			GZIPInputStream i = new GZIPInputStream(new FileInputStream(p));
 			BufferedReader f = new BufferedReader(new InputStreamReader(i,Charset.forName("UTF-8")));
 			boolean istext = false;
+			StringBuilder sb=null;
 			for (int z=0;;z++) {
 				String s = f.readLine();
 				if (s==null) break;
 				if (s.length()==0) continue;
 				if (z%10000==0) System.out.println("lines "+z);
-				if (s.indexOf("<TEXT>")>=0) {
+				if (s.indexOf("<P>")>=0) {
+					sb=new StringBuilder();
 					istext=true; continue;
 				}
-				if (s.indexOf("</TEXT>")>=0) {
+				if (s.indexOf("</P>")>=0) {
+					String tt=sb.toString().trim();
+					if (tt.length()>0) res.add(tt);
 					istext=false; continue;
 				}
 				if (!istext) continue;
 				if (s.charAt(0)=='<') continue;
+				
+				// don't tokenize any more, because this shall be done by openNLP
+				
 				// tokenisation tres simple, car la segmentation plus complexe est bcp trop lente...
-				s=s.replace('=', ' ');
-				s=s.replace("-", " - ");
-				s=s.replace(";", " ;");
-				s=s.replace(":", " :");
-				s=s.replace("!", " !");
-				s=s.replace("?", " ?");
-				s=s.replace("``", " `` ");
-				s=s.replace("''", " ''");
-				s=s.replace("/", " / ");
-				s=s.replace("\"", " \" ");
-				s=s.replace("[", " [ ");
-				s=s.replace("]", " ] ");
-				s=s.replace("{", " { ");
-				s=s.replace("}", " } ");
-				s=s.replace("(", " ( ");
-				s=s.replace(")", " ) ");
+//				s=s.replace('=', ' ');
+//				s=s.replace("-", " - ");
+//				s=s.replace(";", " ;");
+//				s=s.replace(":", " :");
+//				s=s.replace("!", " !");
+//				s=s.replace("?", " ?");
+//				s=s.replace("``", " `` ");
+//				s=s.replace("''", " ''");
+//				s=s.replace("/", " / ");
+//				s=s.replace("\"", " \" ");
+//				s=s.replace("[", " [ ");
+//				s=s.replace("]", " ] ");
+//				s=s.replace("{", " { ");
+//				s=s.replace("}", " } ");
+//				s=s.replace("(", " ( ");
+//				s=s.replace(")", " ) ");
 
 				// point
-				{
-					int x=0;
-					for (;;) {
-						x=s.indexOf('.',x);
-						if (x<0) break;
-						if (x>0) {
-							char c = s.charAt(x-1);
-							if (Character.isDigit(c)||Character.isUpperCase(c)) {
-								// on le laisse dans le mot
-							} else {
-								s=s.substring(0,x)+' '+s.substring(x);
-								++x;
-							}
-						}
-						++x;
-					}
-				}
+//				{
+//					int x=0;
+//					for (;;) {
+//						x=s.indexOf('.',x);
+//						if (x<0) break;
+//						if (x>0) {
+//							char c = s.charAt(x-1);
+//							if (Character.isDigit(c)||Character.isUpperCase(c)) {
+//								// on le laisse dans le mot
+//							} else {
+//								s=s.substring(0,x)+' '+s.substring(x);
+//								++x;
+//							}
+//						}
+//						++x;
+//					}
+//				}
 
 				// virgule
-				{
-					int x=0,y=0;
-					for (;;) {
-						x=s.indexOf(',',y);
-						if (x<0) break;
-						if (x>0) {
-							char c = s.charAt(x-1);
-							if (Character.isDigit(c)) {
-								// on le laisse dans le mot
-							} else {
-								s=s.substring(0,x)+' '+s.substring(x);
-								++x;
-							}
-						}
-						y=x+1;
-					}
-				}
-
-				// apostrophe
-				{
-					int x=0,y=0;
-					for (;;) {
-						x=s.indexOf('\'',y);
-						if (x<0) break;
-						// TODO: do n't    does n't
-						if (x>0) {
-							if (s.substring(x+1).toLowerCase().startsWith("hui")) {
-								// on le laisse dans le mot
-							} else {
-								++x;
-								s=s.substring(0,x)+' '+s.substring(x);
-							}
-						}
-						y=x+1;
-					}
-				}
+//				{
+//					int x=0,y=0;
+//					for (;;) {
+//						x=s.indexOf(',',y);
+//						if (x<0) break;
+//						if (x>0) {
+//							char c = s.charAt(x-1);
+//							if (Character.isDigit(c)) {
+//								// on le laisse dans le mot
+//							} else {
+//								s=s.substring(0,x)+' '+s.substring(x);
+//								++x;
+//							}
+//						}
+//						y=x+1;
+//					}
+//				}
+//
+//				// apostrophe
+//				{
+//					int x=0,y=0;
+//					for (;;) {
+//						x=s.indexOf('\'',y);
+//						if (x<0) break;
+//						// TODO: do n't    does n't
+//						if (x>0) {
+//							if (s.substring(x+1).toLowerCase().startsWith("hui")) {
+//								// on le laisse dans le mot
+//							} else {
+//								++x;
+//								s=s.substring(0,x)+' '+s.substring(x);
+//							}
+//						}
+//						y=x+1;
+//					}
+//				}
 
 				s=s.replaceAll("  +", " ");
 				s=s.trim();
-				String[] st = s.split(" ");
-				for (int t=0;t<st.length;t++) {
-					if (st[t].length()>0) {
-						res.add(st[t].trim());
-					}
-				}
+				sb.append(' '+s);
 			}
 			f.close();
 
