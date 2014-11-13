@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import tools.GeneralConfig;
+
 public class GigawordEn {
 
 	ArrayList<String> chunkPaths = new ArrayList<String>();
@@ -20,7 +22,7 @@ public class GigawordEn {
 			for (;;) {
 				String s=flist.readLine();
 				if (s==null) break;
-				chunkPaths.add(s);
+				chunkPaths.add(GeneralConfig.corpusGigaword+"/"+s);
 			}
 			flist.close();
 		} catch (Exception e) {
@@ -31,8 +33,6 @@ public class GigawordEn {
 
 	public int getNchunks() {return chunkPaths.size();}
 	
-	// no segmentation in sentences is done. But punctuation is preserved.
-	// basic tokenization is done.
 	public List<String> getChunk(int chunk) {
 		if (chunk<0||chunk>=chunkPaths.size()) return null;
 		ArrayList<String> res = new ArrayList<String>();

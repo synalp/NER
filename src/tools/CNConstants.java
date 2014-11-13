@@ -74,6 +74,7 @@ package tools;
     //Gigaword config
     public static String CORPUSGIGATRAINPROP="corpusGigaTrain";
     public static String CORPUSGIGADIRPROP="corpusGigaDir";   
+    public static String CORPUSGIGAWORDPROP="corpusGigaword";   
     
     //RI
     public static String WVDIR="wvdir";

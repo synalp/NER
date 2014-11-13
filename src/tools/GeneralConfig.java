@@ -68,6 +68,7 @@ public class GeneralConfig {
     public static String corpusDir;
     
     //Gigaword
+    public static String corpusGigaword;
     public static String corpusGigaDir;
     public static String corpusGigaTrain;
     
@@ -136,12 +137,24 @@ public class GeneralConfig {
            corpusGigaTrain=properties.getProperty(CNConstants.CORPUSGIGATRAINPROP);
            
            // look for a directory that exists
-           String[] corpusDirs=properties.getProperty(CNConstants.CORPUSGIGADIRPROP).split(",");
-           for (String s : corpusDirs) {
-        	   File f = new File(s);
-        	   if (f.exists()) {
-        		   corpusGigaDir = s;
-        		   break;
+           {
+        	   String[] corpusDirs=properties.getProperty(CNConstants.CORPUSGIGADIRPROP).split(",");
+        	   for (String s : corpusDirs) {
+        		   File f = new File(s);
+        		   if (f.exists()) {
+        			   corpusGigaDir = s;
+        			   break;
+        		   }
+        	   }
+           }
+           {
+        	   String[] corpusDirs=properties.getProperty(CNConstants.CORPUSGIGAWORDPROP).split(",");
+        	   for (String s : corpusDirs) {
+        		   File f = new File(s);
+        		   if (f.exists()) {
+        			   corpusGigaword = s;
+        			   break;
+        		   }
         	   }
            }
            

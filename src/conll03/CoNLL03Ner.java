@@ -11,6 +11,8 @@ import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.ie.crf.CRFClassifier;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.Datum;
+import gigaword.Conll03Preprocess;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -441,14 +443,31 @@ public class CoNLL03Ner {
         }        
     }
     
+    public static final String[] TASKS = {
+    	"basecrf", "buildGigaword"
+    };
+    
     public static void main(String[] args){
+    	int task=0;
+    	if (args.length>0) {
+    		for (int i=0;i<TASKS.length;i++) if (args[0].equals(TASKS[i])) {task=i;break;}
+    	}
+    	
         CoNLL03Ner conll = new CoNLL03Ner();
+        switch(task) {
+        case 0:
+        	conll.trainStanfordCRF(CNConstants.ALL, true, false,false);
+        	break;
+        case 1:
+        	Conll03Preprocess.main(null);
+        	break;
+        }
+        
         //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);
         //conll.onlyEvaluatingCRFResults(CNConstants.ALL);
         //conll.trainStanfordCRF(CNConstants.ALL, true, false,false);
         //CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL);
 
-        conll.trainStanfordCRF(CNConstants.ALL, true, false,false);
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL);
 
         //conll.conllEvaluation("test.all.log");
