@@ -4,8 +4,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
+import opennlp.tools.postag.POSModel;
+import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.tokenize.Tokenizer;
@@ -32,6 +35,7 @@ public class Conll03Preprocess {
 				System.out.println();
 			}
 		}
+		List<String[]> tags = m.postagger(toks);
 	}
 	
 	List<String> sentDetect(List<String> txt) {
@@ -86,6 +90,32 @@ public class Conll03Preprocess {
 			}
 		}
 		System.out.println("tokenization "+res.size()+" "+nw);
+		return res;
+	}
+	
+	List<String[]> postagger(List<String[]> words) {
+		InputStream modelIn=null;
+		ArrayList<String[]> res = new ArrayList<String[]>();
+		HashSet<String> pos = new HashSet<String>();
+		try {
+			modelIn = new FileInputStream("res/en-pos-maxent.bin");
+			POSModel model = new POSModel(modelIn);
+			POSTaggerME tagger = new POSTaggerME(model);
+			for (int i=0;i<words.size();i++) {
+				String tags[] = tagger.tag(words.get(i));
+				for (String t : tags) pos.add(t);
+				res.add(tags);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (modelIn != null) {
+				try {
+					modelIn.close();
+				} catch (IOException e) {}
+			}
+		}
+		System.out.println("postagging "+res.size()+" "+pos);
 		return res;
 	}
 }
