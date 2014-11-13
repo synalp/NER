@@ -80,10 +80,6 @@ package tools;
     public static String WVDIR="wvdir";
     public static String DEFWVDIR="wordvects";
     
-    //GigaWord
-    public static String GWDIRPROP="gwDir";
-    public static String GWDATAPROP="gwData";
-    
     
     //General Constants
     public static final String  CHAR_NULL = "--";

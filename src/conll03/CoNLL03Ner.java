@@ -121,8 +121,8 @@ public class CoNLL03Ner {
                         outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
                     break;
                 case "gigaw":
-                    String gwDir=GeneralConfig.gwDir;
-                    String gwData = GeneralConfig.gwData;
+                    String gwDir=GeneralConfig.corpusGigaDir;
+                    String gwData = GeneralConfig.corpusGigaTrain;
                     if(gwDir == null || gwData == null ){
                         ErrorsReporting.report("The GigaWord configuration should be included in the properties file: ner.properties");
                     }
@@ -524,13 +524,16 @@ public class CoNLL03Ner {
     }
     
     public static final String[] TASKS = {
-    	"basecrf", "buildGigaword"
+    	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat"
     };
     
     public static void main(String[] args){
     	int task=0;
     	if (args.length>0) {
-    		for (int i=0;i<TASKS.length;i++) if (args[0].equals(TASKS[i])) {task=i;break;}
+    		for (int i=0;i<TASKS.length;i++) 
+                    if (args[0].equals(TASKS[i])){
+                      task=i;break;
+                    }
     	}
     	
         CoNLL03Ner conll = new CoNLL03Ner();
@@ -538,9 +541,17 @@ public class CoNLL03Ner {
         case 0:
         	conll.trainStanfordCRF(CNConstants.ALL, true, false,false);
         	break;
+
         case 1:
         	Conll03Preprocess.main(null);
         	break;
+        case 2:
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
+                break;
+        case 3:
+                conll.trainStanfordCRF(CNConstants.ALL, true, true,false);
+                break;            
+            
         }
         
         //conll.generatingStanfordInputFiles(CNConstants.ALL, "train", false, CNConstants.CHAR_NULL);

@@ -164,9 +164,6 @@ public class GeneralConfig {
            
            wvdir=properties.getProperty(CNConstants.WVDIR,CNConstants.DEFWVDIR);
            
-           //GigaWord
-           gwDir=properties.getProperty(CNConstants.GWDIRPROP);
-           gwData=properties.getProperty(CNConstants.GWDATAPROP);
 	       
 	}
 
