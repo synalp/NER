@@ -532,6 +532,7 @@ public class CoNLL03Ner {
     	if (args.length>0) {
     		for (int i=0;i<TASKS.length;i++) 
                     if (args[0].equals(TASKS[i])){
+                        System.out.println(args[0]);
                       task=i;break;
                     }
     	}
@@ -569,7 +570,7 @@ public class CoNLL03Ner {
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
         //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
 
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
+        //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
 
         //conll.relationFAndR(CNConstants.PRNOUN);
         //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
