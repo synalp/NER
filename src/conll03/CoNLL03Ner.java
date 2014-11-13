@@ -235,7 +235,7 @@ public class CoNLL03Ner {
             inFile.close();            
 
         }catch(Exception ex){
-
+            ex.printStackTrace();
         }
     }
     
@@ -306,7 +306,7 @@ public class CoNLL03Ner {
             //generatingStanfordInputFiles(entity, "dev", false,CNConstants.CHAR_NULL);
         }
         AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
-        //AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.TESTFILE=TESTFILE;
         AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
         //if exist recreates the binary file
         File mfile = new File(AnalyzeLClassifier.MODELFILE);
@@ -534,8 +534,8 @@ public class CoNLL03Ner {
         //conll.conllEvaluation("test.all.log");
         //conll.trainStanfordCRF(CNConstants.ALL, true, false);
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
-        //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
+        //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
+        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
         //conll.relationFAndR(CNConstants.PRNOUN);
         //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
         //conll.evaluateOnlyStanfordLC();
