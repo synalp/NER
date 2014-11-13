@@ -123,7 +123,7 @@ public class CoNLL03Ner {
                 case "gigaw":
                     String gwDir=GeneralConfig.gwDir;
                     String gwData = GeneralConfig.gwData;
-                    if(gwDir.isEmpty() || gwData.isEmpty() ){
+                    if(gwDir == null || gwData == null ){
                         ErrorsReporting.report("The GigaWord configuration should be included in the properties file: ner.properties");
                     }
                     inFile = new BufferedReader(new FileReader(gwDir+System.getProperty("file.separator")+gwData)); 
