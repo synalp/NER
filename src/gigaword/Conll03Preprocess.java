@@ -1,8 +1,10 @@
 package gigaword;
 
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +38,25 @@ public class Conll03Preprocess {
 			}
 		}
 		List<String[]> tags = m.postagger(toks);
+		m.saveConll03("giga.conll03",toks,tags);
+	}
+	
+	void saveConll03(String file, List<String[]> toks, List<String[]> tags) {
+		assert toks.size()==tags.size();
+		try {
+			PrintWriter f = new PrintWriter(new FileWriter(file));
+			for (int i=0;i<toks.size();i++) {
+				String[] words = toks.get(i);
+				String[] pos = tags.get(i);
+				assert words.length==pos.length;
+				for (int j=0;j<words.length;j++)
+					f.println(words[j]+"\t"+pos[j]);
+				f.println();
+			}
+			f.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	List<String> sentDetect(List<String> txt) {
