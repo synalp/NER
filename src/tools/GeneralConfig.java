@@ -65,7 +65,11 @@ public class GeneralConfig {
     public static String corpusTrain;
     public static String corpusDev;
     public static String corpusTest;
-    public static String corpusDir;   
+    public static String corpusDir;
+    
+    //Gigaword
+    public static String corpusGigaDir;
+    public static String corpusGigaTrain;
     
     //Random Indexing
     public static String wvdir;
@@ -126,13 +130,17 @@ public class GeneralConfig {
            corpusTrain=properties.getProperty(CNConstants.CORPUSTRAINPROP);
            corpusDev=properties.getProperty(CNConstants.CORPUSDEVPROP);
            corpusTest=properties.getProperty(CNConstants.CORPUSTESTPROP);
+           corpusDir=properties.getProperty(CNConstants.CORPUSDIRPROP);
+           
+           // Gigaword config
+           corpusGigaTrain=properties.getProperty(CNConstants.CORPUSGIGATRAINPROP);
            
            // look for a directory that exists
-           String[] corpusDirs=properties.getProperty(CNConstants.CORPUSDIRPROP).split(",");
+           String[] corpusDirs=properties.getProperty(CNConstants.CORPUSGIGADIRPROP).split(",");
            for (String s : corpusDirs) {
         	   File f = new File(s);
         	   if (f.exists()) {
-        		   corpusDir = s;
+        		   corpusGigaDir = s;
         		   break;
         	   }
            }
