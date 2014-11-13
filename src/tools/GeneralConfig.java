@@ -2,9 +2,12 @@ package tools;
 
 
 import java.util.Properties;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
+import edu.emory.mathcs.backport.java.util.Arrays;
 
 
 /**
@@ -123,7 +126,17 @@ public class GeneralConfig {
            corpusTrain=properties.getProperty(CNConstants.CORPUSTRAINPROP);
            corpusDev=properties.getProperty(CNConstants.CORPUSDEVPROP);
            corpusTest=properties.getProperty(CNConstants.CORPUSTESTPROP);
-           corpusDir=properties.getProperty(CNConstants.CORPUSDIRPROP);
+           
+           // look for a directory that exists
+           String[] corpusDirs=properties.getProperty(CNConstants.CORPUSDIRPROP).split(",");
+           for (String s : corpusDirs) {
+        	   File f = new File(s);
+        	   if (f.exists()) {
+        		   corpusDir = s;
+        		   break;
+        	   }
+           }
+           
            wvdir=properties.getProperty(CNConstants.WVDIR,CNConstants.DEFWVDIR);
 	       
 	}
