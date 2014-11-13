@@ -3030,7 +3030,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         }         
         //saves the model as train
         try {
-            IOUtils.writeObjectToFile(modelTrainFeats, realTrainModel);
+            IOUtils.writeObjectToFile(modelAllFeats, realTrainModel);
         } catch (IOException ex) {
 
         }  
@@ -3063,7 +3063,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", entity);
         String realTrainModel=MODELFILE.replace("%S", entity);
         AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
-        AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
+        AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);;
         AnalyzeLClassifier.exitAfterTrainingFeaturization=true;
         //delete the files if they exist
         File file = new File(AnalyzeLClassifier.MODELFILE);
@@ -3107,7 +3107,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         } 
         //saves the model as train
         try {
-            IOUtils.writeObjectToFile(modelTrainFeats, realTrainModel);
+            IOUtils.writeObjectToFile(modelAllFeats, realTrainModel);
         } catch (IOException ex) {
 
         }  
