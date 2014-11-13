@@ -2,9 +2,12 @@ package tools;
 
 
 import java.util.Properties;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
+import edu.emory.mathcs.backport.java.util.Arrays;
 
 
 /**
@@ -62,7 +65,12 @@ public class GeneralConfig {
     public static String corpusTrain;
     public static String corpusDev;
     public static String corpusTest;
-    public static String corpusDir;   
+    public static String corpusDir;
+    
+    //Gigaword
+    public static String corpusGigaword;
+    public static String corpusGigaDir;
+    public static String corpusGigaTrain;
     
     //Random Indexing
     public static String wvdir;
@@ -128,6 +136,32 @@ public class GeneralConfig {
            corpusDev=properties.getProperty(CNConstants.CORPUSDEVPROP);
            corpusTest=properties.getProperty(CNConstants.CORPUSTESTPROP);
            corpusDir=properties.getProperty(CNConstants.CORPUSDIRPROP);
+           
+           // Gigaword config
+           corpusGigaTrain=properties.getProperty(CNConstants.CORPUSGIGATRAINPROP);
+           
+           // look for a directory that exists
+           {
+        	   String[] corpusDirs=properties.getProperty(CNConstants.CORPUSGIGADIRPROP).split(",");
+        	   for (String s : corpusDirs) {
+        		   File f = new File(s);
+        		   if (f.exists()) {
+        			   corpusGigaDir = s;
+        			   break;
+        		   }
+        	   }
+           }
+           {
+        	   String[] corpusDirs=properties.getProperty(CNConstants.CORPUSGIGAWORDPROP).split(",");
+        	   for (String s : corpusDirs) {
+        		   File f = new File(s);
+        		   if (f.exists()) {
+        			   corpusGigaword = s;
+        			   break;
+        		   }
+        	   }
+           }
+           
            wvdir=properties.getProperty(CNConstants.WVDIR,CNConstants.DEFWVDIR);
            
            //GigaWord
