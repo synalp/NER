@@ -75,6 +75,11 @@ package tools;
     public static String WVDIR="wvdir";
     public static String DEFWVDIR="wordvects";
     
+    //GigaWord
+    public static String GWDIRPROP="gwDir";
+    public static String GWDATAPROP="gwData";
+    
+    
     //General Constants
     public static final String  CHAR_NULL = "--";
     public static final int INT_NULL=-1;
@@ -112,4 +117,6 @@ package tools;
     public static final String TREETAGGERPAR="/lib/french-utf8.par";
     public static final String TREETAGGERBIN="/lib/french-par-linux-3.2-utf8.bin";    
     
+    //StanfodNER class
+    public static String SNERJAR="lib/StanfordNER.jar";
 }

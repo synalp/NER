@@ -67,6 +67,10 @@ public class GeneralConfig {
     //Random Indexing
     public static String wvdir;
     
+    //GigaWord
+    public static String gwDir;
+    public static String gwData;
+    
 	   
 
 	/**
@@ -125,6 +129,10 @@ public class GeneralConfig {
            corpusTest=properties.getProperty(CNConstants.CORPUSTESTPROP);
            corpusDir=properties.getProperty(CNConstants.CORPUSDIRPROP);
            wvdir=properties.getProperty(CNConstants.WVDIR,CNConstants.DEFWVDIR);
+           
+           //GigaWord
+           gwDir=properties.getProperty(CNConstants.GWDIRPROP);
+           gwData=properties.getProperty(CNConstants.GWDATAPROP);
 	       
 	}
 
