@@ -454,7 +454,7 @@ public class CoNLL03Ner {
         //conll.conllEvaluation("test.all.log");
         //conll.trainStanfordCRF(CNConstants.ALL, true, false);
         // CoNLL03Ner.evaluatingCRFResults(CNConstants.ALL, "mures.out");
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
+        //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
         //conll.relationFAndR(CNConstants.PRNOUN);
         //conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
         //conll.evaluateOnlyStanfordLC();
