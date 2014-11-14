@@ -130,12 +130,25 @@ public class CoNLL03Ner {
                     String gwDir=GeneralConfig.corpusGigaDir;
                     String gwData = GeneralConfig.corpusGigaTrain;
                     if(gwDir == null || gwData == null ){
-                        ErrorsReporting.report("The GigaWord configuration should be included in the properties file: ner.properties");
+                        ErrorsReporting.report("The GigaWord configuration must be included in the properties file: ner.properties");
                     }
                     inFile = new BufferedReader(new FileReader(gwDir+System.getProperty("file.separator")+gwData)); 
                     TESTFILE=TESTFILE.replace("conll", "gw").replace("%S", entity).replace("%CLASS", "LC");
                     outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE),CNConstants.UTF8_ENCODING);
-                    break;                    
+                    break;  
+                case "tropennlp":
+                    String newtagData = GeneralConfig.corpusTrainOpenNLP;
+                    if(newtagData == null ){
+                        ErrorsReporting.report("The conll03 corpus with the OpenNLP tags must be included in the properties file: ner.properties");
+                    }                    
+                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTrain)); 
+                    
+                    if(isCRF)
+                        outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);
+                    else
+                        outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+                    break;                   
+                 
             }
             if(isCRF){
                 AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
@@ -245,7 +258,7 @@ public class CoNLL03Ner {
         }
     }
     
-    public void testingNewWeightsLC(String entity,boolean savingFiles, int trainSize){
+    public void testingNewWeightsLC(String entity,boolean savingFiles, int trainSize, int testSize){
         AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
@@ -271,7 +284,7 @@ public class CoNLL03Ner {
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
         ErrorsReporting.report("Trainin on the union of the train adn test datasets, but putting test weights to zero");
-        lcclass.allweightsKeepingOnlyTrain(entity,trainSize);
+        lcclass.allweightsKeepingOnlyTrain(entity,trainSize, testSize);
         
         columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
@@ -303,7 +316,7 @@ public class CoNLL03Ner {
         
         //lcclass.trainAllLinearClassifier(entity, false, false, false);
         //lcclass.testingClassifier(false, entity, false, false);
-        lcclass.allweightsKeepingOnlyTrain(entity,trainSize);
+        lcclass.allweightsKeepingOnlyTrain(entity,trainSize, Integer.MAX_VALUE);
         
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);
@@ -339,10 +352,10 @@ public class CoNLL03Ner {
      * @param entity
      * @param savingFiles 
      */
-    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles){
+    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize){
         
         if(savingFiles){
-            generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
+            generatingStanfordInputFiles(entity, "tropennlp", false,CNConstants.CHAR_NULL);
             generatingStanfordInputFiles(entity, "gigaw", false,CNConstants.CHAR_NULL);
             //generatingStanfordInputFiles(entity, "dev", false,CNConstants.CHAR_NULL);
         }
@@ -363,7 +376,7 @@ public class CoNLL03Ner {
         
         //lcclass.trainAllLinearClassifier(entity, false, false, false);
         //lcclass.testingClassifier(false, entity, false, false);
-        lcclass.allweightsKeepingOnlyTrain(entity,Integer.MAX_VALUE);
+        lcclass.allweightsKeepingOnlyTrain(entity,trainSize,testSize);
         
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);        
@@ -570,6 +583,20 @@ public class CoNLL03Ner {
             
         }        
     }
+    /**
+     * Experiments of weakly supervised + CRF
+     * @param trainSize
+     * @param testSize 
+     */
+    public void experimentsCRFPlusWkSup(int trainSize){
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize);
+        trainStanfordCRF(CNConstants.ALL, true, true,false);
+    }
+  
+    public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize){
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize);
+        trainStanfordCRF(CNConstants.ALL, true, true,false);
+    }    
     
     public static final String[] TASKS = {
     	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags", "weaklySupConll"
@@ -597,7 +624,8 @@ public class CoNLL03Ner {
         	Conll03Preprocess.tagGigaword(null);
         	break;
         case 2:
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true);
+                //testset = gigaword
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500);
                 break;
         case 3:
                 conll.trainStanfordCRF(CNConstants.ALL, true, true,false);
@@ -607,8 +635,8 @@ public class CoNLL03Ner {
         	Conll03Preprocess.retagConll03();
         	break;
         case 5:
-                //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500);
-                conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500);
+                //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         }
         

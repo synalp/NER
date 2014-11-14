@@ -81,6 +81,7 @@ public class AnalyzeLClassifier {
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
     public static String CURRENTSETCLASSIFIER=CNConstants.PRNOUN; //setted by default but you can change it 
     public static int TRAINSIZE=5; 
+    public static int TESTSIZE=Integer.MAX_VALUE; 
     public static Margin CURRENTPARENTMARGIN=null;
     public static float  CURRENTPARENTESTIMR0=0f;
     public static double  CURENTPARENTF10=0f;
@@ -311,7 +312,10 @@ public class AnalyzeLClassifier {
                             if(bltrain && uttCounter> TRAINSIZE){
                                 break;
                             }
-                            
+                            //test set size
+                            if(!bltrain && uttCounter > TESTSIZE){
+                                break;
+                            }
                             /*
                             if (nexinutt>0)
                                 outFile.append("NO\tES\tES\n");
@@ -319,9 +323,13 @@ public class AnalyzeLClassifier {
                                 outFile.append("NO\tES\tES\n");
                             */
                     }
-                            if(bltrain && uttCounter> TRAINSIZE){
-                                break;
-                            }                    
+                    if(bltrain && uttCounter> TRAINSIZE){
+                        break;
+                    }     
+                                                //test set size
+                    if(!bltrain && uttCounter > TESTSIZE){
+                        break;
+                    }
                 }
                 outFile.flush();
                 outFile.close();
@@ -2967,6 +2975,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
      * @param isLower 
      */
     public void allweightsKeepingOnlyTrain(String entity, int trainSize, boolean isSavingFiles, boolean isWiki, boolean isLower){
+       
         File listTrainSet = new File(AnalyzeLClassifier.LISTTRAINFILES);
         File listTestSet = new File(AnalyzeLClassifier.LISTTESTFILES);
         String allTrainAndTest="listTrainTest.xmll".replace("%S", entity);
@@ -3050,7 +3059,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         marginMAP.put(entity, marginAllFeats);        
         
     }
-      public void allweightsKeepingOnlyTrain(String entity, int trainSize){
+    public void allweightsKeepingOnlyTrain(String entity, int trainSize,int testSize){
+        AnalyzeLClassifier.TESTSIZE=testSize;
         File trainSet = new File(AnalyzeLClassifier.TRAINFILE.replace("%S", entity));
         File testSet = new File(AnalyzeLClassifier.TESTFILE.replace("%S", entity));
         String allTrainAndTest=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";

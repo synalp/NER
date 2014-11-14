@@ -66,6 +66,9 @@ public class GeneralConfig {
     public static String corpusDev;
     public static String corpusTest;
     public static String corpusDir;
+    public static String corpusTrainOpenNLP;
+    public static String corpusDevOpenNLP;
+    public static String corpusTestOpenNLP;
     
     //Gigaword
     public static String corpusGigaword;
@@ -136,6 +139,9 @@ public class GeneralConfig {
            corpusDev=properties.getProperty(CNConstants.CORPUSDEVPROP);
            corpusTest=properties.getProperty(CNConstants.CORPUSTESTPROP);
            corpusDir=properties.getProperty(CNConstants.CORPUSDIRPROP);
+           corpusTrainOpenNLP=properties.getProperty(CNConstants.CORPUSTRAINOPENNLPPROP);
+           corpusDevOpenNLP=properties.getProperty(CNConstants.CORPUSDEVOPENNLPPROP);
+           corpusTestOpenNLP=properties.getProperty(CNConstants.CORPUSTESTOPENNLPPROP);
            
            // Gigaword config
            corpusGigaTrain=properties.getProperty(CNConstants.CORPUSGIGATRAINPROP);
