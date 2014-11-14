@@ -320,15 +320,20 @@ public class Margin {
     }
     
     public List<Double> shuffleWeights(){
-        List<Double> shuffledW0 = new ArrayList<>(getOrWeights(0));
         
-        Collections.shuffle(shuffledW0);
-        shuffleWeights.add(shuffledW0);
+        List<Integer> listOfIndexes = new ArrayList<>();
+        for(int i=0; i<getOrWeights(0).size();i++)
+            listOfIndexes.add(i);
+        
+        Collections.shuffle(listOfIndexes);       
+        List<Double> shuffledW0 = new ArrayList<>();
         //set the indexes
-        for(int i=0;i<shuffledW0.size();i++){
-            shuffleAndOrFeatIdxMap.put(i,getOrWeights(0).indexOf(shuffledW0.get(i)));
-            orAndShuffleFeatIdxMap.put(getOrWeights(0).indexOf(shuffledW0.get(i)), i);
-        }  
+        for(int i=0;i<listOfIndexes.size();i++){
+            shuffledW0.add(getOrWeights(0).get(listOfIndexes.get(i)));
+            shuffleAndOrFeatIdxMap.put(i,listOfIndexes.get(i));
+            orAndShuffleFeatIdxMap.put(listOfIndexes.get(i), i);
+        } 
+        shuffleWeights.add(shuffledW0);
         for(int col=1;col<getNlabs();col++){
             List<Double> shuffleWeightsDim= new ArrayList<>();
             for(int sIdx=0;sIdx<shuffledW0.size();sIdx++){
