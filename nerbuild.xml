@@ -107,6 +107,16 @@
        </java>
     </target>
 
+    <target name="testauto" depends="compile" description="run" >
+	<java classname="test.AutoTests"
+	   fork="true"
+           failonerror="true"
+           maxmemory="7g">
+           <arg value="anyarg"/>
+	   <classpath refid="run.classpath" />
+       </java>
+    </target>
+
     <target name="clean" description="clean up" >
 	<!-- Delete the ${build} and ${dist} directory trees -->
         <delete dir="${build}"/>

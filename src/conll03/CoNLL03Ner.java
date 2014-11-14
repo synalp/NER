@@ -26,6 +26,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import linearclassifier.AnalyzeLClassifier;
@@ -89,6 +90,11 @@ public class CoNLL03Ner {
     * @param wSupModelFile 
     */ 
    public void generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, String wSupModelFile){
+	   generatingStanfordInputFiles(entity,dataset,isCRF,(isCRF||!dataset.equals("train"))?0:AnalyzeLClassifier.TRAINSIZE,wSupModelFile);
+   }
+   // I need a bit more flexibility and control over the size of the datasets that are produced
+   // so I'ved added this method but still keeping the default behavior the same with the previous method
+   public void generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, int limitsize, String wSupModelFile){
         BufferedReader inFile = null;
         OutputStreamWriter outFile =null;
         HashMap<String,String> wordclasses = new HashMap<>();
@@ -150,7 +156,6 @@ public class CoNLL03Ner {
             }
                 
             int uttCount=CNConstants.INT_NULL;
-      
             for(;;){
                String line = inFile.readLine();
                
@@ -160,8 +165,7 @@ public class CoNLL03Ner {
                    continue;
                //utterance breaking
                if(line.equals("")){
-                   if(dataset.equals("train") && (!isCRF) &&  uttCount>AnalyzeLClassifier.TRAINSIZE)
-                       break;                   
+                   if(limitsize>0 &&  uttCount>limitsize) break;                   
                    uttCount++;
                    continue;
                }    
@@ -416,7 +420,7 @@ public class CoNLL03Ner {
      * @param wSupFeat, true if it uses the weakly supervised model as feature "NOT WORKING YET"
      * @param useExistingModel , true if it uses an existing binary model file
      */
-    public void trainStanfordCRF(String entity, boolean savingFiles, boolean wSupFeat, boolean useExistingModel){
+    public float trainStanfordCRF(String entity, boolean savingFiles, boolean wSupFeat, boolean useExistingModel){
         if(savingFiles){
             String wsupModel=CNConstants.CHAR_NULL;
             
@@ -441,7 +445,7 @@ public class CoNLL03Ner {
         crfclass.testingClassifier(entity, CNConstants.SNERJAR);
         AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
         evaluatingCRFResults(entity);
-        conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
+        return conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
     }
     
     public static void evaluatingCRFResults(String entity){
@@ -455,11 +459,9 @@ public class CoNLL03Ner {
         }
         
     }
-    /**
-     * Problems when executing command, probably because of \t
-     * @param results 
-     */
-    public void conllEvaluation(String results){
+  
+    public float conllEvaluation(String results){
+    	float f1=0;
         try {
             //command
             String cmd="./scripts/evalconll.sh "+results;
@@ -472,12 +474,20 @@ public class CoNLL03Ner {
             BufferedReader input = new BufferedReader (new InputStreamReader(stdout)); 
             while(true){
                 String line=input.readLine();
-                if(line == null)
-                    break;
-                
-                
+                if(line == null) break;
                 System.out.println(line);
-                 
+                String s=line.trim();
+                if (s.startsWith("accuracy")) {
+                	StringTokenizer st = new StringTokenizer(s);
+                	st.nextToken();
+                	st.nextToken();
+                	st.nextToken();
+                	st.nextToken();
+                	st.nextToken();
+                	st.nextToken();
+                	st.nextToken();
+                	f1=Float.parseFloat(st.nextToken());
+                }
             }
         
             InputStream stderr = process.getErrorStream();
@@ -496,7 +506,7 @@ public class CoNLL03Ner {
         }
         
        System.out.println("ok");
-       
+       return f1;
     }     
      public void onlyEvaluatingCRFResults(String entity){
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();

@@ -80,7 +80,7 @@ public class AnalyzeLClassifier {
     public static String ONLYONEMULTICLASS=CNConstants.ALL;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
     public static String CURRENTSETCLASSIFIER=CNConstants.PRNOUN; //setted by default but you can change it 
-    public static int TRAINSIZE=20;//Integer.MAX_VALUE; 
+    public static int TRAINSIZE=5; 
     public static Margin CURRENTPARENTMARGIN=null;
     public static float  CURRENTPARENTESTIMR0=0f;
     public static double  CURENTPARENTF10=0f;
