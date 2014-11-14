@@ -40,7 +40,7 @@ public class TestingConllExperiments {
                 break;
             case "gw":
                 AnalyzeLClassifier.TRAINSIZE=Integer.parseInt(args[1]);
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN, true, testSize);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN, true, testSize,1000);
                 break;                
         }
     }

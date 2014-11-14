@@ -348,6 +348,8 @@ public class Margin {
         this.shuffleWeights=margin.shuffleWeights;
         this.shuffleAndOrFeatIdxMap.putAll(margin.shuffleAndOrFeatIdxMap);
         this.orAndShuffleFeatIdxMap.putAll(margin.orAndShuffleFeatIdxMap); 
+        this.trainFeatIndx= margin.trainFeatIndx;
+        this.testFeatIndx=margin.testFeatIndx;
     }
     
     public List<Double> getShuffleWeights(){

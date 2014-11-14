@@ -1560,7 +1560,7 @@ public class AnalyzeLClassifier {
     * @param sclass  Type of Classifier (pn or [pers,org,loc,prod])
     * @param closedForm used the closed form or trapezoid integration
     */ 
-  public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters) {
+  public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters, boolean isModelInMemory) {
        CURRENTSETCLASSIFIER=sclass;
  
         boolean isMC=false;
@@ -1571,9 +1571,13 @@ public class AnalyzeLClassifier {
         int numberOfThreads=GeneralConfig.nthreads;
 
         //train the classifier with a small set of train files
-        trainOneNERClassifier(sclass,false);  
+        
+        if(!isModelInMemory || !modelMap.containsKey(sclass) || !marginMAP.containsKey(sclass) )
+            trainOneNERClassifier(sclass,false);  
+
+        
         LinearClassifier model = modelMap.get(sclass);
-        Margin margin = marginMAP.get(sclass);
+        Margin margin = marginMAP.get(sclass);        
         CURRENTPARENTMARGIN=margin;
         
         //scan the test instances for train the gmm

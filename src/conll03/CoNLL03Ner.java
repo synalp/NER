@@ -288,7 +288,7 @@ public class CoNLL03Ner {
         
     }
     
-    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize){
+    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int numIters){
         if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
@@ -340,7 +340,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,10000);
+        lcclass.wkSupParallelStocCoordD(entity, true,numIters,true);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     
@@ -404,7 +404,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,niters);
+        lcclass.wkSupParallelStocCoordD(entity, true,niters,true);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
    
@@ -589,7 +589,7 @@ public class CoNLL03Ner {
      * @param testSize 
      */
     public void experimentsCRFPlusWkSup(int trainSize){
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize);
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,1000);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }
   
@@ -635,7 +635,7 @@ public class CoNLL03Ner {
         	Conll03Preprocess.retagConll03();
         	break;
         case 5:
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,1000);
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
