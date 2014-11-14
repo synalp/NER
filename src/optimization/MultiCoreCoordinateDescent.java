@@ -260,7 +260,7 @@ public class MultiCoreCoordinateDescent  {
                     float delta = 0.5f;
 
                     double deltaW=w0 + w0*delta;
-                    System.out.println("****** deltaW="+deltaW);
+                    System.out.println("****** deltaWNC="+deltaW);
                     weightsForFeat.set(featIdx, deltaW);
                     margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx));
                     float estimr = (isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);

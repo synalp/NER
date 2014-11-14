@@ -1,15 +1,9 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package conll03;
 
 import CRFClassifier.AnalyzeCRFClassifier;
-import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.ie.crf.CRFClassifier;
-import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.Datum;
 import gigaword.Conll03Preprocess;
 
@@ -27,8 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import linearclassifier.AnalyzeLClassifier;
 import tools.CNConstants;
 import tools.GeneralConfig;
@@ -169,6 +161,7 @@ public class CoNLL03Ner {
                     String[] cols=line.split("\\s");
                     wordclasses.put(cols[0], cols[1]);
                 }
+                distSemFile.close();
             }
                 
             int uttCount=CNConstants.INT_NULL;
@@ -296,7 +289,7 @@ public class CoNLL03Ner {
     }
     
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize){
-        AnalyzeLClassifier.TRAINSIZE=trainSize;
+        if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
             generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
@@ -350,12 +343,15 @@ public class CoNLL03Ner {
         lcclass.wkSupParallelStocCoordD(entity, true,10000);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
+    
     /**
      * Uses GigaWord as testdata (unlabeled data)
      * @param entity
      * @param savingFiles 
      */
-    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize){
+
+    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize, int niters){
+        
         AnalyzeLClassifier.TRAINSIZE=trainSize;
         AnalyzeLClassifier.TESTSIZE=testSize;
         if(savingFiles){
@@ -408,7 +404,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,10000);
+        lcclass.wkSupParallelStocCoordD(entity, true,niters);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
    
@@ -598,7 +594,7 @@ public class CoNLL03Ner {
     }
   
     public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize){
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize);
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }    
     
@@ -629,7 +625,7 @@ public class CoNLL03Ner {
         	break;
         case 2:
                 //testset = gigaword
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500,1000);
                 break;
         case 3:
                 conll.trainStanfordCRF(CNConstants.ALL, true, true,false);

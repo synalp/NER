@@ -417,7 +417,7 @@ public class GMMD1Diag extends GMMD1 {
         double sqerr = Double.NaN;
         int numInstances = margin.getNumberOfInstances();
         if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-        System.out.println("train1gauss loglike "+loglike+" nex "+numInstances+ "sqerr "+sqerr);
+        System.out.println("train1gaussD1 loglike "+loglike+" nex "+numInstances+ "sqerr "+sqerr);
         split();
         for (int iter=0;iter<niters;iter++) {
             trainViterbi(margin);

@@ -584,9 +584,9 @@ public class GMMDiag extends GMM {
         train1gauss(margin);
         double loglike = getLoglike(margin);
         assert !Double.isNaN(loglike);
-        double sqerr = Double.NaN;
+        //double sqerr = Double.NaN;
         //if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-        System.out.println("train1gauss loglike "+loglike+" nex "+margin.getNumberOfInstances()+ "sqerr "+sqerr);
+        System.out.println("train1gauss loglike "+loglike+" nex "+margin.getNumberOfInstances());
         split();
         double previousLogLike=loglike;
         for (int iter=0;iter<niters;iter++) {
