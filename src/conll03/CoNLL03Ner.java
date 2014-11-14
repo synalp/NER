@@ -599,7 +599,7 @@ public class CoNLL03Ner {
     }    
     
     public static final String[] TASKS = {
-    	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags", "weaklySupConll"
+    	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags", "weaklySupConll","expGWord"
     };
     
     public static void main(String[] args){
@@ -638,6 +638,8 @@ public class CoNLL03Ner {
                 conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500);
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
+        case 6:
+               conll.experimentsCRFPlusWkSupGWord(500, 50000);
         }
         
         // PLEASE DONT UNCOMMENT ANY LINE BELOW! rather add a task and arg on the command-line  
