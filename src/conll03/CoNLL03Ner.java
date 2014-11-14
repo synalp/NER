@@ -268,9 +268,9 @@ public class CoNLL03Ner {
         //lcclass.trainAllLinearClassifier(entity, false, false, false);
         //lcclass.testingClassifier(false, entity, false, false);
         lcclass.allweightsKeepingOnlyTrain(entity,trainSize);
-        AnalyzeLClassifier.TRAINFILE=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
+        
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
-        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TRAINFILE);
+        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);
         HashMap<String,Double> priorsMap = new HashMap<>();
         
         if(!entity.equals(CNConstants.ALL)){
@@ -330,7 +330,7 @@ public class CoNLL03Ner {
         lcclass.allweightsKeepingOnlyTrain(entity,Integer.MAX_VALUE);
         
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
-        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TRAINFILE);        
+        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);        
         HashMap<String,Double> priorsMap = new HashMap<>();
         
         if(!entity.equals(CNConstants.ALL)){
@@ -565,7 +565,7 @@ public class CoNLL03Ner {
         	Conll03Preprocess.retagConll03();
         	break;
         case 5:
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,20);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
                 break;
         }
         

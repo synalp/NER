@@ -2990,6 +2990,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         AnalyzeLClassifier.LISTTRAINFILES=allTrainAndTest;
         AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
         AnalyzeLClassifier.TRAINFILE=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
+        AnalyzeLClassifier.exitAfterTrainingFeaturization=true;
         //delete the files if they exist
         File file = new File(AnalyzeLClassifier.MODELFILE);
         file.delete();
@@ -3003,6 +3004,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         AnalyzeLClassifier.LISTTRAINFILES=realTrainList;
         AnalyzeLClassifier.MODELFILE=realTrainModel;
         AnalyzeLClassifier.TRAINFILE=tmpRealTrain;
+        AnalyzeLClassifier.exitAfterTrainingFeaturization=false;
         trainAllLinearClassifier(entity,isSavingFiles,isWiki,isLower);
         LinearClassifier modelTrainFeats = modelMap.get(entity);
                 
@@ -3033,6 +3035,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
                         
         }         
         //saves the model as train
+        AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
+        modelAllFeats.setWeights(weightsAllFeats);
         try {
             IOUtils.writeObjectToFile(modelAllFeats, realTrainModel);
         } catch (IOException ex) {
@@ -3112,6 +3116,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
                         
         } 
         //saves the model as train
+        AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
         modelAllFeats.setWeights(weightsAllFeats);
 
         try {
@@ -3125,6 +3130,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         marginAllFeats.setTestFeatureIndexes(testIdx);
         modelMap.put(entity, modelAllFeats);
         marginMAP.put(entity, marginAllFeats);
+       
     }  
     public void evalutatingF1AndR(){
         PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
