@@ -9,7 +9,7 @@ public class AutoTests {
 //		throw new Exception("Just an example of test that fails");
 //		System.out.println("example of test that succeeds");
 		
-//		testCRFquick();
+		testCRFquick();
 		testGigaquick();
 	}
 	
@@ -28,6 +28,6 @@ public class AutoTests {
         GeneralConfig.corpusGigaTrain="giga1000.conll03";
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false);
+        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,-1,-1,10);
 	}
 }

@@ -3060,7 +3060,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         
     }
     public void allweightsKeepingOnlyTrain(String entity, int trainSize,int testSize){
-        AnalyzeLClassifier.TESTSIZE=testSize;
+        if (testSize>=0) AnalyzeLClassifier.TESTSIZE=testSize;
         File trainSet = new File(AnalyzeLClassifier.TRAINFILE.replace("%S", entity));
         File testSet = new File(AnalyzeLClassifier.TESTFILE.replace("%S", entity));
         String allTrainAndTest=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
@@ -3091,7 +3091,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         Margin           marginAllFeats = marginMAP.get(entity);
         //train only train data
         AnalyzeLClassifier.exitAfterTrainingFeaturization=false;
-        AnalyzeLClassifier.TRAINSIZE=trainSize;
+        if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
         AnalyzeLClassifier.MODELFILE=realTrainModel;
         AnalyzeLClassifier.TRAINFILE=tmpRealTrain;
         file = new File(AnalyzeLClassifier.MODELFILE);

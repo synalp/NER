@@ -286,7 +286,7 @@ public class CoNLL03Ner {
     }
     
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize){
-        AnalyzeLClassifier.TRAINSIZE=trainSize;
+        if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
             generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
@@ -340,12 +340,16 @@ public class CoNLL03Ner {
         lcclass.wkSupParallelStocCoordD(entity, true,10000);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
+    
     /**
      * Uses GigaWord as testdata (unlabeled data)
      * @param entity
      * @param savingFiles 
      */
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize){
+    	runningWeaklySupStanfordLC(entity,savingFiles,trainSize,testSize,10000);
+    }
+    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize, int niters){
         
         if(savingFiles){
             generatingStanfordInputFiles(entity, "tropennlp", false,CNConstants.CHAR_NULL);
@@ -397,7 +401,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,10000);
+        lcclass.wkSupParallelStocCoordD(entity, true,niters);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
    
