@@ -112,5 +112,15 @@
         <delete dir="${build}"/>
         <delete dir="${dist}"/>
     </target>
+    <property name="testweights.gold" value="w"/>
+    <property name="testweights.arg1" value="500"/>
+    <target name="testWeights" description="evaluate the combination of weights of train and test features">
+            <java classname="test.TestingConllExperiments" failonerror="true" fork="yes">
+                    <classpath refid="ner.classpath"/>
+                    <arg value="${testweights.gold}"/>
+                    <arg value="${testweights.arg1}"/>
+                    
+            </java>            
+    </target>
 </project>
 

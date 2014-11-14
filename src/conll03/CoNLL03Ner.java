@@ -241,7 +241,39 @@ public class CoNLL03Ner {
         }
     }
     
-   
+    public void testingNewWeightsLC(String entity,boolean savingFiles, int trainSize){
+        AnalyzeLClassifier.TRAINSIZE=trainSize;
+        if(savingFiles){
+            generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
+            generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
+            generatingStanfordInputFiles(entity, "dev", false,CNConstants.CHAR_NULL);
+        }
+        AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
+        //if exist recreates the binary file
+        File mfile = new File(AnalyzeLClassifier.MODELFILE);
+        File mfile2 = new File(AnalyzeLClassifier.MODELFILE+"_COPY");
+        if(mfile.exists()){
+            try {
+                Files.copy(mfile.toPath(), mfile2.toPath(),StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
+        ErrorsReporting.report("Training only on trainset");
+        lcclass.trainAllLinearClassifier(entity, false, false, false);
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
+        ErrorsReporting.report("Trainin on the union of the train adn test datasets, but putting test weights to zero");
+        lcclass.allweightsKeepingOnlyTrain(entity,trainSize);
+        
+        columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
+        
+        
+    }
     
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize){
         AnalyzeLClassifier.TRAINSIZE=trainSize;
@@ -565,7 +597,8 @@ public class CoNLL03Ner {
         	Conll03Preprocess.retagConll03();
         	break;
         case 5:
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE);
+                //conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500);
+                conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         }
         
