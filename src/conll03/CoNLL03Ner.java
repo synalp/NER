@@ -90,7 +90,10 @@ public class CoNLL03Ner {
     * @param wSupModelFile 
     */ 
    public void generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, String wSupModelFile){
-	   generatingStanfordInputFiles(entity,dataset,isCRF,(isCRF||!dataset.equals("train"))?0:AnalyzeLClassifier.TRAINSIZE,wSupModelFile);
+       if(dataset.equals("gigaw"))
+          generatingStanfordInputFiles(entity,dataset,isCRF,(isCRF)?0:AnalyzeLClassifier.TESTSIZE,wSupModelFile); 
+       else    
+          generatingStanfordInputFiles(entity,dataset,isCRF,(isCRF|| (!dataset.equals("train")&&!dataset.equals("tropennlp")))?0:AnalyzeLClassifier.TRAINSIZE,wSupModelFile);
    }
    // I need a bit more flexibility and control over the size of the datasets that are produced
    // so I'ved added this method but still keeping the default behavior the same with the previous method
@@ -353,7 +356,8 @@ public class CoNLL03Ner {
      * @param savingFiles 
      */
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize){
-        
+        AnalyzeLClassifier.TRAINSIZE=trainSize;
+        AnalyzeLClassifier.TESTSIZE=testSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "tropennlp", false,CNConstants.CHAR_NULL);
             generatingStanfordInputFiles(entity, "gigaw", false,CNConstants.CHAR_NULL);
@@ -639,7 +643,7 @@ public class CoNLL03Ner {
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
-               conll.experimentsCRFPlusWkSupGWord(500, 50000);
+               conll.experimentsCRFPlusWkSupGWord(50, 500);
         }
         
         // PLEASE DONT UNCOMMENT ANY LINE BELOW! rather add a task and arg on the command-line  
