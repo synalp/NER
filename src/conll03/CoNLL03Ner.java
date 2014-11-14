@@ -153,6 +153,7 @@ public class CoNLL03Ner {
                     String[] cols=line.split("\\s");
                     wordclasses.put(cols[0], cols[1]);
                 }
+                distSemFile.close();
             }
                 
             int uttCount=CNConstants.INT_NULL;
