@@ -28,6 +28,6 @@ public class AutoTests {
         GeneralConfig.corpusGigaTrain="giga1000.conll03";
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,-1,-1,10);
+        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,10);
 	}
 }
