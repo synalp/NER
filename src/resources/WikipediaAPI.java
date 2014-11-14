@@ -451,9 +451,9 @@ public class WikipediaAPI implements WikiConstants {
     }
     
     public static void main(String[] args){
-        /*
+        ///*
         WikipediaAPI.queryingByCategory("Paris");
-        WikipediaAPI.queryingByCategory("François Hollande");*/
+        WikipediaAPI.queryingByCategory("François Hollande");//*/
         //WikipediaAPI.queryingByCategory("Paris");
         //System.out.println(WikipediaAPI.queryingByPage("Paris"));
         ///*
