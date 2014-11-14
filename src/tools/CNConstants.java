@@ -70,6 +70,9 @@ package tools;
     public static String CORPUSDEVPROP="corpusDev";
     public static String CORPUSTESTPROP="corpusTest";
     public static String CORPUSDIRPROP="corpusDir";   
+    public static String CORPUSTRAINOPENNLPPROP="corpusTrainOpenNLP";
+    public static String CORPUSDEVOPENNLPPROP="corpusDevOpenNLP";
+    public static String CORPUSTESTOPENNLPPROP="corpusTestOpenNLP";
     
     //Gigaword config
     public static String CORPUSGIGATRAINPROP="corpusGigaTrain";
