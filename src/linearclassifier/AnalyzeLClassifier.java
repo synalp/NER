@@ -162,7 +162,11 @@ public class AnalyzeLClassifier {
                     prop.remove("6.useString");
             }
             if(exitAfterTrainingFeaturization)
-                prop.put("exitAfterTrainingFeaturization","true");
+                prop.setProperty("tolerance","10");
+            else{
+                if(prop.getProperty("tolerance")!=null)
+                prop.remove("tolerance");
+            }    
             prop.store(new FileOutputStream(PROPERTIES_FILE),""); // FileOutputStream 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -3063,7 +3067,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", entity);
         String realTrainModel=MODELFILE.replace("%S", entity);
         AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
-        AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);;
+        AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
         AnalyzeLClassifier.exitAfterTrainingFeaturization=true;
         //delete the files if they exist
         File file = new File(AnalyzeLClassifier.MODELFILE);
@@ -3076,6 +3080,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         AnalyzeLClassifier.TRAINSIZE=trainSize;
         AnalyzeLClassifier.MODELFILE=realTrainModel;
         AnalyzeLClassifier.TRAINFILE=tmpRealTrain;
+        file = new File(AnalyzeLClassifier.MODELFILE);
+        file.delete();        
         trainAllLinearClassifier(entity,false,false,false);
         LinearClassifier modelTrainFeats = modelMap.get(entity);
                 
@@ -3106,10 +3112,12 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
                         
         } 
         //saves the model as train
+        modelAllFeats.setWeights(weightsAllFeats);
+
         try {
             IOUtils.writeObjectToFile(modelAllFeats, realTrainModel);
         } catch (IOException ex) {
-
+            ex.printStackTrace();
         }  
    
         

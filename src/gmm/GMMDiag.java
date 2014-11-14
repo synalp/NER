@@ -427,7 +427,7 @@ public class GMMDiag extends GMM {
             logWeights[y]=logMath.linearToLog(nk[y]/nex[y]);
            
         }
-         System.out.println("priors: "+ Arrays.toString(logWeights));
+         //System.out.println("priors: "+ Arrays.toString(logWeights));
         //System.out.println("trainviterbi");
         //printMean();
         //printVariace();   

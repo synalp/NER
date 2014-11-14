@@ -266,8 +266,11 @@ public class CoNLL03Ner {
         AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
         
         //lcclass.trainAllLinearClassifier(entity, false, false, false);
+        //lcclass.testingClassifier(false, entity, false, false);
         lcclass.allweightsKeepingOnlyTrain(entity,trainSize);
-        lcclass.testingClassifier(false, entity, false, false);
+        AnalyzeLClassifier.TRAINFILE=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TRAINFILE);
         HashMap<String,Double> priorsMap = new HashMap<>();
         
         if(!entity.equals(CNConstants.ALL)){
@@ -292,7 +295,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        //lcclass.wkSupParallelStocCoordD(entity, true,10000);
+        lcclass.wkSupParallelStocCoordD(entity, true,10000);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     /**
@@ -323,8 +326,11 @@ public class CoNLL03Ner {
         AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
         
         //lcclass.trainAllLinearClassifier(entity, false, false, false);
+        //lcclass.testingClassifier(false, entity, false, false);
         lcclass.allweightsKeepingOnlyTrain(entity,Integer.MAX_VALUE);
-        lcclass.testingClassifier(false, entity, false, false);
+        
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TRAINFILE);        
         HashMap<String,Double> priorsMap = new HashMap<>();
         
         if(!entity.equals(CNConstants.ALL)){
@@ -559,7 +565,7 @@ public class CoNLL03Ner {
         	Conll03Preprocess.retagConll03();
         	break;
         case 5:
-                conll.runningWeaklySupStanfordLC(CNConstants.ALL,true,20);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,20);
                 break;
         }
         
