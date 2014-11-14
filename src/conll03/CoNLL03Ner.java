@@ -1,15 +1,9 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package conll03;
 
 import CRFClassifier.AnalyzeCRFClassifier;
-import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.ie.crf.CRFClassifier;
-import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.Datum;
 import gigaword.Conll03Preprocess;
 
@@ -27,8 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import linearclassifier.AnalyzeLClassifier;
 import tools.CNConstants;
 import tools.GeneralConfig;

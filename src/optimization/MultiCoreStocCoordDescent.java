@@ -286,22 +286,28 @@ public class MultiCoreStocCoordDescent  {
             if (emptyfeats.contains("["+featIdx+","+0+"]")) 
                 continue;
             
+            // 50% of w0 ? That's a lot !!!
             float delta = 0.5f;
 
             double deltaW=w0 + w0*delta;
-            System.out.println("****** deltaW="+deltaW);
+            // when w0=0, we still want to be able to change it...
+            if (w0==0) deltaW=0.05f;
+            
+            System.out.println("****** deltaWMC="+deltaW);
             weightsForFeat.set(featIdx, deltaW);
             margin.updatingStocGradientStep(0,featIdx, weightsForFeat.get(featIdx));
             float estimr = (isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
 
-            gradw[0] = (estimr-estimr0)/(w0*delta);
+            gradw[0] = (estimr-estimr0)/(deltaW-w0);
             System.out.println("grad "+gradw[0]);
             System.out.println("****** w0="+w0);
             weightsForFeat.set(featIdx, w0); 
             margin.updatingStocGradientStep(0,featIdx, weightsForFeat.get(featIdx));
-            if (gradw[0]==0) 
-                    emptyfeats.add("["+featIdx+","+0+"]");
-            else{  
+            if (gradw[0]==0) {
+            	// why preventing future modifications of these weights ? They may induce risk change at the next iterations !
+            	// for instance, their impact may be quasi-nul in some regions, but larger elsewhere...
+                    // emptyfeats.add("["+featIdx+","+0+"]");
+            }else{  
                 weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- gradw[0] * eps);                    
                 margin.updatingStocGradientStep(0,featIdx, weightsForFeat.get(featIdx));
                 System.out.println("Iteration["+iter+"] Updated feature "+ margin.getOrIndexFromShuffled(featIdx));
