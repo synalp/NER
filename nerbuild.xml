@@ -111,8 +111,8 @@
 	<java classname="test.AutoTests"
 	   fork="true"
            failonerror="true"
-           maxmemory="7g">
-           <arg value="anyarg"/>
+           maxmemory="1g">
+           <arg value="500m"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>

@@ -5,16 +5,23 @@ import tools.GeneralConfig;
 import conll03.CoNLL03Ner;
 
 public class AutoTests {
+	CoNLL03Ner conll;
+	
 	public static void main(String args[]) throws Exception {
 //		throw new Exception("Just an example of test that fails");
 //		System.out.println("example of test that succeeds");
+		AutoTests m = new AutoTests();
+		m.conll = new CoNLL03Ner();
+		if (args.length>0) {
+			String xmstanford = args[0];
+			GeneralConfig.forceXmxStanford=xmstanford;
+		}
 		
-		testCRFquick();
-		testGigaquick();
+		m.testCRFquick();
+		m.testGigaquick();
 	}
 	
-	static void testCRFquick() throws Exception {
-        CoNLL03Ner conll = new CoNLL03Ner();
+	void testCRFquick() throws Exception {
         conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true,20,CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.ALL, "dev", true,CNConstants.CHAR_NULL);
@@ -22,8 +29,7 @@ public class AutoTests {
     	if (f1!=43.38f) throw new Exception("CRF F1 with 20 training utts is "+f1);
 	}
 	
-	static void testGigaquick() throws Exception {
-        CoNLL03Ner conll = new CoNLL03Ner();
+	void testGigaquick() throws Exception {
         GeneralConfig.corpusGigaDir="res/";
         GeneralConfig.corpusGigaTrain="giga1000.conll03";
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
