@@ -1594,8 +1594,8 @@ public class AnalyzeLClassifier {
             closedForm=false;
             isMC=true;            
         }        
-        double[] scores= new double[featsperInst.size()];
-        Arrays.fill(scores, 0.0);
+//        double[] scores= new double[featsperInst.size()];
+//        Arrays.fill(scores, 0.0);
         //Histoplot.showit(scorest,featsperInst.size());
         
         System.out.println("Working with classifier "+sclass);
