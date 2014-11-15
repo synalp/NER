@@ -52,6 +52,7 @@ import optimization.MultiCoreCoordinateDescent;
 import optimization.MultiCoreFSCoordinateDesc;
 import optimization.MultiCoreStocCoordDescent;
 import resources.WikipediaAPI;
+import test.AutoTests;
 import tools.CNConstants;
 import tools.GeneralConfig;
 import tools.Histoplot;
@@ -1600,6 +1601,7 @@ public class AnalyzeLClassifier {
         System.out.println("Working with classifier "+sclass);
         
         CURRENTPARENTESTIMR0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
+        AutoTests.initR = CURRENTPARENTESTIMR0;
 
         System.out.println("init R "+CURRENTPARENTESTIMR0);
         System.out.println("Number of features" + margin.getNfeats());
@@ -1659,6 +1661,7 @@ public class AnalyzeLClassifier {
         //Final weights
         margin.setWeights(allfeats);
         float estimrFinal=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
+        AutoTests.finalR=estimrFinal;
         System.out.println("Final R : "+ estimrFinal);
         double f1=testingClassifier(model,TESTFILE.replace("%S", sclass));
         File mfile = new File(MODELFILE.replace("%S", sclass));

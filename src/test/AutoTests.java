@@ -6,6 +6,7 @@ import conll03.CoNLL03Ner;
 
 public class AutoTests {
 	CoNLL03Ner conll;
+	public static float initR=0, finalR=0;
 	
 	public static void main(String args[]) throws Exception {
 //		throw new Exception("Just an example of test that fails");
@@ -35,5 +36,6 @@ public class AutoTests {
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
         conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,10);
+        if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
 	}
 }
