@@ -148,7 +148,7 @@ public class CoNLL03Ner {
             if(isCRF){
                 AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
                 if(!wSupModelFile.equals(CNConstants.CHAR_NULL))
-                    crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,cluster=3,answer=4 ");     
+                    crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,tag=3,answer=4 ");     
                 else
                     crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");
                 
@@ -258,7 +258,7 @@ public class CoNLL03Ner {
                             Datum<String, String> datum = columnDataClass.makeDatumFromLine(line+"\t"+context+"\n", 0);
                             String outClass = (String) wsupModel.classOf(datum);
                             String label = line.substring(0,line.indexOf("\t"));
-                            String newLine = line.substring(line.indexOf("\t")+1) +"\t"+outClass+"\t"+label+"\n";
+                            String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
                             outFile.append(newLine);
 
                        }                      
