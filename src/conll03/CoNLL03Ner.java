@@ -148,7 +148,7 @@ public class CoNLL03Ner {
             if(isCRF){
                 AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
                 if(!wSupModelFile.equals(CNConstants.CHAR_NULL))
-                    crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,cluster=3,answer=4 ");     
+                    crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,tag=3,answer=4 ");     
                 else
                     crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");
                 
@@ -199,13 +199,20 @@ public class CoNLL03Ner {
                    label=CNConstants.OUTCLASS;
                if(isCRF){
                    if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
-                        AnalyzeLClassifier.MODELFILE=wSupModelFile;
-                        
-                        LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
-                        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
-                        Datum<String, String> datum = columnDataClass.makeDatumFromLine(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\n", 0);
-                        String outClass = (String) wsupModel.classOf(datum);
-                        outFile.append(cols[0]+"\t"+cols[1]+"\t"+chunk+"\t"+outClass+"\t"+label+"\n");
+                       String wordClass="";
+                       if(wordclasses.containsKey(cols[0]))
+                         wordClass=wordclasses.get(cols[0])+"|DISTSIM";
+                       else
+                         wordClass= CNConstants.CHAR_NULL+"|DISTSIM";  
+                       
+                       lines.add(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+chunk+"\t"+wordClass);
+                       wordInLine.add(cols[0]);
+                        //AnalyzeLClassifier.MODELFILE=wSupModelFile;
+                        //LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
+                        //ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+                        //Datum<String, String> datum = columnDataClass.makeDatumFromLine(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\n", 0);
+                        //String outClass = (String) wsupModel.classOf(datum);
+                        //outFile.append(cols[0]+"\t"+cols[1]+"\t"+chunk+"\t"+outClass+"\t"+label+"\n");
                         
                    }else
                         outFile.append(cols[0]+"\t"+cols[1]+"\t"+chunk+"\t"+label+"\n");
@@ -225,7 +232,7 @@ public class CoNLL03Ner {
 
            }
             
-           if(!isCRF){
+           if(!isCRF || (isCRF && !wSupModelFile.equals(CNConstants.CHAR_NULL) ) ){
                
                for(int i=0; i<lines.size();i++){
                    String context="";
@@ -240,7 +247,23 @@ public class CoNLL03Ner {
                    else if(i+1 < lines.size())
                        context+=wordInLine.get(i+1);
                    
-                  outFile.append(lines.get(i)+"\t"+context+"\n"); 
+                  if(!isCRF) 
+                    outFile.append(lines.get(i)+"\t"+context+"\n"); 
+                  else{
+                       if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
+                            AnalyzeLClassifier.MODELFILE=wSupModelFile;
+                            LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
+                            ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+                            String line =lines.get(i);
+                            Datum<String, String> datum = columnDataClass.makeDatumFromLine(line+"\t"+context+"\n", 0);
+                            String outClass = (String) wsupModel.classOf(datum);
+                            String label = line.substring(0,line.indexOf("\t"));
+                            String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
+                            outFile.append(newLine);
+
+                       }                      
+                  }
+                  
                }
                   
            }
@@ -439,7 +462,7 @@ public class CoNLL03Ner {
             String wsupModel=CNConstants.CHAR_NULL;
             
             if(wSupFeat)
-                wsupModel=WKSUPMODEL.replace("%S", entity);
+                wsupModel=WKSUPMODEL.replace("%S", CNConstants.PRNOUN);
             
             generatingStanfordInputFiles(entity, "train", true,wsupModel);
             generatingStanfordInputFiles(entity, "test", true,wsupModel);
@@ -595,7 +618,7 @@ public class CoNLL03Ner {
     }
   
     public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize){
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000);
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,10);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }    
     
