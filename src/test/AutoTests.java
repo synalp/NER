@@ -30,6 +30,14 @@ public class AutoTests {
     	if (f1!=43.38f) throw new Exception("CRF F1 with 20 training utts is "+f1);
 	}
 	
+	/**
+	 * - Why do "macro-averaged F1" alternate between 48 and 87% ??
+	 * - How are the priors estimated ? Is it fair ?
+	 * - Why do the nb of examples in test set vary: 921, 1400, 921...
+	 * - TODO: check that posteriors match priors
+	 * 
+	 * @throws Exception
+	 */
 	void testGigaquick() throws Exception {
         GeneralConfig.corpusGigaDir="res/";
         GeneralConfig.corpusGigaTrain="giga1000.conll03";
