@@ -688,25 +688,26 @@ public class CoNLL03Ner {
     }   
     
     public void computePriors(String entity,String trainSet){
-               generatingStanfordInputFiles(entity, trainSet, false,CNConstants.CHAR_NULL);
-               switch(trainSet){
-                   case "train":
-                       AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");               
-                       break;
-                   case "dev":
-                       AnalyzeLClassifier.TRAINFILE=DEVFILE.replace("%S", entity).replace("%CLASS", "LC");               
-                       break; 
-                   case "test":
-                       AnalyzeLClassifier.TRAINFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");               
-                       break; 
-                       
-               }
-               
-               AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
-               lcclass.trainAllLinearClassifier(entity, true, false, false);
-               float[] priors=lcclass.computePriors(entity, lcclass.getModel(entity));
-               System.out.println(lcclass.getPriorsMap().toString());
-               System.out.println(Arrays.toString(priors));         
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
+        generatingStanfordInputFiles(entity, trainSet, false,CNConstants.CHAR_NULL);
+        switch(trainSet){
+           case "train":
+               AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");               
+               break;
+           case "dev":
+               AnalyzeLClassifier.TRAINFILE=DEVFILE.replace("%S", entity).replace("%CLASS", "LC");               
+               break; 
+           case "test":
+               AnalyzeLClassifier.TRAINFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");               
+               break; 
+
+        }
+
+        AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
+        lcclass.trainAllLinearClassifier(entity, false, false, false);
+        float[] priors=lcclass.computePriors(entity, lcclass.getModel(entity));
+        System.out.println(lcclass.getPriorsMap().toString());
+        System.out.println(Arrays.toString(priors));         
     }
     
     public static final String[] TASKS = {
