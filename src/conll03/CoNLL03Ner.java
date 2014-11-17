@@ -248,7 +248,14 @@ public class CoNLL03Ner {
                   if(!isCRF) 
                     outFile.append(lines.get(i)+"\t"+context+"\n"); 
                   else{
-                       if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
+                	  if (wSupModelFile.equals("autotest_oracle")) {
+                		  // special case, just for testing: put the oracle class in the additional column
+                          String line =lines.get(i);
+                          String label = line.substring(0,line.indexOf("\t"));
+                          String outClass = label;
+                          String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
+                          outFile.append(newLine);
+                	  } else if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
                             AnalyzeLClassifier.MODELFILE=wSupModelFile;
                             // you load the model for every line i ??!!
                             LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
