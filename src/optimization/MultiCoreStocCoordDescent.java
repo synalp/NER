@@ -21,6 +21,7 @@ import java.util.Random;
 import linearclassifier.AnalyzeLClassifier;
 import linearclassifier.Margin;
 import linearclassifier.NumericalIntegration;
+import test.AutoTests;
 import tools.CNConstants;
 import tools.Histoplot;
 import tools.PlotAPI;
@@ -129,7 +130,8 @@ public class MultiCoreStocCoordDescent  {
         final float[] priors = AnalyzeLClassifier.getPriors();
         // get scores
         GMMDiag gmm = new GMMDiag(priors.length, priors);
-        gmm.train(margin);
+        double[] post=gmm.train(margin);
+        AutoTests.checkPosteriors(post,priors);
         /*
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
@@ -315,8 +317,14 @@ public class MultiCoreStocCoordDescent  {
                 double f1train=ColumnDataClassifier.macrof1;
                     if(!currentClassifier.equals(CNConstants.ALL))
                         f1train=columnDataClass.fs.get(currentClassifier);
+                    /*
+                     * I'm not sure it's good to have such a hard decision there, because the "target" weights = the ones obtained when training
+                     * on a very large training corpus, are likely to get a lower F1 on the "small initial" train set than the initial weights
+                     * trained on this small corpus, simply because of overfitting / because there is less variability in the small corpus than in
+                     * the very large one. So it's probably better to rather combine this "F1-train" term with the risk into a new objective function. 
+                     */
                 if(f1train<f1trainOr){
-                    System.out.println("Iteration["+iter+"] Not accepted previous step of gradient ");   
+                    System.out.println("Iteration["+iter+"] Not accepted previous step of gradient "+f1train+" "+f1trainOr);   
                     weightsForFeat.set(featIdx,w0); 
                     margin.updatingStocGradientStep(0,featIdx, weightsForFeat.get(featIdx));
                 }    

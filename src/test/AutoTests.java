@@ -7,10 +7,12 @@ import conll03.CoNLL03Ner;
 public class AutoTests {
 	CoNLL03Ner conll;
 	public static float initR=0, finalR=0;
+	private static boolean autoTestOn=false;
 	
 	public static void main(String args[]) throws Exception {
 //		throw new Exception("Just an example of test that fails");
 //		System.out.println("example of test that succeeds");
+		autoTestOn=true;
 		AutoTests m = new AutoTests();
 		m.conll = new CoNLL03Ner();
 		if (args.length>0) {
@@ -45,5 +47,13 @@ public class AutoTests {
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
         conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,10);
         if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
+	}
+	
+	public static void checkPosteriors(double[] post, float[] priors) {
+		if (!autoTestOn) return;
+		double nex = post[0]+post[1];
+		double realpost0 = post[0]/nex;
+		double realpost1 = post[1]/nex;
+		System.out.println("checkpost "+realpost0+" "+realpost1+" .. "+priors[0]+" "+priors[1]);
 	}
 }

@@ -306,8 +306,9 @@ public class GMMDiag extends GMM {
      * reassigns each frame to one mixture, and retrain the mean and var
      * 
      * @param analyzer
+     * @return the array of marginal posteriors per class
      */
-    public void trainViterbi(Margin margin) {
+    public double[] trainViterbi(Margin margin) {
         final float[] z = new float[nlabs];
         final GMMDiag gmm0 = this.clone();
         for (int i=0;i<nlabs;i++) {
@@ -431,6 +432,7 @@ public class GMMDiag extends GMM {
         //System.out.println("trainviterbi");
         //printMean();
         //printVariace();   
+        return nk;
     }
     
     /**
@@ -577,8 +579,13 @@ public class GMMDiag extends GMM {
         //*/
     }
     
-    
-    public void train(Margin margin) {
+    /**
+     * 
+     * @param margin
+     * @return posterior per class
+     */
+    public double[] train(Margin margin) {
+    	// TODO: how are these parms estimated ? use fair estimation on dev !
         final int niters=20;
         double epsilon=0.0004; //2e-05;
         train1gauss(margin);
@@ -589,8 +596,9 @@ public class GMMDiag extends GMM {
         System.out.println("train1gauss loglike "+loglike+" nex "+margin.getNumberOfInstances());
         split();
         double previousLogLike=loglike;
+        double[] postPerClass=null;
         for (int iter=0;iter<niters;iter++) {
-            trainViterbi(margin);
+            postPerClass=trainViterbi(margin);
             loglike = getLoglike(margin);
             if(Math.abs(loglike-previousLogLike)<epsilon)
                 break;
@@ -601,6 +609,7 @@ public class GMMDiag extends GMM {
             
             //System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+margin.getNumberOfInstances()+ " sqerr "+sqerr);
         }
+        return postPerClass;
     }
     
     public double squareErr(GMM g) {
