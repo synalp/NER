@@ -13,7 +13,7 @@ f9e248 Baseline
 
 ======================================================================  
 f9e248 After using weakly supervised, stoc. coord. gradient 1000 iters 
-(it does not change!)
+(it does not change!) trainSize=50 utts. testSize=500 utts.
 ======================================================================
      [java] ./scripts/evalconll.sh analysis/CRF/test.all.log
      [java] processed 46435 tokens with 8112 phrases; found: 8116 phrases; correct: 7280.
