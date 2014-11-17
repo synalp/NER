@@ -29,7 +29,7 @@ public class AutoTests {
         conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.ALL, "dev", true,CNConstants.CHAR_NULL);
     	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false,false);
-    	if (f1!=43.38f) throw new Exception("CRF F1 with 20 training utts is "+f1);
+    	if (f1<43f) throw new Exception("CRF F1 with 20 training utts is "+f1);
 	}
 	
 	/**
