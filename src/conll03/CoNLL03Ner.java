@@ -137,7 +137,7 @@ public class CoNLL03Ner {
                     if(newtagData == null ){
                         ErrorsReporting.report("The conll03 corpus with the OpenNLP tags must be included in the properties file: ner.properties");
                     }                    
-                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTrain)); 
+                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+newtagData)); 
                     
                     if(isCRF)
                         outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);
