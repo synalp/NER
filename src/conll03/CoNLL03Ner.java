@@ -145,14 +145,7 @@ public class CoNLL03Ner {
                     break;                   
                  
             }
-            if(isCRF){
-                AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
-                if(!wSupModelFile.equals(CNConstants.CHAR_NULL))
-                    crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,tag=3,answer=4 ");     
-                else
-                    crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");
-                
-            }else{
+            if(!isCRF){
                 BufferedReader distSemFile = new BufferedReader(new FileReader("scripts/egw.bnc.200.pruned"));
                 while(true){
                     String line=distSemFile.readLine();
@@ -457,12 +450,17 @@ public class CoNLL03Ner {
      * @param useExistingModel , true if it uses an existing binary model file
      */
     public float trainStanfordCRF(String entity, boolean savingFiles, boolean wSupFeat, boolean useExistingModel){
+        String wsupModel=CNConstants.CHAR_NULL;
+        AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
+        if(wSupFeat){
+            wsupModel=WKSUPMODEL.replace("%S", CNConstants.PRNOUN);
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,ner=3,answer=4 ");     
+
+        }
+        else
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");         
         if(savingFiles){
-            String wsupModel=CNConstants.CHAR_NULL;
-            
-            if(wSupFeat)
-                wsupModel=WKSUPMODEL.replace("%S", CNConstants.PRNOUN);
-            
+            //generate the files
             generatingStanfordInputFiles(entity, "train", true,wsupModel);
             generatingStanfordInputFiles(entity, "test", true,wsupModel);
             generatingStanfordInputFiles(entity, "dev", true,wsupModel);
@@ -651,7 +649,7 @@ public class CoNLL03Ner {
                 conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500,1000);
                 break;
         case 3:
-                conll.trainStanfordCRF(CNConstants.ALL, true, true,false);
+                conll.trainStanfordCRF(CNConstants.ALL, false, true,false);
                 break;            
         case 4:
         	// retag the Conll03 corpus with openNLP: this'll be used to run weakly supervised training of the linear classifier on it
