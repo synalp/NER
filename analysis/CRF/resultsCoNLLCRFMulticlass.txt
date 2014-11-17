@@ -1,0 +1,26 @@
+====================
+f9e248 Baseline
+====================
+    [java] processed 46435 tokens with 8112 phrases; found: 8116 phrases; correct: 7280.
+     [java] accuracy:  97.66%; precision:  89.70%; recall:  89.74%; FB1:  89.72
+     [java]               LOC: precision:  89.95%; recall:  91.12%; FB1:  90.53  1950
+     [java]              MISC: precision:  77.47%; recall:  79.41%; FB1:  78.43  941
+     [java]               ORG: precision:  87.45%; recall:  85.46%; FB1:  86.44  2439
+     [java]               PER: precision:  95.62%; recall:  96.07%; FB1:  95.84  2786
+
+
+
+
+======================================================================  
+f9e248 After using weakly supervised, stoc. coord. gradient 1000 iters 
+(it does not change!)
+======================================================================
+     [java] ./scripts/evalconll.sh analysis/CRF/test.all.log
+     [java] processed 46435 tokens with 8112 phrases; found: 8116 phrases; correct: 7280.
+     [java] accuracy:  97.66%; precision:  89.70%; recall:  89.74%; FB1:  89.72
+     [java]               LOC: precision:  89.95%; recall:  91.12%; FB1:  90.53  1950
+     [java]              MISC: precision:  77.47%; recall:  79.41%; FB1:  78.43  941
+     [java]               ORG: precision:  87.45%; recall:  85.46%; FB1:  86.44  2439
+     [java]               PER: precision:  95.62%; recall:  96.07%; FB1:  95.84  2786
+
+
