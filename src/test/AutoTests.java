@@ -27,16 +27,19 @@ public class AutoTests {
 	void testCRFquick() throws Exception {
         conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true,20,CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.CHAR_NULL);
-        conll.generatingStanfordInputFiles(CNConstants.ALL, "dev", true,CNConstants.CHAR_NULL);
     	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false,false);
+    	// check that the CRF gives reasonnable F1
     	if (f1<43f) throw new Exception("CRF F1 with 20 training utts is "+f1);
+    	
+    	// Test by training a CRF on a small training corpus with an extra-column-feature that contains oracle class
+    	// and check that the F1 of the CRF is close to 100%
+    	// float f1_oracle=conll.trainStanfordCRF(CNConstants.ALL, true, true,false);
 	}
 	
 	/**
-	 * - Why do "macro-averaged F1" alternate between 48 and 87% ??
-	 * - How are the priors estimated ? Is it fair ?
-	 * - Why do the nb of examples in test set vary: 921, 1400, 921...
-	 * - TODO: check that posteriors match priors
+	 * - Why do "macro-averaged F1" alternate between 48 and 87% ?? ==> because tests are run on train and on test
+	 * - How are the priors estimated ? Is it fair ? ==> we don't care, the plan is to tune the priors as another parameter
+	 * - Why do the nb of examples in test set vary: 921, 1400, 921... ==> because tests are run on train and on test
 	 * 
 	 * @throws Exception
 	 */
@@ -49,6 +52,9 @@ public class AutoTests {
         if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
 	}
 	
+	/**
+	 * TODO: Pretty weird: it looks like posteriors and priors are inter-exchanged ???
+	 */
 	public static void checkPosteriors(double[] post, float[] priors) {
 		if (!autoTestOn) return;
 		double nex = post[0]+post[1];
