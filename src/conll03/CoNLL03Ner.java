@@ -518,11 +518,11 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
         if(wSupFeat){
             wsupModel=WKSUPMODEL.replace("%S", CNConstants.PRNOUN);
-            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,ner=2,ner=3,answer=4 ");     
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,ner=3,answer=4 ");     
 
         }
         else
-            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,ner=2,answer=3");         
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");         
         if(savingFiles){
             //generate the files
             generatingStanfordInputFiles(entity, "train", true,wsupModel);
@@ -677,7 +677,16 @@ public class CoNLL03Ner {
         runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,1000);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }
-  
+    /**
+     * This method first train a weakly supervised algorithm for 
+     * with the following train data configured in : corpusTrainOpenNLP
+     * It uses as unlabeled data Gigaword as configured in :corpusGigaTrain
+     * in the ner.properties file.
+     * Then it uses the predictions of the weakly supervised model when training and testing the
+     * CRF for NER
+     * @param trainSize
+     * @param testSize 
+     */
     public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize){
         runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,10);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
