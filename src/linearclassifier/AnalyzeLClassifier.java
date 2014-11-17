@@ -916,7 +916,7 @@ public class AnalyzeLClassifier {
     }
     
     public float[] computePriors(String sclassifier,LinearClassifier model){
-        
+        // why do we need a model to compute priors ? This should be done only from a corpus.
         float[] priors = new float[model.labels().size()];
         
         float prob=0f, alpha=0.1f;
