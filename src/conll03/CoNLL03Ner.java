@@ -652,11 +652,33 @@ public class CoNLL03Ner {
     public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize){
         runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,10);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
-    }    
+    }   
+    
+    public void computePriors(String entity,String trainSet){
+               generatingStanfordInputFiles(entity, trainSet, false,CNConstants.CHAR_NULL);
+               switch(trainSet){
+                   case "train":
+                       AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");               
+                       break;
+                   case "dev":
+                       AnalyzeLClassifier.TRAINFILE=DEVFILE.replace("%S", entity).replace("%CLASS", "LC");               
+                       break; 
+                   case "test":
+                       AnalyzeLClassifier.TRAINFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");               
+                       break; 
+                       
+               }
+               
+               AnalyzeLClassifier lcclass = new AnalyzeLClassifier();
+               lcclass.trainAllLinearClassifier(entity, true, false, false);
+               float[] priors=lcclass.computePriors(entity, lcclass.getModel(entity));
+               System.out.println(lcclass.getPriorsMap().toString());
+               System.out.println(Arrays.toString(priors));         
+    }
     
     public static final String[] TASKS = {
     	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags",  // 0 ... 4
-    	"weaklySupConll", "expGWord", "dev"
+    	"weaklySupConll", "expGWord", "dev","priors"
     };
     
     public static void main(String[] args){
@@ -704,6 +726,9 @@ public class CoNLL03Ner {
         	float f1=conll.tuneOnDev();
         	System.out.println("F1 on DEV "+f1);
         	break;
+        case 8:
+               conll.computePriors(CNConstants.ALL,"dev");
+               break;
         }
         
         // PLEASE DONT UNCOMMENT ANY LINE BELOW! rather add a task and arg on the command-line  
