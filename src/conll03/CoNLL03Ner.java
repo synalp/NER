@@ -444,8 +444,8 @@ public class CoNLL03Ner {
     }
     
     public float tuneOnDev() {
-    	float basef1;
-    	{
+    	float basef1=0;
+    	if (false) {
     		// first train the baseline CRF on train and test it on dev
     		String entity=CNConstants.ALL;
     		String wsupModel=CNConstants.CHAR_NULL;
@@ -466,12 +466,41 @@ public class CoNLL03Ner {
     		AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
     		evaluatingCRFResults(entity);
     		basef1 = conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
+    		// got 93.79 F1 on dev
     	}
-    	{
+    	if (false) {
     		// second estimate the priors for weaksup on train
-    		AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
-            float[] priors=lcclass.computePriors(CNConstants.PRNOUN, lcclass.getModel(CNConstants.PRNOUN));
-            System.out.println("priors on train: "+Arrays.toString(priors));
+    		String entity=CNConstants.PRNOUN;
+    		String wsupModel=CNConstants.CHAR_NULL;
+    		generatingStanfordInputFiles(entity, "train", true,wsupModel);
+    		String tabfile = TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF");
+    		try {
+    			BufferedReader f = new BufferedReader(new FileReader(tabfile));
+    			HashMap<String, Long> co = new HashMap<>();
+    			for (;;) {
+    				String s=f.readLine();
+    				if (s==null) break;
+    				StringTokenizer st = new StringTokenizer(s);
+    				String cl=null;
+    				while (st.hasMoreTokens()) cl=st.nextToken();
+    				Long n=co.get(cl);
+    				if (n==null) n=1l; else n++;
+    				co.put(cl,n);
+    			}
+    			f.close();
+    			int ntot=0;
+    			for (Long n : co.values()) ntot+=n;
+    			for (String cl : co.keySet()) {
+    				long nn = co.get(cl);
+    				double pr = (double)nn/(double)ntot;
+    				System.out.println("PRIOR "+cl+" "+nn+" "+pr);
+    			}
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
+    		// got
+//    	     [java] PRIOR pn 34043 0.16718806017061108
+//    	     [java] PRIOR O 169578 0.832811939829389
     	}
         
         return basef1;
