@@ -502,6 +502,10 @@ public class CoNLL03Ner {
 //    	     [java] PRIOR pn 34043 0.16718806017061108
 //    	     [java] PRIOR O 169578 0.832811939829389
     	}
+    	{
+    		// third tune the GMMDiag parameters by running 10 iterations of weaksup on DEV and taking the parms that give the highest F1
+    		
+    	}
         
         return basef1;
     }
