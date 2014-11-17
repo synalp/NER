@@ -455,11 +455,11 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
         if(wSupFeat){
             wsupModel=WKSUPMODEL.replace("%S", CNConstants.PRNOUN);
-            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,ner=3,answer=4 ");     
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,ner=2,ner=3,answer=4 ");     
 
         }
         else
-            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");         
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,ner=2,answer=3");         
         if(savingFiles){
             //generate the files
             generatingStanfordInputFiles(entity, "train", true,wsupModel);
