@@ -546,7 +546,7 @@ public class AnalyzeCRFClassifier {
                     //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
                     //Process process = Runtime.getRuntime().exec(call);
                     //stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier
-                    String cmd="java -Xmx1g -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
+                    String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
                     Process process = Runtime.getRuntime().exec(cmd);
                     InputStream stdout = process.getInputStream();
 
@@ -607,7 +607,7 @@ public class AnalyzeCRFClassifier {
                 //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
                 //Process process = Runtime.getRuntime().exec(call);
                 //stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier
-                String cmd="java -Xmx1g -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
+                String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
                 Process process = Runtime.getRuntime().exec(cmd);
                 InputStream stdout = process.getInputStream();
 
@@ -665,7 +665,7 @@ public class AnalyzeCRFClassifier {
                 //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
                 //Process process = Runtime.getRuntime().exec(call);
                 //stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier
-                String cmd="java -Xmx10g -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE+" -testFile "+TESTFILE;
+                String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE+" -testFile "+TESTFILE;
                 Process process = Runtime.getRuntime().exec(cmd);
                 InputStream stdout = process.getInputStream();
 

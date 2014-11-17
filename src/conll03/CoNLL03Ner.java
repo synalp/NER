@@ -403,6 +403,7 @@ public class CoNLL03Ner {
             priorsMap.put(CNConstants.PRNOUN, new Double(0.2));
 
         }else{
+        	// TODO: estimate these priors on train, because they seem a bit too much "hacked" to the task ??
             priorsMap.put("O", new Double(0.76));
             priorsMap.put("PER", new Double(0.1)); 
             priorsMap.put(CNConstants.ORG.toUpperCase(), new Double(0.05)); 

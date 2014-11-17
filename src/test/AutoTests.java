@@ -5,16 +5,24 @@ import tools.GeneralConfig;
 import conll03.CoNLL03Ner;
 
 public class AutoTests {
+	CoNLL03Ner conll;
+	public static float initR=0, finalR=0;
+	
 	public static void main(String args[]) throws Exception {
 //		throw new Exception("Just an example of test that fails");
 //		System.out.println("example of test that succeeds");
+		AutoTests m = new AutoTests();
+		m.conll = new CoNLL03Ner();
+		if (args.length>0) {
+			String xmstanford = args[0];
+			GeneralConfig.forceXmxStanford=xmstanford;
+		}
 		
-		testCRFquick();
-		testGigaquick();
+		m.testCRFquick();
+		m.testGigaquick();
 	}
 	
-	static void testCRFquick() throws Exception {
-        CoNLL03Ner conll = new CoNLL03Ner();
+	void testCRFquick() throws Exception {
         conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true,20,CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.ALL, "dev", true,CNConstants.CHAR_NULL);
@@ -22,12 +30,20 @@ public class AutoTests {
     	if (f1!=43.38f) throw new Exception("CRF F1 with 20 training utts is "+f1);
 	}
 	
-	static void testGigaquick() throws Exception {
-        CoNLL03Ner conll = new CoNLL03Ner();
+	/**
+	 * - Why do "macro-averaged F1" alternate between 48 and 87% ??
+	 * - How are the priors estimated ? Is it fair ?
+	 * - Why do the nb of examples in test set vary: 921, 1400, 921...
+	 * - TODO: check that posteriors match priors
+	 * 
+	 * @throws Exception
+	 */
+	void testGigaquick() throws Exception {
         GeneralConfig.corpusGigaDir="res/";
         GeneralConfig.corpusGigaTrain="giga1000.conll03";
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
         conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,10);
+        if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
 	}
 }

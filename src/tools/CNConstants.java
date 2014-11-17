@@ -40,6 +40,7 @@ package tools;
     public static String LISTCRFTESTPROP="listCRFTest";
     public static String CRFPROPS="crfProps";
     public static String DEFCRFPROPS="etc/scrf.props";
+    public static String XMXSTANDFORD="XmxStanford";
     //SVMLight
     public static String LISTSVMTRAINPROP="listSVMTrain";
     public static String DEFLISTSVMTRAIN="esterParseTrainALL.xmll";

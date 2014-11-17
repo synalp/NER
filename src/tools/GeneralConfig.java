@@ -82,7 +82,8 @@ public class GeneralConfig {
     public static String gwDir;
     public static String gwData;
     
-	   
+    public static String XmxStanford;				// this one is read from the prop file
+    public static String forceXmxStanford=null;	// this one may be set by arguments and supercedes the prop file
 
 	/**
 	 * This method reads the properties files located in etc/ner.properties and
@@ -169,8 +170,8 @@ public class GeneralConfig {
            }
            
            wvdir=properties.getProperty(CNConstants.WVDIR,CNConstants.DEFWVDIR);
-           
-	       
+           XmxStanford=properties.getProperty(CNConstants.XMXSTANDFORD);
+           if (forceXmxStanford!=null) XmxStanford=forceXmxStanford;
 	}
 
 
