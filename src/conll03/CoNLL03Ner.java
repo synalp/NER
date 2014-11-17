@@ -1,6 +1,7 @@
 package conll03;
 
 import CRFClassifier.AnalyzeCRFClassifier;
+import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.ie.crf.CRFClassifier;
@@ -300,8 +301,6 @@ public class CoNLL03Ner {
         
         columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
-        
-        
     }
     
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int numIters){
@@ -443,6 +442,41 @@ public class CoNLL03Ner {
         
         lcclass.wkSupParallelCoordD(entity, true,2000);
     }
+    
+    public float tuneOnDev() {
+    	float basef1;
+    	{
+    		// first train the baseline CRF on train and test it on dev
+    		String entity=CNConstants.ALL;
+    		String wsupModel=CNConstants.CHAR_NULL;
+    		AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
+    		crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,ner=2,answer=3");         
+    		generatingStanfordInputFiles(entity, "train", true,wsupModel);
+    		generatingStanfordInputFiles(entity, "dev", true,wsupModel);
+
+    		AnalyzeCRFClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF");
+    		AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
+    		File mfile = new File(AnalyzeCRFClassifier.MODELFILE);
+    		mfile.delete();
+    		AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
+    		crfclass.trainAllCRFClassifier(entity, false, false);
+
+    		AnalyzeCRFClassifier.TESTFILE=DEVFILE.replace("%S", entity).replace("%CLASS", "CRF");
+    		crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+    		AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
+    		evaluatingCRFResults(entity);
+    		basef1 = conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
+    	}
+    	{
+    		// second estimate the priors for weaksup on train
+    		AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
+            float[] priors=lcclass.computePriors(CNConstants.PRNOUN, lcclass.getModel(CNConstants.PRNOUN));
+            System.out.println("priors on train: "+Arrays.toString(priors));
+    	}
+        
+        return basef1;
+    }
+    
     /**
      * 
      * @param entity  classifier "all" for all the entities "pn" for the binary classification : proper noun/ not proper noun
@@ -621,7 +655,8 @@ public class CoNLL03Ner {
     }    
     
     public static final String[] TASKS = {
-    	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags", "weaklySupConll","expGWord"
+    	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags",  // 0 ... 4
+    	"weaklySupConll", "expGWord", "dev"
     };
     
     public static void main(String[] args){
@@ -657,11 +692,18 @@ public class CoNLL03Ner {
         	Conll03Preprocess.retagConll03();
         	break;
         case 5:
+        	// what's the difference between case 5 and 6 ?
                 conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,1000);
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
                conll.experimentsCRFPlusWkSupGWord(50, 500);
+               break;
+        case 7:
+        	// TODO: tune parameters on dev
+        	float f1=conll.tuneOnDev();
+        	System.out.println("F1 on DEV "+f1);
+        	break;
         }
         
         // PLEASE DONT UNCOMMENT ANY LINE BELOW! rather add a task and arg on the command-line  

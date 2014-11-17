@@ -102,7 +102,7 @@
 	   fork="true"
            failonerror="true"
            maxmemory="7g">
-           <arg value="basecrf"/>
+           <arg value="dev"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>
