@@ -29,23 +29,35 @@ public class TestingGMM {
             //final float[] priors = computePriors(sclassifier,model);
             List<List<Integer>> featsperInst = new ArrayList<>(); 
             List<Integer> labelperInst = new ArrayList<>();        
-            final float[] priors = {0.9f,0.1f};
+            //final float[] priors = {0.9f,0.1f};
             String sclass=CNConstants.PRNOUN;
-
-            analyzing.trainOneNERClassifier(sclass,false);
+            ///*
+            HashMap<String,Double> priorsMap = new HashMap<>();
             
+            priorsMap.put("NO", new Double(0.9));
+            priorsMap.put(sclass, new Double(0.1));
+            analyzing.setPriors(priorsMap); 
+            AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
+            /*AnalyzeLClassifier.TRAINFILE=CoNLL03Ner.TRAINFILE.replace("%S", sclass).replace("%CLASS", "LC");
+            AnalyzeLClassifier.TESTFILE=CoNLL03Ner.TESTFILE.replace("%S", sclass).replace("%CLASS", "LC");
+            AnalyzeLClassifier.MODELFILE=CoNLL03Ner.WKSUPMODEL.replace("%S", sclass);*/
+            analyzing.trainAllLinearClassifier(sclass,true, false, false);
+            analyzing.testingClassifier(true, sclass, false, false);
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
             Margin margin = analyzing.getMargin(sclass);
             margin.setFeaturesPerInstance(featsperInst);
             margin.setLabelPerInstance(labelperInst);
-    
+            AnalyzeLClassifier.CURRENTPARENTMARGIN=margin;
+                    
+            float[] priors=AnalyzeLClassifier.getPriors();            
+           
+           
+            //*/
+
             
-            
-            int numinst=labelperInst.size();
-            //Margin margin = new Margin();
-            //numinst=50;
-            //analyzing.setNumberOfInstances(numinst);
+            int numinst=50;
+            margin.setNumberOfInstances(numinst);
             
             Margin.GENERATEDDATA=true;
             margin.generateBinaryRandomScore(numinst);
@@ -188,8 +200,8 @@ public class TestingGMM {
     }       
         
     public static void main(String[] args){
-        //TestingGMM.TestingGMMWithGeneratedData();
+        TestingGMM.TestingGMMWithGeneratedData();
         //TestingGMM.TestingGMMWithClassifierWeights();
-        TestingGMM.TestingGMMCoNLLData();
+        //TestingGMM.TestingGMMCoNLLData();
     }
 }
