@@ -538,7 +538,7 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
         if(wSupFeat){
             wsupModel=WKSUPMODEL.replace("%S", CNConstants.PRNOUN);
-            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,lemma=3,answer=4 ");     
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,feat=3,answer=4 ");     
 
         }
         else
