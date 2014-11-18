@@ -37,5 +37,3 @@ useWord=true
 useTypeSeqs=true
 useTags=true
 useChunks=true
-useFeat=true
-printFeatures="feats.dbgu"
