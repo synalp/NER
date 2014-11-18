@@ -539,7 +539,7 @@ public class CoNLL03Ner {
 
         }
         else
-            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,value=3");         
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");         
         if(savingFiles){
             //generate the files
             generatingStanfordInputFiles(entity, "train", true,wsupModel);
