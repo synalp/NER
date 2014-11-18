@@ -20,6 +20,12 @@ public class Histoplot extends JFrame {
 	private static final long serialVersionUID = 1L;
 	double[] sc;
 	private static Histoplot frame = null;
+	
+	public static void showit(final float[] x) {
+		double[] y = new double[x.length];
+		for (int i=0;i<y.length;i++) y[i]=x[i];
+		showit(y, y.length);
+	}
 
 	public static void showit(final double[] x, final int len) {
 		Thread t = new Thread(new Runnable() {

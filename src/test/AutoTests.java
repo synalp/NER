@@ -20,7 +20,7 @@ public class AutoTests {
 			GeneralConfig.forceXmxStanford=xmstanford;
 		}
 		
-		m.testCRFquick();
+//		m.testCRFquick();
 		m.testGigaquick();
 	}
 	
