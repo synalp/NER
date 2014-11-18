@@ -105,7 +105,7 @@
        </java>
     </target>
 
-    <target name="testauto" depends="compile" description="run" >
+    <target name="testauto" depends="compile" description="unit tests that are designed to be fast and throw an exception if something is broken" >
 	<java classname="test.AutoTests"
 	   fork="true"
            failonerror="true"

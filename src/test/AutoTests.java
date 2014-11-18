@@ -24,6 +24,10 @@ public class AutoTests {
 		m.testGigaquick();
 	}
 	
+	/**
+	 * Quickly test on a small dataset that the baseline CRF is learning correctly.
+	 * Also check that adding a new feature column (in this case, an "oracle" feature) is correctly taken into account
+	 */
 	void testCRFquick() throws Exception {
         conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true,20,CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.CHAR_NULL);
