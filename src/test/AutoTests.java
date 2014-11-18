@@ -22,6 +22,12 @@ public class AutoTests {
 		
 //		m.testCRFquick();
 		m.testGigaquick();
+                //test the gmm with generated data
+                TestingGMM.TestingGMMWithGeneratedData();
+                //test gmm with ester gaussians
+                //TestingGMM.TestingGMMWithClassifierWeights();
+                //test gmm with conllmulticlass gaussians
+                //TestingGMM.TestingGMMCoNLLData();
 	}
 	
 	/**

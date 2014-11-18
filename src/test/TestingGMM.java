@@ -95,7 +95,7 @@ public class TestingGMM {
             priorsMap.put(sclass, new Double(0.1));
             analyzing.setPriors(priorsMap); 
             
-
+            AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
 
             analyzing.trainOneNERClassifier(sclass,false);
             
@@ -198,8 +198,8 @@ public class TestingGMM {
     }       
         
     public static void main(String[] args){
-        TestingGMM.TestingGMMWithGeneratedData();
+        //TestingGMM.TestingGMMWithGeneratedData();
         //TestingGMM.TestingGMMWithClassifierWeights();
-        //TestingGMM.TestingGMMCoNLLData();
+        TestingGMM.TestingGMMCoNLLData();
     }
 }
