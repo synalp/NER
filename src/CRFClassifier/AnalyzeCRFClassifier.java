@@ -211,6 +211,11 @@ public class AnalyzeCRFClassifier {
             prop.setProperty("backgroundSymbol",background);
             if(mapping.contains("lemma"))
                 prop.setProperty("useLemmas", "true");
+            else{
+                if(prop.getProperty("useLemmasg")!=null)
+                    prop.remove("useLemmas");
+            }
+                
             
             prop.store(new FileOutputStream(PROPERTIES_FILE),""); // FileOutputStream 
         } catch (Exception ex) {
