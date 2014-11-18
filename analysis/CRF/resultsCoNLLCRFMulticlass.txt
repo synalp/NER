@@ -23,6 +23,25 @@ f9e248 After using weakly supervised, stoc. coord. gradient 1000 iters
      [java]               ORG: precision:  87.45%; recall:  85.46%; FB1:  86.44  2439
      [java]               PER: precision:  95.62%; recall:  96.07%; FB1:  95.84  2786
 
+
+     [java] processed 46435 tokens with 8112 phrases; found: 8116 phrases; correct: 7280.
+     [java] accuracy:  97.66%; precision:  89.70%; recall:  89.74%; FB1:  89.72
+     [java]               LOC: precision:  89.95%; recall:  91.12%; FB1:  90.53  1950
+     [java]              MISC: precision:  77.47%; recall:  79.41%; FB1:  78.43  941
+     [java]               ORG: precision:  87.45%; recall:  85.46%; FB1:  86.44  2439
+     [java]               PER: precision:  95.62%; recall:  96.07%; FB1:  95.84  2786
+======================================================================  
+e842b After using weakly supervised, stoc. coord. gradient 1000 iters 
+(it does not change!) trainSize=50 utts. testSize=500 utts.
+======================================================================
+     [java] accuracy:  97.65%; precision:  89.43%; recall:  89.90%; FB1:  89.67
+     [java]               LOC: precision:  90.20%; recall:  90.81%; FB1:  90.50  1938
+     [java]              MISC: precision:  77.54%; recall:  79.74%; FB1:  78.63  944
+     [java]               ORG: precision:  86.73%; recall:  86.18%; FB1:  86.45  2480
+     [java]               PER: precision:  95.31%; recall:  96.00%; FB1:  95.65  2793
+
+
+
 ====================
 e88298 Priors on dev
 ====================
