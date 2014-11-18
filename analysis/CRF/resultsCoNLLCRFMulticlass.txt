@@ -1,5 +1,5 @@
 ====================
-f9e248 Baseline
+f9e248 Baseline (words, distsim, w/o spans)
 ====================
     [java] processed 46435 tokens with 8112 phrases; found: 8116 phrases; correct: 7280.
      [java] accuracy:  97.66%; precision:  89.70%; recall:  89.74%; FB1:  89.72
@@ -62,8 +62,8 @@ b08b74 Baseline
      [java]             I-ORG: precision:  86.94%; recall:  86.03%; FB1:  86.48  2465
      [java]             I-PER: precision:  95.48%; recall:  96.00%; FB1:  95.74  2788
 ======================
-a7b07f Baseline BIO
-conlleval.pl w/o -r
+a7b07f Baseline BIO (tag, chunks)
+conlleval.pl w/o -r 
 ======================
      [java] processed 46435 tokens with 5616 phrases; found: 5557 phrases; correct: 4937.
      [java] accuracy:  97.64%; precision:  88.84%; recall:  87.91%; FB1:  88.37
