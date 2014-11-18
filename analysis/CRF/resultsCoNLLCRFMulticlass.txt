@@ -61,6 +61,17 @@ b08b74 Baseline
      [java]            I-MISC: precision:  76.53%; recall:  79.98%; FB1:  78.21  950
      [java]             I-ORG: precision:  86.94%; recall:  86.03%; FB1:  86.48  2465
      [java]             I-PER: precision:  95.48%; recall:  96.00%; FB1:  95.74  2788
+======================
+a7b07f Baseline BIO
+conlleval.pl w/o -r
+======================
+     [java] processed 46435 tokens with 5616 phrases; found: 5557 phrases; correct: 4937.
+     [java] accuracy:  97.64%; precision:  88.84%; recall:  87.91%; FB1:  88.37
+     [java]               LOC: precision:  90.72%; recall:  91.00%; FB1:  90.86  1671
+     [java]              MISC: precision:  80.00%; recall:  78.17%; FB1:  79.08  685
+     [java]               ORG: precision:  85.86%; recall:  82.94%; FB1:  84.37  1591
+     [java]               PER: precision:  93.60%; recall:  94.07%; FB1:  93.84  1610
+
 
 
 ====================
