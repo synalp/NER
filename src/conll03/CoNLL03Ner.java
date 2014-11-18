@@ -184,11 +184,14 @@ public class CoNLL03Ner {
                    String prefix=label.substring(0,label.indexOf("-")+1);
                    if(!prefix.isEmpty())
                     label = CNConstants.PRNOUN;
-               }else if(entity.equals(CNConstants.ALL)){
+               }
+               /*
+               else if(entity.equals(CNConstants.ALL)){
                    String prefix=label.substring(0,label.indexOf("-")+1);
                    if(!prefix.isEmpty())
                        label = label.replace(prefix, "");
                }
+               */
                if(label.equals(CNConstants.OUTCLASS))
                    label=CNConstants.OUTCLASS;
                if(isCRF){

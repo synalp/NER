@@ -212,7 +212,7 @@ public class AnalyzeCRFClassifier {
             if(mapping.contains("lemma"))
                 prop.setProperty("useLemmas", "true");
             else{
-                if(prop.getProperty("useLemmasg")!=null)
+                if(prop.getProperty("useLemmas")!=null)
                     prop.remove("useLemmas");
             }
                 
