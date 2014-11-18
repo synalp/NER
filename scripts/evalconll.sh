@@ -1,1 +1,1 @@
-./scripts/conlleval.pl -r -d "\t"   < $1 
+./scripts/conlleval.pl -d "\t"   < $1 
