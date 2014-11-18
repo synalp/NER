@@ -29,7 +29,7 @@ public class AutoTests {
         conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.CHAR_NULL);
     	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false,false);
     	// check that the CRF gives reasonnable F1
-    	if (f1<43f||f1>100f) throw new Exception("CRF F1 with 20 training utts is too low "+f1);
+    	if (f1<40f||f1>100f) throw new Exception("CRF F1 with 20 training utts is too low "+f1);
     	
     	// Test by training a CRF on a small training corpus with an extra-column-feature that contains oracle class
     	// and check that the F1 of the CRF is close to 100%
@@ -38,6 +38,7 @@ public class AutoTests {
     	float f1_oracle=conll.trainStanfordCRF(CNConstants.ALL, false, true,false);
     	System.out.println("testCRFF1s "+f1+" "+f1_oracle);
     	if (f1_oracle<=f1) throw new Exception("ORACLE F1 is not better than F1");
+    	if (f1_oracle<70) throw new Exception("ORACLE F1 is too low "+f1_oracle);
 	}
 	
 	/**
