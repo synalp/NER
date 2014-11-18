@@ -39,7 +39,15 @@ e842b After using weakly supervised, stoc. coord. gradient 1000 iters
      [java]              MISC: precision:  77.54%; recall:  79.74%; FB1:  78.63  944
      [java]               ORG: precision:  86.73%; recall:  86.18%; FB1:  86.45  2480
      [java]               PER: precision:  95.31%; recall:  96.00%; FB1:  95.65  2793
-
+====================
+b08b74 Baseline
+====================
+     [java] processed 46435 tokens with 8112 phrases; found: 8147 phrases; correct: 7298.
+     [java] accuracy:  97.67%; precision:  89.58%; recall:  89.97%; FB1:  89.77
+     [java]               LOC: precision:  90.22%; recall:  91.06%; FB1:  90.64  1943
+     [java]              MISC: precision:  77.08%; recall:  79.85%; FB1:  78.44  951
+     [java]               ORG: precision:  87.29%; recall:  86.10%; FB1:  86.69  2462
+     [java]               PER: precision:  95.41%; recall:  96.03%; FB1:  95.72  2791
 
 
 ====================
