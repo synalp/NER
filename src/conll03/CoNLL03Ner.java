@@ -192,8 +192,12 @@ public class CoNLL03Ner {
                if(label.equals(CNConstants.OUTCLASS))
                    label=CNConstants.OUTCLASS;
                if(isCRF){
+            	   // why adding the distsim feature would depend on whether or not you add an extra column for the weaksup model ??
                    if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
                        String wordClass="";
+                       // why do you add a pipe before "DISTSIM" ?
+                       // doesn't it create 2 features: one with the word Class, and another constant "DISTSIM" ?
+                       // don't you want to rather put an underscore instead of a pipe ? 
                        if(wordclasses.containsKey(cols[0]))
                          wordClass=wordclasses.get(cols[0])+"|DISTSIM";
                        else
@@ -244,8 +248,16 @@ public class CoNLL03Ner {
                   if(!isCRF) 
                     outFile.append(lines.get(i)+"\t"+context+"\n"); 
                   else{
-                       if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
+                	  if (wSupModelFile.equals("autotest_oracle")) {
+                		  // special case, just for testing: put the oracle class in the additional column
+                          String line =lines.get(i);
+                          String label = line.substring(0,line.indexOf("\t"));
+                          String outClass = label;
+                          String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
+                          outFile.append(newLine);
+                	  } else if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
                             AnalyzeLClassifier.MODELFILE=wSupModelFile;
+                            // you load the model for every line i ??!!
                             LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
                             ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
                             String line =lines.get(i);
@@ -502,6 +514,10 @@ public class CoNLL03Ner {
 //    	     [java] PRIOR pn 34043 0.16718806017061108
 //    	     [java] PRIOR O 169578 0.832811939829389
     	}
+    	{
+    		// third tune the GMMDiag parameters by running 10 iterations of weaksup on DEV and taking the parms that give the highest F1
+    		
+    	}
         
         return basef1;
     }
@@ -512,6 +528,7 @@ public class CoNLL03Ner {
      * @param savingFiles, true if it must generate the input files to StanfordNER
      * @param wSupFeat, true if it uses the weakly supervised model as feature "NOT WORKING YET"
      * @param useExistingModel , true if it uses an existing binary model file
+     * @return the F1 of the CRF on the test corpus
      */
     public float trainStanfordCRF(String entity, boolean savingFiles, boolean wSupFeat, boolean useExistingModel){
         String wsupModel=CNConstants.CHAR_NULL;

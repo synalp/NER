@@ -39,6 +39,11 @@ public class GMMDiag extends GMM {
     // this is diagonal variance (not inverse !)
     double[][] diagvar;
     
+    // parameters to tune;
+    public static double splitRatio=0.1;
+    public static int nitersTraining=20;
+    public static double toleranceTraining=0.0004; //2e-05;
+    
     public GMMDiag(final int nclasses, final float priors[]) {
         super(nclasses,priors,true);
         diagvar = new double[nlabs][nlabs];
@@ -469,7 +474,6 @@ public class GMMDiag extends GMM {
             }    
         }
         //*/
-        double ratio=0.1;
         int nSigma=0;
         for(int y=0;y<nlabs;y++){
              if (y%2==0){
@@ -477,13 +481,13 @@ public class GMMDiag extends GMM {
                 //double delta=Math.sqrt(diagvar[y][0])*nSigma;
                 for (int l=0;l<nlabs;l++){
                     double sign=(means[y][l]<0)?-1:1;
-                    means[y][l]= sign*(Math.abs(means[y][l])+Math.sqrt(diagvar[y][l])*nSigma*ratio);        
+                    means[y][l]= sign*(Math.abs(means[y][l])+Math.sqrt(diagvar[y][l])*nSigma*splitRatio);        
                 }
              }else{
                  //double delta=Math.sqrt(diagvar[y][0])*nSigma;
                  for (int l=0;l<nlabs;l++){
                     double sign=(means[y][l]<0)?-1:1;
-                    means[y][l]= sign*(Math.abs(means[y][l])-Math.sqrt(diagvar[y][l])*nSigma*ratio);
+                    means[y][l]= sign*(Math.abs(means[y][l])-Math.sqrt(diagvar[y][l])*nSigma*splitRatio);
                  }   
              }
         }
@@ -586,8 +590,6 @@ public class GMMDiag extends GMM {
      */
     public double[] train(Margin margin) {
     	// TODO: how are these parms estimated ? use fair estimation on dev !
-        final int niters=20;
-        double epsilon=0.0004; //2e-05;
         train1gauss(margin);
         double loglike = getLoglike(margin);
         assert !Double.isNaN(loglike);
@@ -597,10 +599,10 @@ public class GMMDiag extends GMM {
         split();
         double previousLogLike=loglike;
         double[] postPerClass=null;
-        for (int iter=0;iter<niters;iter++) {
+        for (int iter=0;iter<nitersTraining;iter++) {
             postPerClass=trainViterbi(margin);
             loglike = getLoglike(margin);
-            if(Math.abs(loglike-previousLogLike)<epsilon)
+            if(Math.abs(loglike-previousLogLike)<toleranceTraining)
                 break;
             
             previousLogLike=loglike;
