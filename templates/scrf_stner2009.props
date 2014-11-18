@@ -35,3 +35,5 @@ useOccurrencePatterns=true
 map=word\=0,tag\=1,chunk\=2,answer\=3
 useWord=true
 useTypeSeqs=true
+useTags=true
+useChunks=true

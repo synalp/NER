@@ -518,11 +518,11 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier crf = new AnalyzeCRFClassifier();
         if(wSupFeat){
             wsupModel=WKSUPMODEL.replace("%S", CNConstants.PRNOUN);
-            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,ner=3,answer=4 ");     
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,lemma=3,answer=4 ");     
 
         }
         else
-            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,answer=3");         
+            crf.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,value=3");         
         if(savingFiles){
             //generate the files
             generatingStanfordInputFiles(entity, "train", true,wsupModel);
@@ -688,7 +688,7 @@ public class CoNLL03Ner {
      * @param testSize 
      */
     public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize){
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,10);
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }   
     
