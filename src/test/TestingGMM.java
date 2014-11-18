@@ -38,11 +38,9 @@ public class TestingGMM {
             priorsMap.put(sclass, new Double(0.1));
             analyzing.setPriors(priorsMap); 
             AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
-            /*AnalyzeLClassifier.TRAINFILE=CoNLL03Ner.TRAINFILE.replace("%S", sclass).replace("%CLASS", "LC");
-            AnalyzeLClassifier.TESTFILE=CoNLL03Ner.TESTFILE.replace("%S", sclass).replace("%CLASS", "LC");
-            AnalyzeLClassifier.MODELFILE=CoNLL03Ner.WKSUPMODEL.replace("%S", sclass);*/
+     
             analyzing.trainAllLinearClassifier(sclass,true, false, false);
-            analyzing.testingClassifier(true, sclass, false, false);
+            //analyzing.testingClassifier(true, sclass, false, false);
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
             Margin margin = analyzing.getMargin(sclass);
@@ -156,7 +154,7 @@ public class TestingGMM {
             AnalyzeLClassifier.TESTFILE=CoNLL03Ner.TESTFILE.replace("%S", sclass).replace("%CLASS", "LC");
             AnalyzeLClassifier.MODELFILE=CoNLL03Ner.WKSUPMODEL.replace("%S", sclass);
 
-            //analyzing.trainOneNERClassifier(sclass,false);
+            
             analyzing.trainAllLinearClassifier(sclass, false, false, false);
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
