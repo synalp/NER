@@ -33,6 +33,11 @@ public class GMMD1Diag extends GMMD1 {
     private float maxMean=Float.MIN_VALUE;
     private float maxSigma=Float.MIN_VALUE;
     
+	// 50: var=0.9
+	// 500: var=0.8
+	// 5000: var=0.6
+    public int nitersGMMTraining=50;
+
     // this is diagonal variance (not inverse !)
     double[] diagvar;
     
@@ -414,7 +419,6 @@ public class GMMD1Diag extends GMMD1 {
     
     
     public void train(Margin margin) {
-        final int niters=50;
         train1gauss(margin);
         double loglike = getLoglike(margin);
         assert !Double.isNaN(loglike);
@@ -426,7 +430,7 @@ public class GMMD1Diag extends GMMD1 {
         logWeights[0]=logMath.linearToLog(margin.prior0);
         float priorRest = logMath.linearToLog(1f-margin.prior0)-logMath.linearToLog(logWeights.length-1);
         for (int i=1;i<logWeights.length;i++) logWeights[i]=priorRest;
-        for (int iter=0;iter<niters;iter++) {
+        for (int iter=0;iter<nitersGMMTraining;iter++) {
             trainViterbi(margin);
             // here, do you want to replace the estimated logWeights by the fixed priors ? OK, there set before and kept constant
             loglike = getLoglike(margin);

@@ -55,7 +55,11 @@ public class TestingGMM {
             float[] priors = {0.8f,0.2f};
            
            
-            //*/
+            /*
+             * Runs training 20 times to check variability of the estimate
+             */
+            double[][] means = new double[20][2];
+            for (int retry=0;retry<means.length;retry++) {
             
             int numinst=50;
             margin.setNumberOfInstances(numinst);
@@ -71,15 +75,17 @@ public class TestingGMM {
             System.out.println("******  ONE DIMENSIONAL GMM ********");
             // get scores
             GMMD1Diag gmm = new GMMD1Diag(2, priors);
+            // variability of the result is a concern...
+            gmm.nitersGMMTraining=5000;
             gmm.train(margin);
             System.out.println("mean=[ "+gmm.getMean(0)+" , "+-gmm.getMean(0)+";\n"+
             +gmm.getMean(1)+" , "+-gmm.getMean(1)+"]");
             System.out.println("var=[ "+gmm.getVar(0)+" , "+gmm.getVar(0)+";\n"+
             +gmm.getVar(1)+" , "+gmm.getVar(1));
             System.out.println("GMM trained");      
-            
-            if (Math.abs(gmm.getMean(0)-8)>1) throw new Exception("ERROR: trained mean is not good "+gmm.getMean(0));
-            if (Math.abs(gmm.getMean(1)-2)>1) throw new Exception("ERROR: trained mean is not good "+gmm.getMean(1));
+
+            means[retry][0]=gmm.getMean(0);
+            means[retry][1]=gmm.getMean(1);
             
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
             GMMDiag gmmMD = new GMMDiag(2, priors);
@@ -90,6 +96,32 @@ public class TestingGMM {
             System.out.println("var=[ "+gmmMD.getVar(0,1,1)+" , "+gmmMD.getVar(0,1,1)+";\n"+
             +gmmMD.getVar(1,0,0)+" , "+gmmMD.getVar(1,1,1));
             System.out.println("GMM trained");
+            }
+
+            double vv0,vv1,mm0,mm1;
+            {
+            	double s=0,ss=0;
+            	for (int i=0;i<means.length;i++) {
+            		s+=means[i][0];
+            		ss+=means[i][0]*means[i][0];
+            	}
+            	mm0 = s/(double)means.length;
+            	vv0 = ss/(double)means.length-mm0*mm0;
+            }
+            {
+            	double s=0,ss=0;
+            	for (int i=0;i<means.length;i++) {
+            		s+=means[i][1];
+            		ss+=means[i][1]*means[i][1];
+            	}
+            	mm1 = s/(double)means.length;
+            	vv1= ss/(double)means.length-mm1*mm1;
+            }
+
+            System.out.println("variability "+vv0+" "+vv1);
+            if (Math.abs(mm0-8)>2) throw new Exception("ERROR: trained mean is not good "+mm0);
+            if (Math.abs(mm1-2)>2) throw new Exception("ERROR: trained mean is not good "+mm1);
+          
     }
  
         public static void TestingGMMWithClassifierWeights(){
