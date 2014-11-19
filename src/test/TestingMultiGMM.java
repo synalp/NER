@@ -4,9 +4,11 @@
  */
 package test;
 
+import conll03.CoNLL03Ner;
 import edu.stanford.nlp.classify.LinearClassifier;
 import gmm.GMMD1Diag;
 import gmm.GMMDiag;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,6 +30,9 @@ import tools.Histoplot;
 public class TestingMultiGMM {
 
         public TestingMultiGMM(){
+        }
+        
+        public void TestingMulticlassGMM(){
             AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
             analyzing.reInitializingEsterFiles();
             AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
@@ -120,7 +125,78 @@ public class TestingMultiGMM {
             //*/
     }
     
+         public static void testingGMMCoNLLData(){
+            AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
+            CoNLL03Ner conll = new CoNLL03Ner();
+            //final float[] priors = computePriors(sclassifier,model);
+            List<List<Integer>> featsperInst = new ArrayList<>(); 
+            List<Integer> labelperInst = new ArrayList<>();        
+            HashMap<String,Double> priorsMap = new HashMap<>();
+            String sclass=CNConstants.ALL;
+            priorsMap.put("O", new Double(0.76));
+            priorsMap.put("PER", new Double(0.1)); 
+            priorsMap.put(CNConstants.ORG.toUpperCase(), new Double(0.05)); 
+            priorsMap.put(CNConstants.LOC.toUpperCase(), new Double(0.06)); 
+            priorsMap.put("MISC", new Double(0.03)); 
+            analyzing.setPriors(priorsMap); 
+            
+            AnalyzeLClassifier.TRAINFILE=CoNLL03Ner.TRAINFILE.replace("%S", sclass).replace("%CLASS", "LC");
+            AnalyzeLClassifier.TESTFILE=CoNLL03Ner.TESTFILE.replace("%S", sclass).replace("%CLASS", "LC");
+            AnalyzeLClassifier.MODELFILE=CoNLL03Ner.WKSUPMODEL.replace("%S", sclass);
+            File file = new File(AnalyzeLClassifier.TRAINFILE);
+            if(!file.exists())
+                conll.generatingStanfordInputFiles(sclass, "train", false,CNConstants.CHAR_NULL);
+            file = new File(AnalyzeLClassifier.TESTFILE);
+            if(!file.exists())
+                conll.generatingStanfordInputFiles(sclass, "test", false,CNConstants.CHAR_NULL);
+            
+            analyzing.trainAllLinearClassifier(sclass, false, false, false);
+            
+            
+            LinearClassifier model = analyzing.getModel(sclass);
+            analyzing.getValues(TESTFILE,model,featsperInst,labelperInst);
+            Margin margin = analyzing.getMargin(sclass);
+            margin.setFeaturesPerInstance(featsperInst);
+            margin.setLabelPerInstance(labelperInst);
+            AnalyzeLClassifier.CURRENTPARENTMARGIN=margin;
+            int numinst=labelperInst.size();
+            margin.setNumberOfInstances(numinst);
+            float[] priors=AnalyzeLClassifier.getPriors();
+            System.out.println(Arrays.toString(priors));
+            double[] scores= new double[featsperInst.size()];
+            Arrays.fill(scores, 0.0);
+            Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
+            //Histoplot.showit(margin.getScoreForAllInstancesLabel1(featsperInst,scores), featsperInst.size());
+            /*
+            System.out.println("x=[");
+            for(int i=0;i<numinst;i++){
+                System.out.println(margin.getGenScore(i, 0)+","+margin.getGenScore(i, 1)+";");
+            }*/
+            System.out.println("]");
+            System.out.println("******  ONE DIMENSIONAL GMM ********");
+            // get scores
+            GMMD1Diag gmm = new GMMD1Diag(priors.length, priors);
+            gmm.train(margin);
+            System.out.println("mean=[ "+gmm.getMean(0)+" , "+-gmm.getMean(0)+";\n"+
+            +gmm.getMean(1)+" , "+-gmm.getMean(1)+"]");
+            System.out.println("var=[ "+gmm.getVar(0)+" , "+gmm.getVar(0)+";\n"+
+            +gmm.getVar(1)+" , "+gmm.getVar(1));
+            System.out.println("GMM trained");      
+            System.out.println("******  MULTIDIMENSIONAL GMM ********");
+            GMMDiag gmmMD = new GMMDiag(priors.length, priors);
+            gmmMD.train(margin);
+            System.out.println("mean=[ "+gmmMD.getMean(0,0)+" , "+gmmMD.getMean(0,1)+";\n"+
+            +gmmMD.getMean(1,0)+" , "+gmmMD.getMean(1,1)+"]");
+            System.out.println("var=[ "+gmmMD.getVar(0,1,1)+" , "+gmmMD.getVar(0,1,1)+";\n"+
+            +gmmMD.getVar(1,0,0)+" , "+gmmMD.getVar(1,1,1));
+            System.out.println("GMM trained");
+            
+            
+    }          
+        
     public static void main(String[] args){
         TestingMultiGMM test = new TestingMultiGMM();
+        //test.TestingMulticlassGMM();
+        TestingMultiGMM.testingGMMCoNLLData();
     }
 }
