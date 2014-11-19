@@ -3066,6 +3066,20 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         marginMAP.put(entity, marginAllFeats);        
         
     }
+    /**
+     * This methods follows the following steps:
+     * <ul>
+     * <li>It trains the linear classifier on both datasets train and test and we keep
+     * the weights.</li>
+     * <li>Then it trains the linear classifier on the trainset only.</li>
+     * <li>It updates the weights that are not in the trainset to zero in the set containing all weights (train and test).</li>
+     * <li>It updates the weights of the trainset with the values obtained in the second step (train on trainset only).</li>
+     * <li>It saves the model as a training model.</li>
+     * </ul>
+     * @param entity
+     * @param trainSize
+     * @param testSize 
+     */
     public void allweightsKeepingOnlyTrain(String entity, int trainSize,int testSize){
         if (testSize>=0) AnalyzeLClassifier.TESTSIZE=testSize;
         File trainSet = new File(AnalyzeLClassifier.TRAINFILE.replace("%S", entity));
