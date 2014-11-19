@@ -87,6 +87,7 @@ public class TestingGMM {
  
         public static void TestingGMMWithClassifierWeights(){
             AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
+            analyzing.reInitializingEsterFiles();
             //final float[] priors = computePriors(sclassifier,model);
             List<List<Integer>> featsperInst = new ArrayList<>(); 
             List<Integer> labelperInst = new ArrayList<>();        
@@ -99,7 +100,8 @@ public class TestingGMM {
             AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
 
             analyzing.trainOneNERClassifier(sclass,false);
-            
+            //creates the testfile
+            analyzing.saveGroups(sclass,false, false, false);            
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
             Margin margin = analyzing.getMargin(sclass);
