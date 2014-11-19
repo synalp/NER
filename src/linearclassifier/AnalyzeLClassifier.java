@@ -138,6 +138,7 @@ public class AnalyzeLClassifier {
         float[] priors = new float [priorsMap.size()];
         
         for(String lbl:lblIndex){
+        	System.out.println("DEUBHHHHHHHHHHHHHHH "+lbl+" "+priorsMap.get(lbl));
             priors[lblIndex.indexOf(lbl)]=priorsMap.get(lbl).floatValue();
         }
         return priors;

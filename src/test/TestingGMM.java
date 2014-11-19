@@ -39,7 +39,7 @@ public class TestingGMM {
             analyzing.setPriors(priorsMap); 
             AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
      
-            analyzing.trainAllLinearClassifier(sclass,true, false, false);
+            analyzing.trainAllLinearClassifier(sclass,false, false, false);
             //analyzing.testingClassifier(true, sclass, false, false);
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
@@ -198,8 +198,8 @@ public class TestingGMM {
     }       
         
     public static void main(String[] args){
-        TestingGMM.TestingGMMWithGeneratedData();
+        //TestingGMM.TestingGMMWithGeneratedData();
         //TestingGMM.TestingGMMWithClassifierWeights();
-        //TestingGMM.TestingGMMCoNLLData();
+        TestingGMM.TestingGMMCoNLLData();
     }
 }
