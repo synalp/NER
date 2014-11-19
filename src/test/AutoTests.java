@@ -20,7 +20,7 @@ public class AutoTests {
 			GeneralConfig.forceXmxStanford=xmstanford;
 		}
 		
-//		m.testCRFquick();
+		m.testCRFquick();
 		m.testGigaquick();
                 //test the gmm with generated data
                 TestingGMM.TestingGMMWithGeneratedData();
