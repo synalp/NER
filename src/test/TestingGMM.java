@@ -8,6 +8,7 @@ import conll03.CoNLL03Ner;
 import edu.stanford.nlp.classify.LinearClassifier;
 import gmm.GMMD1Diag;
 import gmm.GMMDiag;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -144,6 +145,7 @@ public class TestingGMM {
     }
          public static void TestingGMMCoNLLData(){
             AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
+            CoNLL03Ner conll = new CoNLL03Ner();
             //final float[] priors = computePriors(sclassifier,model);
             List<List<Integer>> featsperInst = new ArrayList<>(); 
             List<Integer> labelperInst = new ArrayList<>();        
@@ -156,13 +158,18 @@ public class TestingGMM {
             AnalyzeLClassifier.TRAINFILE=CoNLL03Ner.TRAINFILE.replace("%S", sclass).replace("%CLASS", "LC");
             AnalyzeLClassifier.TESTFILE=CoNLL03Ner.TESTFILE.replace("%S", sclass).replace("%CLASS", "LC");
             AnalyzeLClassifier.MODELFILE=CoNLL03Ner.WKSUPMODEL.replace("%S", sclass);
-
+            File file = new File(AnalyzeLClassifier.TRAINFILE);
+            if(!file.exists())
+                conll.generatingStanfordInputFiles(sclass, "train", false,CNConstants.CHAR_NULL);
+            file = new File(AnalyzeLClassifier.TESTFILE);
+            if(!file.exists())
+                conll.generatingStanfordInputFiles(sclass, "test", false,CNConstants.CHAR_NULL);
             
             analyzing.trainAllLinearClassifier(sclass, false, false, false);
-            //creates the testfile
-            analyzing.saveGroups(sclass,false, false, false);
+            
+            
             LinearClassifier model = analyzing.getModel(sclass);
-            analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
+            analyzing.getValues(TESTFILE,model,featsperInst,labelperInst);
             Margin margin = analyzing.getMargin(sclass);
             margin.setFeaturesPerInstance(featsperInst);
             margin.setLabelPerInstance(labelperInst);
