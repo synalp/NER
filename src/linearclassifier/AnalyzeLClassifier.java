@@ -3027,29 +3027,33 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         Index<String> featIdxs = modelTrainFeats.featureIndex();
         Index<String> allfeatIdxs = modelAllFeats.featureIndex();
         List<String> trainFeats = featIdxs.objectsList();
-        List<String> testFeats = new ArrayList(allfeatIdxs.objectsList());
+        List<String> allFeats = new ArrayList(allfeatIdxs.objectsList());
         List<Integer>testIdx=new ArrayList<>();
-        testFeats.removeAll(trainFeats);
+        //testFeats.removeAll(trainFeats);
         double[][] weightsAllFeats = marginAllFeats.getWeights();
-        //set all the features in the testset to 0.0
-        for(String feat:testFeats){
-            int featIdx=allfeatIdxs.indexOf(feat);
-            for(int i=0; i<weightsAllFeats[featIdx].length;i++){
-                weightsAllFeats[featIdx][i]=0.0;
-            }
-            testIdx.add(featIdx);
-        }
-        //copy the initial weights of the supervised method
         Margin  marginTrainFeats = marginMAP.get(entity);
         double[][] trainWeights = marginTrainFeats.getWeights();
-        List<Integer> trainIdx=new ArrayList<>();
-        for(String feat:trainFeats){
+        List<Integer> trainIdx=new ArrayList<>();        
+        
+        for(String feat:allFeats){
             int featIdx=allfeatIdxs.indexOf(feat);
-            int trIdx=featIdxs.indexOf(feat);
-            trainIdx.add(featIdx);
-            weightsAllFeats[featIdx]=trainWeights[trIdx];
-                        
-        }         
+            if(trainFeats.contains(feat)){
+                //copy the initial weights of the supervised method
+                int trIdx=featIdxs.indexOf(feat);
+                trainIdx.add(featIdx);
+                weightsAllFeats[featIdx]=trainWeights[trIdx];
+
+            }else{      
+                //set all the features in the testset to 0.0
+                for(int i=0; i<weightsAllFeats[featIdx].length;i++){
+                    weightsAllFeats[featIdx][i]=0.0;
+                }
+                testIdx.add(featIdx);
+            }
+        }
+        
+
+         
         //saves the model as train
         AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
         modelAllFeats.setWeights(weightsAllFeats);
@@ -3070,7 +3074,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
      * This methods follows the following steps:
      * <ul>
      * <li>It trains the linear classifier on both datasets train and test and we keep
-     * the weights.</li>
+     * all the weights.</li>
      * <li>Then it trains the linear classifier on the trainset only.</li>
      * <li>It updates the weights that are not in the trainset to zero in the set containing all weights (train and test).</li>
      * <li>It updates the weights of the trainset with the values obtained in the second step (train on trainset only).</li>
@@ -3123,29 +3127,31 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         Index<String> featIdxs = modelTrainFeats.featureIndex();
         Index<String> allfeatIdxs = modelAllFeats.featureIndex();
         List<String> trainFeats = featIdxs.objectsList(); 
-        List<String> testFeats = new ArrayList(allfeatIdxs.objectsList());
+        List<String> allFeats = new ArrayList(allfeatIdxs.objectsList());
         List<Integer>testIdx=new ArrayList<>();
-        testFeats.removeAll(trainFeats);
+        
         double[][] weightsAllFeats = marginAllFeats.getWeights();
-        //set all the features in the testset to 0.0
-        for(String feat:testFeats){
-            int featIdx=allfeatIdxs.indexOf(feat);
-            for(int i=0; i<weightsAllFeats[featIdx].length;i++){
-                weightsAllFeats[featIdx][i]=0.0;
-            }
-            testIdx.add(featIdx);
-        }
-        //copy the initial weights of the supervised method
         Margin  marginTrainFeats = marginMAP.get(entity);
         double[][] trainWeights = marginTrainFeats.getWeights();
-        List<Integer> trainIdx=new ArrayList<>();
-        for(String feat:trainFeats){
+        List<Integer> trainIdx=new ArrayList<>();        
+        
+        for(String feat:allFeats){
             int featIdx=allfeatIdxs.indexOf(feat);
-            int trIdx=featIdxs.indexOf(feat);
-            trainIdx.add(featIdx);
-            weightsAllFeats[featIdx]=trainWeights[trIdx];
-                        
-        } 
+            if(trainFeats.contains(feat)){
+                //copy the initial weights of the supervised method
+                int trIdx=featIdxs.indexOf(feat);
+                trainIdx.add(featIdx);
+                weightsAllFeats[featIdx]=trainWeights[trIdx];
+            }else{
+                //set all the features in the testset to 0.0
+                for(int i=0; i<weightsAllFeats[featIdx].length;i++){
+                    weightsAllFeats[featIdx][i]=0.0;
+                }
+                testIdx.add(featIdx);
+            }
+            
+        }
+           
         //saves the model as train
         AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
         modelAllFeats.setWeights(weightsAllFeats);
