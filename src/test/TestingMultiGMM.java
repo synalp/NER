@@ -29,12 +29,22 @@ public class TestingMultiGMM {
 
         public TestingMultiGMM(){
             AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
-            //final float[] priors = computePriors(sclassifier,model);
+            analyzing.reInitializingEsterFiles();
+            AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
+            
             List<List<Integer>> featsperInst = new ArrayList<>(); 
             List<Integer> labelperInst = new ArrayList<>();        
-            final float[] priors = {0.2f,0.3f,0.4f,0.1f};
+            //final float[] priors = {0.2f,0.3f,0.4f,0.1f};
             String sclass=CNConstants.ALL;
-
+            HashMap<String,Double> priorsMap = new HashMap<>();
+            priorsMap.put("NO", new Double(0.9));
+            priorsMap.put("pers", new Double(0.04));
+            priorsMap.put("loc", new Double(0.03));
+            priorsMap.put("org", new Double(0.03));
+            
+            
+            analyzing.setPriors(priorsMap);             
+            
             analyzing.trainAllLinearClassifier(sclass,true,false,false);
             
             LinearClassifier model = analyzing.getModel(sclass);
@@ -43,12 +53,14 @@ public class TestingMultiGMM {
             Margin margin = analyzing.getMargin(sclass);
             margin.setFeaturesPerInstance(featsperInst);
             margin.setLabelPerInstance(labelperInst);
+            AnalyzeLClassifier.CURRENTPARENTMARGIN=margin;
             double[] scores= new double[featsperInst.size()];
             Arrays.fill(scores, 0.0);            
             Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
             
             
             int numinst=labelperInst.size();
+            float[] priors=AnalyzeLClassifier.getPriors();
             //Margin margin = new Margin();
             /*
             numinst=10;
