@@ -157,6 +157,8 @@ public class TestingGMM {
 
             
             analyzing.trainAllLinearClassifier(sclass, false, false, false);
+            //creates the testfile
+            analyzing.saveGroups(sclass,false, false, false);
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
             Margin margin = analyzing.getMargin(sclass);
