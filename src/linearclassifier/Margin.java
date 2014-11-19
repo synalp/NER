@@ -28,6 +28,9 @@ import tools.Histoplot;
  */
 public class Margin {
     public static boolean GENERATEDDATA=false;
+    
+    public float prior0 = 0.9f;
+    
     //Weights
     private double[][] weights;
     private Index<String> labelIdx, featureIdx;
@@ -171,7 +174,7 @@ public class Margin {
         Random r = new Random();
         for(int i=0; i<ninst; i++){
             float rnd=r.nextFloat();
-            genScores[i][0]=(rnd<0.9)?(float) distr0.sample():(float) distr1.sample();
+            genScores[i][0]=(rnd<prior0)?(float) distr0.sample():(float) distr1.sample();
             genScores[i][1]=-genScores[i][0];
             //scores0[i]=genScores[i][0];
             //scores1[i]=genScores[i][1];
