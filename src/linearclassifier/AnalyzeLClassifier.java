@@ -190,6 +190,12 @@ public class AnalyzeLClassifier {
            saveFilesForLClassifier(str,bltrain, iswiki, allLower);
 
     }
+   
+    public void reInitializingEsterFiles(){
+            MODELFILE="bin.%S.lc.mods";
+            TRAINFILE="groups.%S.tab.lc.train";
+            TESTFILE="groups.%S.tab.lc.test";
+    }
         
     public void saveFilesForLClassifier(String entity, boolean bltrain, boolean iswiki, boolean isLower) {
             try {

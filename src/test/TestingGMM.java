@@ -26,6 +26,7 @@ public class TestingGMM {
 
         public static void TestingGMMWithGeneratedData(){
             AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
+            analyzing.reInitializingEsterFiles();
             //final float[] priors = computePriors(sclassifier,model);
             List<List<Integer>> featsperInst = new ArrayList<>(); 
             List<Integer> labelperInst = new ArrayList<>();        
@@ -38,8 +39,8 @@ public class TestingGMM {
             priorsMap.put(sclass, new Double(0.1));
             analyzing.setPriors(priorsMap); 
             AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
-     
-            analyzing.trainAllLinearClassifier(sclass,true, false, false);
+   
+            analyzing.trainAllLinearClassifier(sclass,false, false, false);
             //analyzing.testingClassifier(true, sclass, false, false);
             LinearClassifier model = analyzing.getModel(sclass);
             analyzing.getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
