@@ -766,7 +766,7 @@ public class CoNLL03Ner {
                 conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500,1000);
                 break;
         case 3:
-                conll.trainStanfordCRF(CNConstants.ALL, false, true,false);
+                conll.trainStanfordCRF(CNConstants.ALL, true, true,false);
                 break;            
         case 4:
         	// retag the Conll03 corpus with openNLP: this'll be used to run weakly supervised training of the linear classifier on it

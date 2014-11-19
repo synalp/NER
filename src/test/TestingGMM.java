@@ -198,8 +198,8 @@ public class TestingGMM {
     }       
         
     public static void main(String[] args){
-        //TestingGMM.TestingGMMWithGeneratedData();
+        TestingGMM.TestingGMMWithGeneratedData();
         //TestingGMM.TestingGMMWithClassifierWeights();
-        TestingGMM.TestingGMMCoNLLData();
+        //TestingGMM.TestingGMMCoNLLData();
     }
 }

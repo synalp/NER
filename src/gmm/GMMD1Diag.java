@@ -303,7 +303,7 @@ public class GMMD1Diag extends GMMD1 {
             co/=2.0;
             gconst[y]=co;
             //change logWeights
-            logWeights[y]=logMath.linearToLog(nk[y]/nex[y]);
+            //logWeights[y]=logMath.linearToLog(nk[y]/nex[y]);
             
         }
         //System.out.println("diagvar["+y+"]="+Arrays.toString(diagvar[y]));
