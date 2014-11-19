@@ -75,6 +75,13 @@ conlleval.pl w/o -r
 66291 Baseline BIO (not tag, not chunks)
 conlleval.pl w/o -r 
 ======================
+     [java] ./scripts/evalconll.sh analysis/CRF/test.all.log
+     [java] processed 46435 tokens with 5616 phrases; found: 5548 phrases; correct: 4935.
+     [java] accuracy:  97.64%; precision:  88.95%; recall:  87.87%; FB1:  88.41
+     [java]               LOC: precision:  90.47%; recall:  91.18%; FB1:  90.82  1679
+     [java]              MISC: precision:  80.65%; recall:  78.46%; FB1:  79.54  682
+     [java]               ORG: precision:  85.94%; recall:  82.39%; FB1:  84.13  1579
+     [java]               PER: precision:  93.84%; recall:  94.19%; FB1:  94.02  1608
 
 ======================================================================  
 66291 After using weakly supervised, stoc. coord. gradient 1000 iters 
