@@ -320,7 +320,9 @@ public class GMMD1Diag extends GMMD1 {
             
         }
         
+        final double newlogweight = logWeights[0] + logMath.linearToLog(0.5);
         for (int y=0;y<ngauss;y++) {
+        	logWeights[y]=newlogweight;
             if (y%2==0){
                 means[y]+=Math.sqrt(diagvar[y])*ratio;
                 //means[y][1]=-means[y][0];
@@ -403,6 +405,8 @@ public class GMMD1Diag extends GMMD1 {
             //double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y][l]);
             //co/=2.0;
             
+        logWeights[0]=0;
+        
         System.out.println("train1gauss means=["+means[0]+","+-means[0]+";\n"+means[1]+","+-means[1]+"]");
         System.out.println("train1gauss var=["+diagvar[0]+","+diagvar[0]+";\n"+diagvar[1]+","+diagvar[1]+"]");
         System.out.println("train1gauss var=["+gconst[0]+","+gconst[1]+"]");
@@ -419,8 +423,12 @@ public class GMMD1Diag extends GMMD1 {
         if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
         System.out.println("train1gaussD1 loglike "+loglike+" nex "+numInstances+ "sqerr "+sqerr);
         split();
+        logWeights[0]=logMath.linearToLog(margin.prior0);
+        float priorRest = logMath.linearToLog(1f-margin.prior0)-logMath.linearToLog(logWeights.length-1);
+        for (int i=1;i<logWeights.length;i++) logWeights[i]=priorRest;
         for (int iter=0;iter<niters;iter++) {
             trainViterbi(margin);
+            // here, do you want to replace the estimated logWeights by the fixed priors ? OK, there set before and kept constant
             loglike = getLoglike(margin);
             sqerr = Double.NaN;
             if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
