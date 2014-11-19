@@ -25,7 +25,7 @@ import tools.Histoplot;
  */
 public class TestingGMM {
 
-        public static void TestingGMMWithGeneratedData(){
+        public static void TestingGMMWithGeneratedData() throws Exception {
             AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
             analyzing.reInitializingEsterFiles();
             //final float[] priors = computePriors(sclassifier,model);
@@ -50,11 +50,12 @@ public class TestingGMM {
             margin.setLabelPerInstance(labelperInst);
             AnalyzeLClassifier.CURRENTPARENTMARGIN=margin;
                     
-            float[] priors=AnalyzeLClassifier.getPriors();            
+//            float[] priors=AnalyzeLClassifier.getPriors();            
+            // bug before: margin.lblIndex is empty, so the priors were not set. I prefer to set them directly, to simplify testing GMM:
+            float[] priors = {0.8f,0.2f};
            
            
             //*/
-
             
             int numinst=50;
             margin.setNumberOfInstances(numinst);
@@ -76,8 +77,13 @@ public class TestingGMM {
             System.out.println("var=[ "+gmm.getVar(0)+" , "+gmm.getVar(0)+";\n"+
             +gmm.getVar(1)+" , "+gmm.getVar(1));
             System.out.println("GMM trained");      
+            
+            if (Math.abs(gmm.getMean(0)-8)>1) throw new Exception("ERROR: trained mean is not good "+gmm.getMean(0));
+            if (Math.abs(gmm.getMean(1)-2)>1) throw new Exception("ERROR: trained mean is not good "+gmm.getMean(1));
+            
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
             GMMDiag gmmMD = new GMMDiag(2, priors);
+
             gmmMD.train(margin);
             System.out.println("mean=[ "+gmmMD.getMean(0,0)+" , "+gmmMD.getMean(0,1)+";\n"+
             +gmmMD.getMean(1,0)+" , "+gmmMD.getMean(1,1)+"]");

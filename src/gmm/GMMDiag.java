@@ -553,7 +553,6 @@ public class GMMDiag extends GMM {
         }
         assert numInstances>0;
 
-        
         // precompute gconst
         /*
          * log de

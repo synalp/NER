@@ -134,7 +134,6 @@ public class AnalyzeLClassifier {
            ErrorsReporting.report("The margin cannot be null");
         }
         Index<String> lblIndex = margin.getLabelIndex();
-        
         float[] priors = new float [priorsMap.size()];
         
         for(String lbl:lblIndex){

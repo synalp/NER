@@ -27,7 +27,7 @@ public class GMM {
     private Matrix vars[];
     protected double[] gconst;
     protected double[][] means;
-    final double[] logWeights;
+    public final double[] logWeights;
     final int nlabs;
     final LogMath logMath = new LogMath();
     protected double[] tmp;
