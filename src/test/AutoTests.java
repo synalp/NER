@@ -69,12 +69,18 @@ public class AutoTests {
 	
 	/**
 	 * TODO: Pretty weird: it looks like posteriors and priors are inter-exchanged ???
+	 * 
+	 * @return true if test is a success
 	 */
 	public static void checkPosteriors(double[] post, float[] priors) {
 		if (!autoTestOn) return;
 		double nex = post[0]+post[1];
 		double realpost0 = post[0]/nex;
 		double realpost1 = post[1]/nex;
-		System.out.println("checkpost "+realpost0+" "+realpost1+" .. "+priors[0]+" "+priors[1]);
+		double err = Math.abs(realpost0-priors[0])+Math.abs(realpost1-priors[1]);
+		System.out.println("checkpost "+realpost0+" "+realpost1+" .. "+priors[0]+" "+priors[1]+" "+err);
+		if (err>0.4) {
+			throw new Error("TEST ERROR: posteriors differ from priors ");
+		}
 	}
 }

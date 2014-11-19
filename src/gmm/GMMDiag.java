@@ -429,8 +429,8 @@ public class GMMDiag extends GMM {
             co/=2.0;
             gconst[y]=co;
             
-            //change logWeights
-            logWeights[y]=logMath.linearToLog(nk[y]/nex[y]);
+            //change logWeights ... or not ??
+            // logWeights[y]=logMath.linearToLog(nk[y]/nex[y]);
            
         }
          //System.out.println("priors: "+ Arrays.toString(logWeights));
@@ -582,6 +582,7 @@ public class GMMDiag extends GMM {
         //*/
     }
     
+    public int nIterDone=0;
     /**
      * 
      * @param margin
@@ -598,7 +599,8 @@ public class GMMDiag extends GMM {
         split();
         double previousLogLike=loglike;
         double[] postPerClass=null;
-        for (int iter=0;iter<nitersTraining;iter++) {
+        nIterDone=0;
+        for (int iter=0;iter<nitersTraining;iter++,nIterDone++) {
             postPerClass=trainViterbi(margin);
             loglike = getLoglike(margin);
             if(Math.abs(loglike-previousLogLike)<toleranceTraining)

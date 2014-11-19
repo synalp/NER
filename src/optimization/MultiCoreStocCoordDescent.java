@@ -25,6 +25,7 @@ import test.AutoTests;
 import tools.CNConstants;
 import tools.Histoplot;
 import tools.PlotAPI;
+import utils.Wait;
 
 
 /**
@@ -125,13 +126,28 @@ public class MultiCoreStocCoordDescent  {
  
     
     public float computeROfTheta(Margin margin) {
-        
-        //final float[] priors = computePriors(sclassifier,model);
-        final float[] priors = AnalyzeLClassifier.getPriors();
-        // get scores
-        GMMDiag gmm = new GMMDiag(priors.length, priors);
-        double[] post=gmm.train(margin);
-        AutoTests.checkPosteriors(post,priors);
+    	//final float[] priors = computePriors(sclassifier,model);
+    	final float[] priors = AnalyzeLClassifier.getPriors();
+    	// get scores
+    	GMMDiag gmm = new GMMDiag(priors.length, priors);
+    	gmm.nitersTraining=1000;
+    	gmm.toleranceTraining=0;
+    	double[] post=gmm.train(margin);
+    	System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone);
+    	AutoTests.checkPosteriors(post,priors);
+    		// for debugging:
+//    		int numInstances = margin.getNumberOfInstances();
+//    		float[] z = new float[numInstances];
+//    		for (int ex=0;ex<numInstances;ex++) {
+//    			List<Integer> featuresByInstance = new ArrayList<>();
+//    			if(!Margin.GENERATEDDATA) featuresByInstance = margin.getFeaturesPerInstance(ex);
+//    			if(Margin.GENERATEDDATA)
+//    				z[ex] = margin.getGenScore(ex, 0);
+//    			else                
+//    				z[ex] = margin.getScore(featuresByInstance,0);
+//    		}
+//    		Histoplot.showit(z);
+//    		Wait.waitUser();
         /*
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
