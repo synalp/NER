@@ -1,5 +1,9 @@
 package test;
 
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.util.Random;
+
 import gmm.GMMD1;
 import gmm.GMMDiag;
 import tools.CNConstants;
@@ -54,6 +58,8 @@ public class AutoTests {
 	}
 	
 	/**
+	 * Test that the risk is decreasing when doing weaksup iterations
+	 * 
 	 * - Why do "macro-averaged F1" alternate between 48 and 87% ?? ==> because tests are run on train and on test
 	 * - How are the priors estimated ? Is it fair ? ==> we don't care, the plan is to tune the priors as another parameter
 	 * - Why do the nb of examples in test set vary: 921, 1400, 921... ==> because tests are run on train and on test
@@ -73,8 +79,9 @@ public class AutoTests {
 	
 	/**
 	 * Check whether posteriors are not too far from priors.
-	 * Warning: if the priors are 0.9 / 0.1, then a degenerated solution that has posteriors 1/0 would be ok...
-	 * So I change this test to check that the posteriors are within +/-20% of the priors 
+	 * Warning: if the priors are 0.9 / 0.1, then a degenerated solution that has posteriors 1/0 would be ok... too permissive
+	 * So I change this test to check that the posteriors are within +/-20% of the priors... too restrictive
+	 * So I change this test to only prevent degenerated solutions
 	 */
 	public static void checkPosteriors(double[] post, float[] priors) {
 		if (!autoTestOn) return;
@@ -97,5 +104,40 @@ public class AutoTests {
 			double po1 = post[1]/nex;
 			throw new Error("TEST ERROR: posteriors differ from priors "+po0+" "+po1+" "+priors[0]+" "+priors[1]);
 		}
+	}
+	
+	void genArtificialDataLC(float prior0) {
+		try {
+			OutputStreamWriter outFile = new OutputStreamWriter(new FileOutputStream("conll.%S.tab.%CLASS.train".replace("%S", CNConstants.PRNOUN).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+			Random r = new Random();
+			for (int i=0;i<1000;i++) {
+				// very basic random generation with only 2 features
+				if (r.nextFloat()<prior0) {
+					outFile.append("pn\t");
+					outFile.append("W1\t");
+					outFile.append("W1\t");
+					outFile.append("W1\t");
+					outFile.append("C1\t");
+					outFile.append("W1");
+				} else {
+					outFile.append("O\t");
+					outFile.append("W2\t");
+					outFile.append("W2\t");
+					outFile.append("W2\t");
+					outFile.append("C2\t");
+					outFile.append("W2");
+				}
+			}
+			outFile.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	void testWeaksupArtificialData() throws Exception {
+		genArtificialDataLC(0.8f);
+        GMMDiag.nitersTraining=1000;
+        GMMDiag.toleranceTraining=0; // do all iters
+        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,100,false);
+        if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
 	}
 }
