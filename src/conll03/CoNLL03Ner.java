@@ -286,7 +286,7 @@ public class CoNLL03Ner {
         }
     }
     
-    public void testingNewWeightsLC(String entity,boolean savingFiles, int trainSize, int testSize){
+    public void testingNewWeightsLC(String entity,boolean savingFiles, int trainSize, int testSize, boolean useExistingModels){
         AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
@@ -312,13 +312,14 @@ public class CoNLL03Ner {
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
         ErrorsReporting.report("Trainin on the union of the train adn test datasets, but putting test weights to zero");
-        lcclass.allweightsKeepingOnlyTrain(entity,trainSize, testSize);
+        //lcclass.allweightsKeepingOnlyTrain(entity,trainSize, testSize,useExistingModels);
+        lcclass.allweightsKeepingOnlyTrain(entity,trainSize, testSize,useExistingModels);
         
         columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
     }
     
-    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int numIters){
+    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int numIters,boolean useExistingModels){
         if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
@@ -342,7 +343,7 @@ public class CoNLL03Ner {
         
         //lcclass.trainAllLinearClassifier(entity, false, false, false);
         //lcclass.testingClassifier(false, entity, false, false);
-        lcclass.allweightsKeepingOnlyTrain(entity,trainSize, Integer.MAX_VALUE);
+        lcclass.allweightsKeepingOnlyTrain(entity,trainSize, Integer.MAX_VALUE,useExistingModels);
         
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);
@@ -380,7 +381,7 @@ public class CoNLL03Ner {
      * @param savingFiles 
      */
 
-    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize, int niters){
+    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize, int niters, boolean useExistingModels){
         
         AnalyzeLClassifier.TRAINSIZE=trainSize;
         AnalyzeLClassifier.TESTSIZE=testSize;
@@ -406,7 +407,7 @@ public class CoNLL03Ner {
         
         //lcclass.trainAllLinearClassifier(entity, false, false, false);
         //lcclass.testingClassifier(false, entity, false, false);
-        lcclass.allweightsKeepingOnlyTrain(entity,trainSize,testSize);
+        lcclass.allweightsKeepingOnlyTrain(entity,trainSize,testSize,useExistingModels);
         
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);        
@@ -693,8 +694,8 @@ public class CoNLL03Ner {
      * @param trainSize
      * @param testSize 
      */
-    public void experimentsCRFPlusWkSup(int trainSize){
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,1000);
+    public void experimentsCRFPlusWkSup(int trainSize, boolean useExistingModels){
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,1000,useExistingModels);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }
     /**
@@ -707,8 +708,8 @@ public class CoNLL03Ner {
      * @param trainSize
      * @param testSize 
      */
-    public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize){
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000);
+    public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize, boolean useExistingModels){
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingModels);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }   
     
@@ -763,7 +764,7 @@ public class CoNLL03Ner {
         	break;
         case 2:
                 //testset = gigaword
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500,1000);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500,1000,true);
                 break;
         case 3:
                 conll.trainStanfordCRF(CNConstants.ALL, true, true,false);
@@ -774,11 +775,11 @@ public class CoNLL03Ner {
         	break;
         case 5:
         	// what's the difference between case 5 and 6 ?
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,1000);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,1000,false);
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
-               conll.experimentsCRFPlusWkSupGWord(50, 500);
+               conll.experimentsCRFPlusWkSupGWord(50, 500,true);
                break;
         case 7:
         	// TODO: tune parameters on dev

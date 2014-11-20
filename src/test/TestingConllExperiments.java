@@ -36,11 +36,11 @@ public class TestingConllExperiments {
         switch(args[0]){
             
             case "w":
-                conll.testingNewWeightsLC(CNConstants.PRNOUN, true, (trainSize==-1)?Integer.MAX_VALUE:trainSize, (testSize==-1)?Integer.MAX_VALUE:testSize );
+                conll.testingNewWeightsLC(CNConstants.PRNOUN, true, (trainSize==-1)?Integer.MAX_VALUE:trainSize, (testSize==-1)?Integer.MAX_VALUE:testSize,false );
                 break;
             case "gw":
                 AnalyzeLClassifier.TRAINSIZE=Integer.parseInt(args[1]);
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN, true, testSize,1000);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN, true, testSize,1000,false);
                 break;                
         }
     }

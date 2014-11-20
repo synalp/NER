@@ -5,6 +5,7 @@
 package linearclassifier;
 
 
+import conll03.CoNLL03Ner;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -449,7 +450,50 @@ public class AnalyzeLClassifier {
     
         }        
     }       
+    public void trainBothDatasetsClassifier(String entity){
+        LinearClassifier model = null;
+        File mfile = new File(MODELFILE.replace("%S", entity));
+        if(!mfile.exists()){
+            
+            ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);                
+            GeneralDataset data = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", entity));
+            model = (LinearClassifier) columnDataClass.makeClassifier(data);
 
+            //model.
+            //save the model in a file
+            try {
+                IOUtils.writeObjectToFile(model, mfile);
+            } catch (IOException ex) {
+
+            }
+
+        }else{
+            Object object;
+            try {
+                object = IOUtils.readObjectFromFile(mfile);
+                model=(LinearClassifier)object;                  
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } 
+
+        }
+        if(model!=null){
+            /*List<List<Integer>> featsperInst = new ArrayList<>(); 
+            List<Integer> labelperInst = new ArrayList<>(); */
+            //train data
+            modelMap.put(entity,model);
+            Margin margin = new Margin(model);
+            marginMAP.put(entity,margin);  
+            
+            //compute the values for instances in the trainset
+            /*getValues(TRAINFILE.replace("%S", entity),model,featsperInst,labelperInst);
+            System.out.println("Total number of features: "+ model.features().size());
+            featInstMap.put(entity,featsperInst);
+            lblInstMap.put(entity, labelperInst);*/
+    
+        }        
+    }  
     /**
      * Returns the different models for each type of NE,
      * save the models in a file, so there is no need to retrain each time
@@ -3003,76 +3047,60 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-        //Train all train and test data
+       //Train all train and test data
         AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
-        String realTrainList=AnalyzeLClassifier.LISTTRAINFILES;
         String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", entity);
+
         String realTrainModel=MODELFILE.replace("%S", entity);
-        AnalyzeLClassifier.LISTTRAINFILES=allTrainAndTest;
-        AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
-        AnalyzeLClassifier.TRAINFILE=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
-        AnalyzeLClassifier.exitAfterTrainingFeaturization=true;
-        //delete the files if they exist
-        File file = new File(AnalyzeLClassifier.MODELFILE);
-        file.delete();
-        file = new File(AnalyzeLClassifier.TRAINFILE);
-        file.delete();
-        trainAllLinearClassifier(entity,isSavingFiles,isWiki,isLower);
-        LinearClassifier modelAllFeats = modelMap.get(entity);
-        Margin           marginAllFeats = marginMAP.get(entity);
-        //train only train data
-        AnalyzeLClassifier.TRAINSIZE=trainSize;
-        AnalyzeLClassifier.LISTTRAINFILES=realTrainList;
-        AnalyzeLClassifier.MODELFILE=realTrainModel;
-        AnalyzeLClassifier.TRAINFILE=tmpRealTrain;
-        AnalyzeLClassifier.exitAfterTrainingFeaturization=false;
-        trainAllLinearClassifier(entity,isSavingFiles,isWiki,isLower);
-        LinearClassifier modelTrainFeats = modelMap.get(entity);
-                
-        Index<String> featIdxs = modelTrainFeats.featureIndex();
-        Index<String> allfeatIdxs = modelAllFeats.featureIndex();
-        List<String> trainFeats = featIdxs.objectsList();
-        List<String> allFeats = new ArrayList(allfeatIdxs.objectsList());
-        List<Integer>testIdx=new ArrayList<>();
-        //testFeats.removeAll(trainFeats);
-        double[][] weightsAllFeats = marginAllFeats.getWeights();
-        Margin  marginTrainFeats = marginMAP.get(entity);
-        double[][] trainWeights = marginTrainFeats.getWeights();
-        List<Integer> trainIdx=new ArrayList<>();        
-        
-        for(String feat:allFeats){
-            int featIdx=allfeatIdxs.indexOf(feat);
-            if(trainFeats.contains(feat)){
-                //copy the initial weights of the supervised method
-                int trIdx=featIdxs.indexOf(feat);
-                trainIdx.add(featIdx);
-                weightsAllFeats[featIdx]=trainWeights[trIdx];
-
-            }else{      
-                //set all the features in the testset to 0.0
-                for(int i=0; i<weightsAllFeats[featIdx].length;i++){
-                    weightsAllFeats[featIdx][i]=0.0;
-                }
-                testIdx.add(featIdx);
-            }
-        }
-        
-
-         
-        //saves the model as train
         AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
-        modelAllFeats.setWeights(weightsAllFeats);
-        try {
-            IOUtils.writeObjectToFile(modelAllFeats, realTrainModel);
-        } catch (IOException ex) {
+        //AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
+        //AnalyzeLClassifier.exitAfterTrainingFeaturization=true;
+        //delete the files if they exist
+        File mfile = new File(AnalyzeLClassifier.MODELFILE);
+        mfile.delete();
+        updatingPropFile(entity, false);
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);   
+        GeneralDataset datatr = columnDataClass.readTrainingExamples(tmpRealTrain);        
+        LinearClassifier model = null;
+        if(!mfile.exists()){
+            GeneralDataset dataAll = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", entity));
+            Pair<GeneralDataset, GeneralDataset> splitData= dataAll.split(0, datatr.size());
+            model = (LinearClassifier) columnDataClass.makeClassifier(splitData.second);  
 
-        }  
-  
-        
-        marginAllFeats.setTrainFeatureIndexes(trainIdx);
-        marginAllFeats.setTestFeatureIndexes(testIdx);
-        modelMap.put(entity, modelAllFeats);
-        marginMAP.put(entity, marginAllFeats);        
+            //save the model in a file
+            try {
+                IOUtils.writeObjectToFile(model, realTrainModel);
+            } catch (IOException ex) {
+
+            }
+
+        }else{
+            Object object;
+            try {
+                object = IOUtils.readObjectFromFile(mfile);
+                model=(LinearClassifier)object;                  
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } 
+
+        }        
+
+        Index<String> trainFeatIdxs = datatr.featureIndex();
+        List<Integer> trainIdx=new ArrayList<>();        
+
+
+        for(String feat:trainFeatIdxs){
+            int featIdx=trainFeatIdxs.indexOf(feat);
+                trainIdx.add(featIdx);
+            
+        }
+
+        //saves the model as train
+        modelMap.put(entity, model);
+        Margin margin = new Margin(model);
+        marginMAP.put(entity,margin);          
+        margin.setFeatureIndexes(trainIdx);    
         
     }
     /**
@@ -3089,8 +3117,106 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
      * @param trainSize
      * @param testSize 
      */
-    public void allweightsKeepingOnlyTrain(String entity, int trainSize,int testSize){
-        if (testSize>=0) AnalyzeLClassifier.TESTSIZE=testSize;
+//    public void allweightsKeepingOnlyTrain(String entity, int trainSize,int testSize, boolean useExistingModels){
+//        if (testSize>=0) AnalyzeLClassifier.TESTSIZE=testSize;
+//        File trainSet = new File(AnalyzeLClassifier.TRAINFILE.replace("%S", entity));
+//        File testSet = new File(AnalyzeLClassifier.TESTFILE.replace("%S", entity));
+//        String allTrainAndTest=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
+//        File trainAndTest = new File(allTrainAndTest);        
+//        try {
+//            String file1Str = org.apache.commons.io.FileUtils.readFileToString(trainSet);
+//            String file2Str = org.apache.commons.io.FileUtils.readFileToString(testSet);
+//            // Write the file
+//            org.apache.commons.io.FileUtils.write(trainAndTest, file1Str);
+//            org.apache.commons.io.FileUtils.write(trainAndTest, file2Str, true); // true for append
+//            
+//            
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
+//        //Train all train and test data
+//        AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
+//        String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", entity);
+//        String realTrainModel=MODELFILE.replace("%S", entity);
+//        AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
+//        AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
+//        AnalyzeLClassifier.exitAfterTrainingFeaturization=true;
+//        //delete the files if they exist
+//        File file = new File(AnalyzeLClassifier.MODELFILE);
+//        if(!useExistingModels)
+//            file.delete();
+//        trainAllLinearClassifier(entity,false,false,false);
+//        LinearClassifier modelAllFeats = modelMap.get(entity);
+//        Margin           marginAllFeats = marginMAP.get(entity);
+//        //train only train data
+//        AnalyzeLClassifier.exitAfterTrainingFeaturization=false;
+//        if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
+//        AnalyzeLClassifier.MODELFILE=realTrainModel;
+//        AnalyzeLClassifier.TRAINFILE=tmpRealTrain;
+//        file = new File(AnalyzeLClassifier.MODELFILE);
+//        if(!useExistingModels)
+//            file.delete();        
+//        trainAllLinearClassifier(entity,false,false,false);
+//        LinearClassifier modelTrainFeats = modelMap.get(entity);
+//                
+//        Index<String> featIdxs = modelTrainFeats.featureIndex();
+//        Index<String> allfeatIdxs = modelAllFeats.featureIndex();
+//        List<String> trainFeats = featIdxs.objectsList(); 
+//        //List<String> allFeats = new ArrayList(allfeatIdxs.objectsList());
+//        List<Integer>testIdx=new ArrayList<>();
+//        
+//        double[][] weightsAllFeats = marginAllFeats.getWeights();
+//        Margin  marginTrainFeats = marginMAP.get(entity);
+//        double[][] trainWeights = marginTrainFeats.getWeights();
+//        List<Integer> trainIdx=new ArrayList<>();        
+//        System.out.println("Before scanning all features: "+allfeatIdxs.size());
+//        Long stTime=System.currentTimeMillis();
+//        for(String feat:allfeatIdxs){
+//            int featIdx=allfeatIdxs.indexOf(feat);
+//            if(trainFeats.contains(feat)){
+//                //copy the initial weights of the supervised method
+//                int trIdx=featIdxs.indexOf(feat);
+//                trainIdx.add(featIdx);
+//                weightsAllFeats[featIdx]=trainWeights[trIdx];
+//            }else{
+//                //set all the features in the testset to 0.0
+//                for(int i=0; i<weightsAllFeats[featIdx].length;i++){
+//                    weightsAllFeats[featIdx][i]=0.0;
+//                }
+//                testIdx.add(featIdx);
+//            }
+//            
+//        }
+//        Long endTime=System.currentTimeMillis(); 
+//        long totalTime=endTime-stTime;
+//        System.out.println("Total time in milliseconds:"+ totalTime);
+//        //saves the model as train
+//        AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
+//        modelAllFeats.setWeights(weightsAllFeats);
+//
+//        try {
+//            IOUtils.writeObjectToFile(modelAllFeats, realTrainModel);
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }  
+//   
+//        
+//        marginAllFeats.setTrainFeatureIndexes(trainIdx);
+//        marginAllFeats.setTestFeatureIndexes(testIdx);
+//        modelMap.put(entity, modelAllFeats);
+//        marginMAP.put(entity, marginAllFeats);
+//       
+//    } 
+    /**
+     * Trains on all data, train and test but keeps only the weights of the little train data, the weights for all the other features
+     * (testset) are set to zero
+     * @param entity
+     * @param trainSize
+     * @param testSize 
+     */    
+    public void allweightsKeepingOnlyTrain(String entity, int trainSize,int testSize, boolean useExistingModels){
+        if (testSize>=0) 
+            AnalyzeLClassifier.TESTSIZE=testSize;
         File trainSet = new File(AnalyzeLClassifier.TRAINFILE.replace("%S", entity));
         File testSet = new File(AnalyzeLClassifier.TESTFILE.replace("%S", entity));
         String allTrainAndTest=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
@@ -3101,79 +3227,68 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             // Write the file
             org.apache.commons.io.FileUtils.write(trainAndTest, file1Str);
             org.apache.commons.io.FileUtils.write(trainAndTest, file2Str, true); // true for append
-            
-            
+    
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+
         //Train all train and test data
         AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
         String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", entity);
+
         String realTrainModel=MODELFILE.replace("%S", entity);
         AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
-        AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
-        AnalyzeLClassifier.exitAfterTrainingFeaturization=true;
+        //AnalyzeLClassifier.MODELFILE="bin.%S.allfeats.lc.mods".replace("%S", entity);
+        //AnalyzeLClassifier.exitAfterTrainingFeaturization=true;
         //delete the files if they exist
-        File file = new File(AnalyzeLClassifier.MODELFILE);
-        file.delete();
-        trainAllLinearClassifier(entity,false,false,false);
-        LinearClassifier modelAllFeats = modelMap.get(entity);
-        Margin           marginAllFeats = marginMAP.get(entity);
-        //train only train data
-        AnalyzeLClassifier.exitAfterTrainingFeaturization=false;
-        if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
-        AnalyzeLClassifier.MODELFILE=realTrainModel;
-        AnalyzeLClassifier.TRAINFILE=tmpRealTrain;
-        file = new File(AnalyzeLClassifier.MODELFILE);
-        file.delete();        
-        trainAllLinearClassifier(entity,false,false,false);
-        LinearClassifier modelTrainFeats = modelMap.get(entity);
-                
-        Index<String> featIdxs = modelTrainFeats.featureIndex();
-        Index<String> allfeatIdxs = modelAllFeats.featureIndex();
-        List<String> trainFeats = featIdxs.objectsList(); 
-        List<String> allFeats = new ArrayList(allfeatIdxs.objectsList());
-        List<Integer>testIdx=new ArrayList<>();
-        
-        double[][] weightsAllFeats = marginAllFeats.getWeights();
-        Margin  marginTrainFeats = marginMAP.get(entity);
-        double[][] trainWeights = marginTrainFeats.getWeights();
-        List<Integer> trainIdx=new ArrayList<>();        
-        
-        for(String feat:allFeats){
-            int featIdx=allfeatIdxs.indexOf(feat);
-            if(trainFeats.contains(feat)){
-                //copy the initial weights of the supervised method
-                int trIdx=featIdxs.indexOf(feat);
-                trainIdx.add(featIdx);
-                weightsAllFeats[featIdx]=trainWeights[trIdx];
-            }else{
-                //set all the features in the testset to 0.0
-                for(int i=0; i<weightsAllFeats[featIdx].length;i++){
-                    weightsAllFeats[featIdx][i]=0.0;
-                }
-                testIdx.add(featIdx);
+        File mfile = new File(AnalyzeLClassifier.MODELFILE);
+        if(!useExistingModels)
+            mfile.delete();
+        updatingPropFile(entity, false);
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);   
+        GeneralDataset datatr = columnDataClass.readTrainingExamples(tmpRealTrain);        
+        LinearClassifier model = null;
+        if(!mfile.exists()){
+            GeneralDataset dataAll = columnDataClass.readTrainingExamples(TRAINFILE.replace("%S", entity));
+            Pair<GeneralDataset, GeneralDataset> splitData= dataAll.split(0, datatr.size());
+            model = (LinearClassifier) columnDataClass.makeClassifier(splitData.second);  
+
+            //save the model in a file
+            try {
+                IOUtils.writeObjectToFile(model, realTrainModel);
+            } catch (IOException ex) {
+
             }
+
+        }else{
+            Object object;
+            try {
+                object = IOUtils.readObjectFromFile(mfile);
+                model=(LinearClassifier)object;                  
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            } 
+
+        }        
+
+        Index<String> trainFeatIdxs = datatr.featureIndex();
+        List<Integer> trainIdx=new ArrayList<>();        
+
+
+        for(String feat:trainFeatIdxs){
+            int featIdx=trainFeatIdxs.indexOf(feat);
+                trainIdx.add(featIdx);
             
         }
-           
-        //saves the model as train
-        AnalyzeLClassifier.TRAINFILE=allTrainAndTest;
-        modelAllFeats.setWeights(weightsAllFeats);
 
-        try {
-            IOUtils.writeObjectToFile(modelAllFeats, realTrainModel);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }  
-   
-        
-        marginAllFeats.setTrainFeatureIndexes(trainIdx);
-        marginAllFeats.setTestFeatureIndexes(testIdx);
-        modelMap.put(entity, modelAllFeats);
-        marginMAP.put(entity, marginAllFeats);
-       
-    }  
+        //saves the model as train
+        modelMap.put(entity, model);
+        Margin margin = new Margin(model);
+        marginMAP.put(entity,margin);          
+        margin.setFeatureIndexes(trainIdx);
+
+    }      
     public void evalutatingF1AndR(){
         PlotAPI plotR = new PlotAPI("R vs Iterations","Num of Iterations", "R");
         PlotAPI plotF1 = new PlotAPI("F1 vs Iterations","Num of Iterations", "F1");        
@@ -3252,7 +3367,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //*/
         //analyzing.checkingInstances("pers");
         //computing the risk
-        analyzing.evalutatingF1AndR();
+        //analyzing.evalutatingF1AndR();
         /*
         // Checking WEAKLY SUPERVISED OPTIONS
         //File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
@@ -3341,7 +3456,9 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
          * are set to zero
          */
         //analyzing.allweightsKeepingOnlyTrain(CNConstants.PRNOUN,20, true, false, false);
-        
+        //testing new weights
+        CoNLL03Ner conll = new CoNLL03Ner();
+        conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 50,500,false);
     }
   
 }

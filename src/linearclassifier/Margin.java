@@ -537,4 +537,12 @@ public class Margin {
     public List<Integer> getTestFeatureIndexes(){
         return this.testFeatIndx;
     }   
+    public void setFeatureIndexes(List<Integer> trainIdx){
+        this.trainFeatIndx=trainIdx;
+        for(int i=0;i<weights.length;i++){
+            if(trainIdx.contains(i))
+                continue;
+            testFeatIndx.add(i);
+        }
+    }
 }
