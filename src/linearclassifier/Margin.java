@@ -54,8 +54,8 @@ public class Margin {
     double[][] orWeightsCopy ;
     
     //list of features in the labeled and unlabeled datasets
-    private List<Integer> trainFeatIndx = new ArrayList<>();
-    private List<Integer> testFeatIndx = new ArrayList<>();
+    private Integer trainFeatSize;
+    private Integer testFeatSize;
     
     public Margin(){
         
@@ -356,8 +356,8 @@ public class Margin {
         this.shuffleWeights=margin.shuffleWeights;
         this.shuffleAndOrFeatIdxMap.putAll(margin.shuffleAndOrFeatIdxMap);
         this.orAndShuffleFeatIdxMap.putAll(margin.orAndShuffleFeatIdxMap); 
-        this.trainFeatIndx= margin.trainFeatIndx;
-        this.testFeatIndx=margin.testFeatIndx;
+        this.trainFeatSize= margin.trainFeatSize;
+        this.testFeatSize=margin.testFeatSize;
     }
     
     public List<Double> getShuffleWeights(){
@@ -525,24 +525,17 @@ public class Margin {
         this.numInstances=numInst;
     } 
     
-    public void setTrainFeatureIndexes(List<Integer> fIdx){
-        this.trainFeatIndx=fIdx;
+    public void setTrainFeatureSize(Integer fIdx){
+        this.trainFeatSize=fIdx;
     }
-    public List<Integer> getTrainFeatureIndexes(){
-        return this.trainFeatIndx;
+    public Integer getTrainFeatureSize(){
+        return this.trainFeatSize;
     }
-     public void setTestFeatureIndexes(List<Integer> fIdx){
-        this.testFeatIndx=fIdx;
+     public void setTestFeatureSize(Integer fIdx){
+        this.testFeatSize=fIdx;
     }
-    public List<Integer> getTestFeatureIndexes(){
-        return this.testFeatIndx;
+    public Integer getTestFeatureSize(){
+        return this.testFeatSize;
     }   
-    public void setFeatureIndexes(List<Integer> trainIdx){
-        this.trainFeatIndx=trainIdx;
-        for(int i=0;i<weights.length;i++){
-            if(trainIdx.contains(i))
-                continue;
-            testFeatIndx.add(i);
-        }
-    }
+
 }

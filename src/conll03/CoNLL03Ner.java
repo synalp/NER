@@ -708,8 +708,8 @@ public class CoNLL03Ner {
      * @param trainSize
      * @param testSize 
      */
-    public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize, boolean useExistingModels){
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingModels);
+    public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize, boolean useExistingWSModel){
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }   
     
@@ -779,7 +779,7 @@ public class CoNLL03Ner {
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
-               conll.experimentsCRFPlusWkSupGWord(50, 500,true);
+               conll.experimentsCRFPlusWkSupGWord(50, 500,false);
                break;
         case 7:
         	// TODO: tune parameters on dev

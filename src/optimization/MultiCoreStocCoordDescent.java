@@ -262,19 +262,19 @@ public class MultiCoreStocCoordDescent  {
             }
             List<Double> weightsForFeat= margin.getSubListOfFeats(dimIdx);
             //int selectedFeats[] = margin.getTopWeights(0.3,50);
-            List<Integer> trainFeats = margin.getTrainFeatureIndexes();
-            List<Integer> testFeats = margin.getTestFeatureIndexes();
+            //List<Integer> trainFeats = margin.getTrainFeatureIndexes();
+            //List<Integer> testFeats = margin.getTestFeatureIndexes();
             List<Integer> trainFeatsInSubSet = new ArrayList<>();
-            for(int index=0; index<trainFeats.size();index++){
-                int shIdx=margin.getShuffledIndexFromOriginal(testFeats.get(index));
+            for(int index=0; index<margin.getTrainFeatureSize();index++){
+                int shIdx=margin.getShuffledIndexFromOriginal(index);
                 if(margin.isIndexInSubset(shIdx))
                     trainFeatsInSubSet.add(shIdx);
                     
                     
             }            
             List<Integer> testFeatsInSubSet = new ArrayList<>();
-            for(int index=0; index<testFeats.size();index++){
-                int shIdx=margin.getShuffledIndexFromOriginal(testFeats.get(index));
+            for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
+                int shIdx=margin.getShuffledIndexFromOriginal(index);
                 if(margin.isIndexInSubset(shIdx))
                     testFeatsInSubSet.add(shIdx);
                     

@@ -3100,8 +3100,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         modelMap.put(entity, model);
         Margin margin = new Margin(model);
         marginMAP.put(entity,margin);          
-        margin.setFeatureIndexes(trainIdx);    
-        
+        margin.setTrainFeatureSize(datatr.numFeatures());    
+        margin.setTestFeatureSize(model.weights().length);
     }
     /**
      * This methods follows the following steps:
@@ -3286,7 +3286,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         modelMap.put(entity, model);
         Margin margin = new Margin(model);
         marginMAP.put(entity,margin);          
-        margin.setFeatureIndexes(trainIdx);
+        margin.setTrainFeatureSize(datatr.numFeatures());    
+        margin.setTestFeatureSize(model.weights().length);
 
     }      
     public void evalutatingF1AndR(){
