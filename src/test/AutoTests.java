@@ -1,5 +1,7 @@
 package test;
 
+import gmm.GMMD1;
+import gmm.GMMDiag;
 import tools.CNConstants;
 import tools.GeneralConfig;
 import conll03.CoNLL03Ner;
@@ -63,24 +65,28 @@ public class AutoTests {
         GeneralConfig.corpusGigaTrain="giga1000.conll03";
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,10);
+        // which GMMDiag is used ? GMMD1Diag or GMMDiag ?
+        // GMMDiag.nitersTraining=1000;
+        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,100);
         if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
 	}
 	
 	/**
-	 * TODO: Pretty weird: it looks like posteriors and priors are inter-exchanged ???
-	 * 
-	 * @return true if test is a success
+	 * Check whether posteriors are not too far from priors.
+	 * Warning: if the priors are 0.9 / 0.1, then a degenerated solution that has posteriors 1/0 would be ok...
+	 * So I change this test to check that the posteriors are within +/-20% of the priors 
 	 */
 	public static void checkPosteriors(double[] post, float[] priors) {
 		if (!autoTestOn) return;
 		double nex = post[0]+post[1];
-		double realpost0 = post[0]/nex;
-		double realpost1 = post[1]/nex;
-		double err = Math.abs(realpost0-priors[0])+Math.abs(realpost1-priors[1]);
-		System.out.println("checkpost "+realpost0+" "+realpost1+" .. "+priors[0]+" "+priors[1]+" "+err);
-		if (err>0.4) {
+		double expectedN0 = nex*priors[0];
+		double expectedN1 = nex*priors[1];
+		double deltaN0 = expectedN0*0.2;
+		double deltaN1 = expectedN1*0.2;
+
+		System.out.println("checkpost "+post[0]+" "+post[1]+" .. "+priors[0]+" "+priors[1]);
+		if (post[0]<expectedN0-deltaN0 || post[0]>expectedN0+deltaN0 ||
+				post[1]<expectedN1-deltaN1 || post[1]>expectedN1+deltaN1)
 			throw new Error("TEST ERROR: posteriors differ from priors ");
-		}
 	}
 }
