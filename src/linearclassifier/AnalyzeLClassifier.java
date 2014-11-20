@@ -3086,16 +3086,6 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
 
         }        
 
-        Index<String> trainFeatIdxs = datatr.featureIndex();
-        List<Integer> trainIdx=new ArrayList<>();        
-
-
-        for(String feat:trainFeatIdxs){
-            int featIdx=trainFeatIdxs.indexOf(feat);
-                trainIdx.add(featIdx);
-            
-        }
-
         //saves the model as train
         modelMap.put(entity, model);
         Margin margin = new Margin(model);
@@ -3271,16 +3261,6 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             } 
 
         }        
-
-        Index<String> trainFeatIdxs = datatr.featureIndex();
-        List<Integer> trainIdx=new ArrayList<>();        
-
-
-        for(String feat:trainFeatIdxs){
-            int featIdx=trainFeatIdxs.indexOf(feat);
-                trainIdx.add(featIdx);
-            
-        }
 
         //saves the model as train
         modelMap.put(entity, model);
