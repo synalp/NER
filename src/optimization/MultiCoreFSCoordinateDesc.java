@@ -300,7 +300,7 @@ public class MultiCoreFSCoordinateDesc  {
                     counter++;
                     estimr0 =(isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
                     System.out.println("*******************************"); 
-                    System.out.println("R["+iter+"] = "+estimr0);   
+                    System.out.println("RMCFS["+iter+"] = "+estimr0);   
                     lastRisk=(double)estimr0;
                     //plotR.addPoint(counter, estimr0);
                     System.out.println("*******************************");

@@ -115,6 +115,16 @@
        </java>
     </target>
 
+    <target name="dettest" depends="compile" description="xtof manual tests" >
+	<java classname="test.ManualTests"
+	   fork="true"
+           failonerror="true"
+           maxmemory="7g">
+           <arg value="500m"/>
+	   <classpath refid="run.classpath" />
+       </java>
+    </target>
+
     <target name="clean" description="clean up" >
 	<!-- Delete the ${build} and ${dist} directory trees -->
         <delete dir="${build}"/>
