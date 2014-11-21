@@ -183,7 +183,8 @@ public class AutoTests {
         HashMap<String,Double> priorsMap = new HashMap<>();
         priorsMap.put("O", new Double(1-priorPN));
         priorsMap.put(CNConstants.PRNOUN, new Double(priorPN));
-        lcclass.setPriors(priorsMap);  
+        lcclass.setPriors(priorsMap);
+        GeneralConfig.nthreads=1;
         lcclass.wkSupParallelStocCoordD(CNConstants.PRNOUN, true, nitersWeakSup, true);
         
         if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
