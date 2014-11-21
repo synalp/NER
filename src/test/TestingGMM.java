@@ -121,7 +121,10 @@ public class TestingGMM {
             System.out.println("variability "+vv0+" "+vv1);
             if (Math.abs(mm0-8)>2) throw new Exception("ERROR: trained mean is not good "+mm0);
             if (Math.abs(mm1-2)>2) throw new Exception("ERROR: trained mean is not good "+mm1);
-          
+            
+            // avoid future problems: this static var is only used in this method (?), and I got exceptions when calling
+            // a test just after this one because of this var...
+            Margin.GENERATEDDATA=false;
     }
  
         public static void TestingGMMWithClassifierWeights(){

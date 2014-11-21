@@ -3,12 +3,12 @@ package test;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import linearclassifier.AnalyzeLClassifier;
 import linearclassifier.Margin;
 
-import gmm.GMMD1;
 import gmm.GMMDiag;
 import tools.CNConstants;
 import tools.GeneralConfig;
@@ -49,6 +49,7 @@ public class AutoTests {
                 //TestingGMM.TestingGMMWithClassifierWeights();
                 //test gmm with conllmulticlass gaussians
                //TestingGMM.TestingGMMCoNLLData();
+        m.testWeaksupArtificialData();
 	}
 	
 	/**
@@ -187,6 +188,29 @@ public class AutoTests {
         GeneralConfig.nthreads=1;
         lcclass.wkSupParallelStocCoordD(CNConstants.PRNOUN, true, nitersWeakSup, true);
         
+        // check that the Gaussians match exactly the modes:
+        Margin margin = lcclass.getMargin(CNConstants.PRNOUN);
+        List<List<Integer>> feats = margin.getFeaturesPerInstances();
+        // We know that we only have exactly two Dirac, so we just need to compute the min and max value to get the precision scores for both modes
+        float xmin=Float.MAX_VALUE,xmax=-Float.MAX_VALUE;
+        for (int i=0;i<feats.size();i++) {
+        	float x=margin.getScore(feats.get(i), 0);
+        	if (x<xmin) xmin=x;
+        	if (x>xmax) xmax=x;
+        }
+        final float[] priors = AnalyzeLClassifier.getPriors();
+      	GMMDiag gmm = new GMMDiag(priors.length, priors);
+      	gmm.nitersTraining=1000;
+      	gmm.toleranceTraining=0;
+      	gmm.train(margin);
+      	double m0=gmm.getMean(0, 0), m1=gmm.getMean(1, 0);
+      	if (m1<m0) {double mt=m0; m0=m1; m1=mt;}
+      	double err = Math.abs(m0-xmin) + Math.abs(m1-xmax);
+      	if (err>0.2) throw new Exception("Estimated gauss do not match real modes "+m0+" "+m1+" "+xmin+" "+xmax);
+        
+      	// check that the risk decreases
         if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
+        
+        // TODO: check also F1 increases
 	}
 }

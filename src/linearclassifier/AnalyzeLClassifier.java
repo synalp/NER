@@ -1121,6 +1121,9 @@ public class AnalyzeLClassifier {
 	}    
     /**
      * Do not forget to set the priorsMap before calling this method
+     * 
+     * TODO: delete this method so that we have a SINGLE method for computing R !
+     * 
      * @return 
      */
     public float computeROfTheta() {
