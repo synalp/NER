@@ -2780,7 +2780,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             FileOutputStream fileOut =
             new FileOutputStream(fileName);
             ObjectOutputStream out =
-                            new ObjectOutputStream(fileOut);
+              new ObjectOutputStream(fileOut);
             out.writeObject(vocFeats);
             out.close();
             fileOut.close();

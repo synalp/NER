@@ -96,6 +96,19 @@ conlleval.pl w/o -r
      [java]               PER: precision:  93.73%; recall:  94.19%; FB1:  93.96  1610
 
 
+======================================================================
+8f1f8d After using weakly supervised, stoc. coord. gradient 1000 iters 
+ trainSize=50 utts. testSize=500 utts. BIO (not tags, not chunks)
+All flow chart
+======================================================================
+     [java] ./scripts/evalconll.sh analysis/CRF/test.all.log
+     [java] processed 46435 tokens with 5616 phrases; found: 5565 phrases; correct: 4940.
+     [java] accuracy:  97.62%; precision:  88.77%; recall:  87.96%; FB1:  88.36
+     [java]               LOC: precision:  90.49%; recall:  91.36%; FB1:  90.92  1682
+     [java]              MISC: precision:  80.35%; recall:  78.17%; FB1:  79.25  682
+     [java]               ORG: precision:  85.62%; recall:  82.76%; FB1:  84.16  1592
+     [java]               PER: precision:  93.66%; recall:  94.07%; FB1:  93.86  1609
+
 
 ====================
 e88298 Priors on dev
