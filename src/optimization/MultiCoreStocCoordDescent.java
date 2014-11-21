@@ -38,6 +38,101 @@ public class MultiCoreStocCoordDescent  {
   private ThreadsafeProcessor<Pair<Integer,Margin>,Pair<Integer,Double>> coordGradThr;
   private int nThreads;
   
+  public static float computeROfTheta(Margin margin) {
+  	//final float[] priors = computePriors(sclassifier,model);
+  	final float[] priors = AnalyzeLClassifier.getPriors();
+  	// get scores
+  	GMMDiag gmm = new GMMDiag(priors.length, priors);
+  	gmm.nitersTraining=1000;
+  	gmm.toleranceTraining=0;
+  	double[] post=gmm.train(margin);
+  	System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
+  	
+  	{
+  		// depending on the weights, it may happen that the posteriors and priors are inverted.
+  		// Then, R increases (but is this a consequence of the inversion ? I'm not 100% sure)
+  		// so I try to detect this situation here, and negate the weights when this happens
+  		if ((priors[0]>priors[1] && post[0]<post[1])||(priors[0]<priors[1] && post[1]<post[0])) {
+  			System.out.println("WARNING: detected prior inversion; negating weights "+Thread.currentThread().getId());
+  			double[][] w = margin.getWeights();
+  			for (int i=0;i<w.length;i++)
+  				for (int j=0;j<w[i].length;j++)
+  					w[i][j]=-w[i][j];
+  			post=gmm.train(margin);
+  			System.out.println("just after inversion train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
+  		}
+  	}
+  	
+  	AutoTests.checkPosteriors(post,priors);
+  		// for debugging:
+//  		int numInstances = margin.getNumberOfInstances();
+//  		float[] z = new float[numInstances];
+//  		for (int ex=0;ex<numInstances;ex++) {
+//  			List<Integer> featuresByInstance = new ArrayList<>();
+//  			if(!Margin.GENERATEDDATA) featuresByInstance = margin.getFeaturesPerInstance(ex);
+//  			if(Margin.GENERATEDDATA)
+//  				z[ex] = margin.getGenScore(ex, 0);
+//  			else                
+//  				z[ex] = margin.getScore(featuresByInstance,0);
+//  		}
+//  		Histoplot.showit(z);
+//  		Wait.waitUser();
+      /*
+      System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
+      +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
+      System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
+      +gmm.getVar(1, 0, 0)+" , "+gmm.getVar(1, 1, 1));
+      System.out.println("GMM trained");
+      */
+      //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
+      
+      float r= computeR(gmm, priors,true); //xtof
+              
+      return r;
+      
+  }
+
+  /**
+   * Le GMM modélise les scores de la class 0, i.e: (mu_0,0 ; sigma_0,0) et (mu_1,0 ; sigma_1,0)
+   */
+  static float computeR(GMMDiag gmm, final float[] py, boolean isconstrained) {
+      final float sqrtpi = (float)Math.sqrt(Math.PI);
+      final float pi = (float)Math.PI;
+      final float sigma00 = (float)Math.sqrt(gmm.getVar(0, 0, 0));
+      
+      final float sigma10 = (float)Math.sqrt(gmm.getVar(1, 0, 0));
+      
+      final float var00 = (float)gmm.getVar(0, 0, 0);
+      final float var10 = (float)gmm.getVar(1, 0, 0);
+      final float mean00  = (float)gmm.getMean(0, 0);
+      final float mean01  = (float)gmm.getMean(0, 1);
+      final float mean10  = (float)gmm.getMean(1, 0);
+      final float mean11  = (float)gmm.getMean(1, 1);
+      
+
+      
+      if(isconstrained){
+          float t1 = py[0]*(1f-2f*mean00)/(4f*sigma00*sqrtpi) * (1f+(float)AnalyzeLClassifier.erf( (0.5-mean00)/sigma00 ));
+          float t2 = py[0]/(2f*pi) * (float)Math.exp( -(0.5f-mean00)*(0.5f-mean00)/var00 );
+          float t3 = py[1]*(1f+2f*mean10)/(4f*sigma10*sqrtpi) * (1f-(float)AnalyzeLClassifier.erf( (-0.5-mean10)/sigma10 ));
+          float t4 = py[1]/(2f*pi) * (float)Math.exp( -(-0.5f-mean10)*(-0.5f-mean10)/var10 );
+          return t1+t2+t3+t4;
+      }
+      
+      float t1= 0.5f + (py[0]*mean01)/2f + (py[1]*mean10)/2f;
+      float newsigma=  ((float) gmm.getVar(0, 0, 0) + (float)gmm.getVar(0, 1, 1));
+      float t2 = py[0]*((float)gmm.getVar(0, 1, 1))* (float) gmm.getProbability(mean00, mean01+1, newsigma);
+      newsigma=  ((float) gmm.getVar(1, 1, 1) + (float)gmm.getVar(1, 0, 0));
+      float t3 = py[1]*((float)gmm.getVar(1, 0, 0))* (float) gmm.getProbability(mean11, mean10+1, newsigma);
+      newsigma=  ((float) gmm.getVar(0, 1, 1) + (float)gmm.getVar(0, 0, 0));
+      float t4= (py[0]/2f)*(mean00 - mean01 - 1)*(float)AnalyzeLClassifier.erf((mean00-mean01-1)/Math.sqrt(2*newsigma));
+      newsigma=  ((float) gmm.getVar(1, 0, 0) + (float)gmm.getVar(1, 1, 1));
+      float t5= (py[1]/2f)*(mean11 - mean10 - 1)*(float)AnalyzeLClassifier.erf((mean11-mean10-1)/Math.sqrt(2*newsigma));
+                          
+      
+      return t1+t2+t3+t4+t5;
+  }    
+
   
   public MultiCoreStocCoordDescent(int niters, int nThreads, boolean isclose, boolean ismontecarlo, int numniiters){
       this.nThreads = nThreads;
@@ -80,88 +175,10 @@ public class MultiCoreStocCoordDescent  {
 
         
     
-    /**
-     * Le GMM modélise les scores de la class 0, i.e: (mu_0,0 ; sigma_0,0) et (mu_1,0 ; sigma_1,0)
-     */
-    float computeR(GMMDiag gmm, final float[] py, boolean isconstrained) {
-        final float sqrtpi = (float)Math.sqrt(Math.PI);
-        final float pi = (float)Math.PI;
-        final float sigma00 = (float)Math.sqrt(gmm.getVar(0, 0, 0));
-        
-        final float sigma10 = (float)Math.sqrt(gmm.getVar(1, 0, 0));
-        
-        final float var00 = (float)gmm.getVar(0, 0, 0);
-        final float var10 = (float)gmm.getVar(1, 0, 0);
-        final float mean00  = (float)gmm.getMean(0, 0);
-        final float mean01  = (float)gmm.getMean(0, 1);
-        final float mean10  = (float)gmm.getMean(1, 0);
-        final float mean11  = (float)gmm.getMean(1, 1);
-        
-
-        
-        if(isconstrained){
-            float t1 = py[0]*(1f-2f*mean00)/(4f*sigma00*sqrtpi) * (1f+(float)AnalyzeLClassifier.erf( (0.5-mean00)/sigma00 ));
-            float t2 = py[0]/(2f*pi) * (float)Math.exp( -(0.5f-mean00)*(0.5f-mean00)/var00 );
-            float t3 = py[1]*(1f+2f*mean10)/(4f*sigma10*sqrtpi) * (1f-(float)AnalyzeLClassifier.erf( (-0.5-mean10)/sigma10 ));
-            float t4 = py[1]/(2f*pi) * (float)Math.exp( -(-0.5f-mean10)*(-0.5f-mean10)/var10 );
-            return t1+t2+t3+t4;
-        }
-        
-        float t1= 0.5f + (py[0]*mean01)/2f + (py[1]*mean10)/2f;
-        float newsigma=  ((float) gmm.getVar(0, 0, 0) + (float)gmm.getVar(0, 1, 1));
-        float t2 = py[0]*((float)gmm.getVar(0, 1, 1))* (float) gmm.getProbability(mean00, mean01+1, newsigma);
-        newsigma=  ((float) gmm.getVar(1, 1, 1) + (float)gmm.getVar(1, 0, 0));
-        float t3 = py[1]*((float)gmm.getVar(1, 0, 0))* (float) gmm.getProbability(mean11, mean10+1, newsigma);
-        newsigma=  ((float) gmm.getVar(0, 1, 1) + (float)gmm.getVar(0, 0, 0));
-        float t4= (py[0]/2f)*(mean00 - mean01 - 1)*(float)AnalyzeLClassifier.erf((mean00-mean01-1)/Math.sqrt(2*newsigma));
-        newsigma=  ((float) gmm.getVar(1, 0, 0) + (float)gmm.getVar(1, 1, 1));
-        float t5= (py[1]/2f)*(mean11 - mean10 - 1)*(float)AnalyzeLClassifier.erf((mean11-mean10-1)/Math.sqrt(2*newsigma));
-                            
-        
-        return t1+t2+t3+t4+t5;
-    }    
     
       
     
  
-    
-    public float computeROfTheta(Margin margin) {
-    	//final float[] priors = computePriors(sclassifier,model);
-    	final float[] priors = AnalyzeLClassifier.getPriors();
-    	// get scores
-    	GMMDiag gmm = new GMMDiag(priors.length, priors);
-    	gmm.nitersTraining=1000;
-    	gmm.toleranceTraining=0;
-    	double[] post=gmm.train(margin);
-    	System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone);
-    	AutoTests.checkPosteriors(post,priors);
-    		// for debugging:
-//    		int numInstances = margin.getNumberOfInstances();
-//    		float[] z = new float[numInstances];
-//    		for (int ex=0;ex<numInstances;ex++) {
-//    			List<Integer> featuresByInstance = new ArrayList<>();
-//    			if(!Margin.GENERATEDDATA) featuresByInstance = margin.getFeaturesPerInstance(ex);
-//    			if(Margin.GENERATEDDATA)
-//    				z[ex] = margin.getGenScore(ex, 0);
-//    			else                
-//    				z[ex] = margin.getScore(featuresByInstance,0);
-//    		}
-//    		Histoplot.showit(z);
-//    		Wait.waitUser();
-        /*
-        System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
-        +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
-        System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
-        +gmm.getVar(1, 0, 0)+" , "+gmm.getVar(1, 1, 1));
-        System.out.println("GMM trained");
-        */
-        //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
-        
-        float r= computeR(gmm, priors,true); //xtof
-                
-        return r;
-        
-    }
     
     float computeRNumInt(GMMDiag gmm, final float[] py, int nLabels, boolean isMC, int numIters) {
         float risk=0f;
@@ -348,7 +365,7 @@ public class MultiCoreStocCoordDescent  {
             counter++;
             estimr0 =(isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
             System.out.println("*******************************"); 
-            System.out.println("R["+iter+"] = "+estimr0);   
+            System.out.println("RMCSC["+iter+"] = "+estimr0+" "+Thread.currentThread().getId());   
             lastRisk=(double)estimr0;
             //plotR.addPoint(counter, estimr0);
             System.out.println("*******************************");

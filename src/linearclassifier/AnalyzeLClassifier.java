@@ -1121,6 +1121,9 @@ public class AnalyzeLClassifier {
 	}    
     /**
      * Do not forget to set the priorsMap before calling this method
+     * 
+     * TODO: delete this method so that we have a SINGLE method for computing R !
+     * 
      * @return 
      */
     public float computeROfTheta() {
@@ -3223,6 +3226,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         }
 
         //Train all train and test data
+        // TODO: all these public static vars should never be set inside methods, but only once by the main app, otherwise, it's hard to know what's going on
         AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
         String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", entity);
 

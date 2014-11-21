@@ -124,28 +124,6 @@ public class MultiCoreFSCoordinateDesc  {
     
  
     
-    public float computeROfTheta(Margin margin) {
-        
-        //final float[] priors = computePriors(sclassifier,model);
-        final float[] priors = AnalyzeLClassifier.getPriors();
-        // get scores
-        GMMDiag gmm = new GMMDiag(priors.length, priors);
-        gmm.train(margin);
-        /*
-        System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
-        +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
-        System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
-        +gmm.getVar(1, 0, 0)+" , "+gmm.getVar(1, 1, 1));
-        System.out.println("GMM trained");
-        */
-        //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
-        
-        float r= computeR(gmm, priors,true); //xtof
-                
-        return r;
-        
-    }
-    
     float computeRNumInt(GMMDiag gmm, final float[] py, int nLabels, boolean isMC, int numIters) {
         float risk=0f;
         
@@ -273,7 +251,7 @@ public class MultiCoreFSCoordinateDesc  {
                     //System.out.println("****** deltaW="+deltaW);
                     weightsForFeat.set(featIdx, deltaW);
                     margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx));
-                    float estimr = (isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
+                    float estimr = (isCloseForm)?MultiCoreStocCoordDescent.computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
 
                     gradw[0] = (estimr-estimr0)/(w0*delta);
                     System.out.println("grad "+gradw[0]);
@@ -298,9 +276,9 @@ public class MultiCoreFSCoordinateDesc  {
                         }    
                     }  
                     counter++;
-                    estimr0 =(isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
+                    estimr0 =(isCloseForm)?MultiCoreStocCoordDescent.computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
                     System.out.println("*******************************"); 
-                    System.out.println("R["+iter+"] = "+estimr0);   
+                    System.out.println("RMCFS["+iter+"] = "+estimr0);   
                     lastRisk=(double)estimr0;
                     //plotR.addPoint(counter, estimr0);
                     System.out.println("*******************************");

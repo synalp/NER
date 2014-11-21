@@ -195,7 +195,6 @@ public class CoNLL03Ner {
                if(label.equals(CNConstants.OUTCLASS))
                    label=CNConstants.OUTCLASS;
                if(isCRF){
-            	   // why adding the distsim feature would depend on whether or not you add an extra column for the weaksup model ??
                    if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
                        String wordClass="";
                        // why do you add a pipe before "DISTSIM" ?

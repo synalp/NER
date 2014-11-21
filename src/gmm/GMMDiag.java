@@ -16,6 +16,16 @@ import linearclassifier.Margin;
  * mu_y is the mean vector associated to examples that belong to class y,
  * var_y is the corresponding _diagonal_ variance matrix, so encoded as a vector.
  * 
+ * BIG PROBLEM:
+ * 
+ * when fixing constant logWeights, then, after splitting, the 2 means may not converge towards the right values because
+ * the weights impact is larger than the difference in loglike.
+ * So whatever the relative position of both means, either mean0>mean1 or mean1>mean0, the very same set of frames will be assigned
+ * to mean0 or mean1 because of the weight.
+ * Because we start from means close to the average value, the set of frames assigned to each gaussian is likely to contain frames
+ * from both data modes. So the means will stay somewhere between both modes, and converge very slowly, if ever.
+ * 
+ * This problem can be solved by starting from the extreme values, instead of the average ?
  * 
  * taken from the GMM class implemented by Christophe Cerisara.
  * 
@@ -325,7 +335,6 @@ public class GMMDiag extends GMM {
         
         Arrays.fill(nex, 0);
         Arrays.fill(nk, 0.0);
-        
         int numInstances = margin.getNumberOfInstances();       
         for (int inst=0;inst<numInstances;inst++) {
             List<Integer> featuresByInstance = new ArrayList<>();
@@ -350,7 +359,6 @@ public class GMMDiag extends GMM {
                 
             }
             
-             
             for (int y=0;y<nlabs;y++){ 
                 nex[y]++;
                 //ex2lab[inst]=y;
@@ -463,17 +471,28 @@ public class GMMDiag extends GMM {
             }    
         }
         //*/
+//        for(int y=0;y<nlabs;y++){
+//            if (y%nlabs==0){
+//                for (int i=0;i<nlabs;i++)
+//                    means[y][i]+=Math.sqrt(diagvar[y][i])*splitRatio;
+//            }else{
+//                for (int i=0;i<nlabs;i++)
+//                    means[y][i]-=Math.sqrt(diagvar[y][i])*(splitRatio+y%nlabs);            
+//            }    
+//        }
+
+        // we assume only 2 classes !!!
+        means[0][0]+=Math.sqrt(diagvar[0][0])*splitRatio;
+        means[1][0]-=Math.sqrt(diagvar[1][0])*splitRatio;
+        means[0][1]=-means[0][0];
+        means[1][1]=-means[1][1];
+        
         /*
-        for(int y=0;y<nlabs;y++){
-            if (y%nlabs==0){
-                for (int i=0;i<nlabs;i++)
-                    means[y][i]+=Math.sqrt(diagvar[y][i])*ratio;
-            }else{
-                for (int i=0;i<nlabs;i++)
-                    means[y][i]-=Math.sqrt(diagvar[y][i])*(ratio+y%nlabs);            
-            }    
-        }
-        //*/
+         * why such a complex split ???
+         * PROBLEM: it does not work when inverting the weights because of priors inversion !!
+         * so I replace it with the much simpler split just above
+         */
+/*
         int nSigma=0;
         for(int y=0;y<nlabs;y++){
              if (y%2==0){
@@ -491,6 +510,7 @@ public class GMMDiag extends GMM {
                  }   
              }
         }
+*/
         ///*
         System.out.println("split ");
         printMean();
@@ -583,20 +603,28 @@ public class GMMDiag extends GMM {
     }
     
     public int nIterDone=0;
+    
     /**
      * 
      * @param margin
      * @return posterior per class
      */
     public double[] train(Margin margin) {
-    	// TODO: how are these parms estimated ? use fair estimation on dev !
-        train1gauss(margin);
+    	// just to compute the variance and gconst:
+    	train1gauss(margin);
+    	// compute extreme values
+    	List<List<Integer>> feats = margin.getFeaturesPerInstances();
+    	float scmin=Float.MAX_VALUE,scmax=-Float.MAX_VALUE;
+    	for (List<Integer> f : feats) {
+    		float sc=margin.getScore(f, 0);
+    		if (sc<scmin) scmin=sc;
+    		if (sc>scmax) scmax=sc;
+    	}
+    	means[0][0]=scmax; means[0][1]=-scmax;
+    	means[1][0]=scmin; means[1][1]=-scmin;
         double loglike = getLoglike(margin);
-        assert !Double.isNaN(loglike);
-        //double sqerr = Double.NaN;
-        //if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-        System.out.println("train1gauss loglike "+loglike+" nex "+margin.getNumberOfInstances());
-        split();
+        
+        System.out.println("trainextrema loglike "+loglike+" nex "+margin.getNumberOfInstances());
         double previousLogLike=loglike;
         double[] postPerClass=null;
         nIterDone=0;
