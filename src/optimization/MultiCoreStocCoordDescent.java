@@ -51,14 +51,17 @@ public class MultiCoreStocCoordDescent  {
   	{
   		// depending on the weights, it may happen that the posteriors and priors are inverted.
   		// Then, R increases (but is this a consequence of the inversion ? I'm not 100% sure)
-  		// so I try to detect this situation here, and negate the weights when this happens
+  		// so I try to detect this situation here, and inverse the gauss
   		if ((priors[0]>priors[1] && post[0]<post[1])||(priors[0]<priors[1] && post[1]<post[0])) {
-  			System.out.println("WARNING: detected prior inversion; negating weights "+Thread.currentThread().getId());
-  			double[][] w = margin.getWeights();
-  			for (int i=0;i<w.length;i++)
-  				for (int j=0;j<w[i].length;j++)
-  					w[i][j]=-w[i][j];
-  			post=gmm.train(margin);
+  			System.out.println("WARNING: detected prior inversion; inversing gauss "+Thread.currentThread().getId());
+  			double[][] means = gmm.getMeans();
+  			double m=means[0][0];
+  			means[0][0]=means[1][0];
+  			means[1][0]=m;
+  			m=means[0][1];
+  			means[0][1]=means[1][1];
+  			means[1][1]=m;
+  			post=gmm.trainWithoutInit(margin);
   			System.out.println("just after inversion train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   		}
   	}
