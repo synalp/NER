@@ -10,6 +10,7 @@ import tools.CNConstants;
 import tools.Histoplot;
 import xtof.Corpus;
 import xtof.LinearModel;
+import xtof.Parms;
 import xtof.RiskMachine;
 
 public class TestArtificialData {
@@ -75,7 +76,15 @@ public class TestArtificialData {
 //		Histoplot.showit(sc);
 		
 		// check that risk optimization makes the risk decrease
+		Parms.nitersRiskOptim=100;
 		mod.optimizeRisk(c.trainData);
+		RiskMachine rr3 = new RiskMachine(priors);
+		for (int i=0;i<sc.length;i++) sc[i]=mod.getSCore(feats[i]);
+		float risk3=rr3.computeRisk(sc);
+		if (risk3>=risk2) throw new Error("optim risk does not make risk decrease "+risk2+" "+risk3);
+		acc = mod.test(c.testData);
+		System.out.println("final acc "+acc);
+		if (acc>0.1&&acc<0.9) throw new Error("Acc after risk optim too bad");
 	}
 
 	void genArtificialDataLC(String outfile, int nex, float priorPN) {
