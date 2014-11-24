@@ -116,10 +116,10 @@
     </target>
 
     <target name="dettest" depends="compile" description="xtof manual tests" >
-	<java classname="test.ManualTests"
+	<java classname="xtof.tests.TestArtificialData"
 	   fork="true"
            failonerror="true"
-           maxmemory="7g">
+           maxmemory="1g">
            <arg value="500m"/>
 	   <classpath refid="run.classpath" />
        </java>

@@ -1,5 +1,6 @@
 package xtof;
 
+import linearclassifier.AnalyzeLClassifier;
 import edu.emory.mathcs.backport.java.util.Arrays;
 import gmm.LogMath;
 
@@ -12,12 +13,48 @@ import gmm.LogMath;
  *
  */
 public class RiskMachine {
+	GMMDiag gmm;
+	double[] post, priors;
+	
+	public RiskMachine(double[] priors) {
+		this.priors=priors;
+	}
+	
+	public float[] getMeans() {
+		float[] mm = {gmm.mean0,gmm.mean1};
+		return mm;
+	}
+	public double[] getPosteriors() {return post;}
+	
 	public float computeRisk(float[] scores) {
 		// first, I find the 2 modes of the scores, without using any prior, just by looking at the data:
-		GMMDiag gmm = new GMMDiag();
-	  	double[] post=gmm.train(scores);
-	  	// then 
-	  	return 0;
+		gmm = new GMMDiag();
+	  	post=gmm.train(scores);
+	  	// then I switch priors if they are in reverse order than post
+	  	if ((priors[0]>priors[1] && post[1]>post[0])||
+	  			(priors[0]<priors[1] && post[1]<post[0])) {
+	  		System.out.println("reverting priors");
+	  		double d=priors[0];
+	  		priors[0]=priors[1];
+	  		priors[1]=d;
+	  	}
+	  	// I can now compute the risk
+	  	final float sqrtpi = (float)Math.sqrt(Math.PI);
+	  	final float pi = (float)Math.PI;
+	  	final float sigma00 = (float)Math.sqrt(gmm.var0);
+	  	final float sigma10 = (float)Math.sqrt(gmm.var1);
+	  	final float var00 = gmm.var0;
+	  	final float var10 = gmm.var1;
+	  	final float mean00  = gmm.mean0;
+	  	final float mean10  = gmm.mean1;
+	  	
+	  	System.out.println("compR "+mean00+" "+mean10+" "+var00+" "+var10);
+	      
+	  	float t1 = (float)priors[0]*(1f-2f*mean00)/(4f*sigma00*sqrtpi) * (1f+(float)AnalyzeLClassifier.erf( (0.5-mean00)/sigma00 ));
+	  	float t2 = (float)priors[0]/(2f*pi) * (float)Math.exp( -(0.5f-mean00)*(0.5f-mean00)/var00 );
+	  	float t3 = (float)priors[1]*(1f+2f*mean10)/(4f*sigma10*sqrtpi) * (1f-(float)AnalyzeLClassifier.erf( (-0.5-mean10)/sigma10 ));
+	  	float t4 = (float)priors[1]/(2f*pi) * (float)Math.exp( -(-0.5f-mean10)*(-0.5f-mean10)/var10 );
+	  	return t1+t2+t3+t4;
 	}
 	
 	private class GMMDiag {
@@ -29,6 +66,7 @@ public class RiskMachine {
 		public double[] train(float[] x) {
 			train1gauss(x);
 			split();
+			System.out.println("1gauss "+mean0+" "+mean1);
 			return trainEM(x);
 		}
 		public void train1gauss(float[] xs) {
@@ -44,6 +82,8 @@ public class RiskMachine {
 			float d=0.1f*var0;
 			mean1=mean0-d;
 			mean0+=d;
+			var1=var0;
+			gconst1=gconst0;
 			logw0=logMath.linearToLog(0.5);
 			logw1=logw0;
 		}

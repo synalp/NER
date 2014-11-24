@@ -4,9 +4,13 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Random;
 
+import edu.emory.mathcs.backport.java.util.Arrays;
+
 import tools.CNConstants;
+import tools.Histoplot;
 import xtof.Corpus;
 import xtof.LinearModel;
+import xtof.RiskMachine;
 
 public class TestArtificialData {
 
@@ -16,15 +20,61 @@ public class TestArtificialData {
 		m.genArtificialDataLC("artdat.test", 500, 0.2f);
 		Corpus c = new Corpus("artdat.train", null, null, "artdat.test");
 		
+		// check that training of linear model gives 100% acc on this simple data
 		LinearModel mod=LinearModel.train(c.columnDataClassifier, c.trainData);
 		float acc = mod.test(c.columnDataClassifier, c.testData);
 		System.out.println("trained acc "+acc);
 		if (acc<1) throw new Error("trained acc not 100% "+acc);
+
+		float riskTrain=-1;
+		{
+			int[][] feats = c.getTrainFeats();
+			float[] sc = new float[feats.length];
+			for (int i=0;i<sc.length;i++) sc[i]=mod.getSCore(feats[i]);
+			double[] priors = {0.2,0.8};
+			RiskMachine rr = new RiskMachine(priors);
+			riskTrain=rr.computeRisk(sc);
+		}
 		
+		// check that random weights give less than 100% of acc
 		mod.randomizeWeights();
 		acc = mod.test(c.columnDataClassifier, c.testData);
 		System.out.println("random acc "+acc);
 		if (acc==1||acc==0) throw new Error("random acc weird "+acc);
+		
+		// check that the risk with random weights is higher than the risk with optimal weights
+		float riskRand=-1;
+		{
+			int[][] feats = c.getTrainFeats();
+			float[] sc = new float[feats.length];
+			for (int i=0;i<sc.length;i++) sc[i]=mod.getSCore(feats[i]);
+			double[] priors = {0.2,0.8};
+			RiskMachine rr = new RiskMachine(priors);
+			riskRand=rr.computeRisk(sc);
+		}
+		System.out.println("train-rand risks "+riskTrain+" "+riskRand);
+		if (riskTrain>=riskRand) throw new Error("error risks");
+		
+		// check that the risk gives the same values when we invert priors
+		int[][] feats = c.getTrainFeats();
+		float[] sc = new float[feats.length];
+		for (int i=0;i<sc.length;i++) sc[i]=mod.getSCore(feats[i]);
+		double[] priors = {0.2,0.8};
+		RiskMachine rr = new RiskMachine(priors);
+		float risk1=rr.computeRisk(sc);
+		priors[0]=0.8; priors[1]=0.2;
+		RiskMachine rr2 = new RiskMachine(priors);
+		float risk2=rr2.computeRisk(sc);
+		System.out.println("RISK "+risk1+" "+risk2);
+		if (risk1!=risk2) throw new Error("risk sensible to priors order "+risk1+" "+risk2);
+		
+		// visualize means and histogram of scores
+//		float[] means = rr.getMeans();
+//		double[] post = rr.getPosteriors();
+//		System.out.println("means "+Arrays.toString(means)+" "+Arrays.toString(post));
+//		Histoplot.showit(sc);
+		
+		
 	}
 
 	void genArtificialDataLC(String outfile, int nex, float priorPN) {

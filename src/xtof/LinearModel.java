@@ -15,6 +15,15 @@ public class LinearModel {
         return m;
 	}
 	
+	public float getSCore(int[] feats) {
+		double[][] w = model.weights();
+		double sc=0;
+		for (int j=0;j<feats.length;j++) {
+			sc+=w[feats[j]][0];
+		}
+		return (float)sc;
+	}
+	
 	public void randomizeWeights() {
 		double[][] w = model.weights();
 		Random r = new Random();
