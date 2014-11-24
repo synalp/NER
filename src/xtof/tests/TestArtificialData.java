@@ -22,7 +22,7 @@ public class TestArtificialData {
 		
 		// check that training of linear model gives 100% acc on this simple data
 		LinearModel mod=LinearModel.train(c.columnDataClassifier, c.trainData);
-		float acc = mod.test(c.columnDataClassifier, c.testData);
+		float acc = mod.test(c.testData);
 		System.out.println("trained acc "+acc);
 		if (acc<1) throw new Error("trained acc not 100% "+acc);
 
@@ -38,7 +38,7 @@ public class TestArtificialData {
 		
 		// check that random weights give less than 100% of acc
 		mod.randomizeWeights();
-		acc = mod.test(c.columnDataClassifier, c.testData);
+		acc = mod.test(c.testData);
 		System.out.println("random acc "+acc);
 		if (acc==1||acc==0) throw new Error("random acc weird "+acc);
 		
@@ -74,7 +74,8 @@ public class TestArtificialData {
 //		System.out.println("means "+Arrays.toString(means)+" "+Arrays.toString(post));
 //		Histoplot.showit(sc);
 		
-		
+		// check that risk optimization makes the risk decrease
+		mod.optimizeRisk(c.trainData);
 	}
 
 	void genArtificialDataLC(String outfile, int nex, float priorPN) {

@@ -32,8 +32,8 @@ public class LinearModel {
 				w[i][j]=r.nextDouble();
 	}
 	
-	public float test(ColumnDataClassifier cdc, GeneralDataset data) {
-		int[][] feats = data.getDataArray();
+	public float test(GeneralDataset data) {
+		final int[][] feats = data.getDataArray();
 		int[] refs = data.getLabelsArray();
 		double[][] w = model.weights();
 		System.out.println("debug w "+w.length+" "+w[0].length);
@@ -50,5 +50,44 @@ public class LinearModel {
 		}
 		float acc = (float)nok/(float)feats.length;
 		return acc;
+	}
+	
+	public void optimizeRisk(GeneralDataset data) {
+		Random r = new Random();
+		final int[][] feats = data.getDataArray();
+		double[] priors = {0.2,0.8};
+		float[] sc = new float[feats.length];
+		double[][] w = model.weights();
+		float prevRisk;
+		{
+			for (int i=0;i<sc.length;i++) sc[i]=getSCore(feats[i]);
+			RiskMachine rr = new RiskMachine(priors);
+			prevRisk=rr.computeRisk(sc);
+		}
+		float acc = test(data);
+		System.out.println("SCD iter -1 "+prevRisk+" acc "+acc);
+		for (int i=0;i<Parms.nitersRiskOptim;i++) {
+			int wi=r.nextInt(w.length);
+			w[wi][0]+=Parms.finiteDiffDelta;
+			w[wi][1]-=Parms.finiteDiffDelta;
+			float newRisk;
+			{
+				for (int ii=0;ii<sc.length;ii++) sc[ii]=getSCore(feats[ii]);
+				RiskMachine rr = new RiskMachine(priors);
+				newRisk=rr.computeRisk(sc);
+			}
+			float grad=(newRisk-prevRisk)/Parms.finiteDiffDelta;
+			if (grad!=0) {
+				w[wi][0]-=grad*Parms.gradientStep;
+				w[wi][1]+=grad*Parms.gradientStep;
+				{
+					for (int ii=0;ii<sc.length;ii++) sc[ii]=getSCore(feats[ii]);
+					RiskMachine rr = new RiskMachine(priors);
+					prevRisk=rr.computeRisk(sc);
+				}
+				acc = test(data);
+				System.out.println("SCD iter "+i+" "+prevRisk+" acc "+acc);
+			}
+		}
 	}
 }
