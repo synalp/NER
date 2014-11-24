@@ -610,11 +610,12 @@ public class AnalyzeLClassifier {
                      stLCDictTestFeatures.put(numInstances, new ArrayList<>(features));                       
                                
             }
+            /*
             if(fileName.contains("train"))
                 serializingFeatures(stLCDictTrainFeatures,true);
             else
                 serializingFeatures(stLCDictTestFeatures,false);
-            
+            */
             
            inFile.close();
            
@@ -1659,7 +1660,7 @@ public class AnalyzeLClassifier {
         AutoTests.initR = CURRENTPARENTESTIMR0;
 
         System.out.println("init R "+CURRENTPARENTESTIMR0);
-        System.out.println("Number of features" + margin.getNfeats());
+        System.out.println("Number of features " + margin.getNfeats());
         
         if(computeF1){
             ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
@@ -1669,10 +1670,10 @@ public class AnalyzeLClassifier {
                 CURENTPARENTF10=columnDataClass.fs.get(sclass);   
         }
         //by default give the initial weights for the first column column 0
-        List<Double> shuffleWeights=margin.shuffleWeights();       
-
+        //List<Double> shuffleWeights=margin.shuffleWeights();       
         
-        float partiSize = (float) shuffleWeights.size()/numberOfThreads;
+        List<Double> sameWeights=margin.getOrWeights(0);    
+        float partiSize = (float) sameWeights.size()/numberOfThreads;
         int partSize= Math.round(partiSize);
         MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
@@ -1695,7 +1696,7 @@ public class AnalyzeLClassifier {
             
             //copy the weights
             int initPart=i*partSize;
-            marginThr.setSubListOfShuffleFeats(0,initPart, initPart+partSize);
+            marginThr.setSubListOfFeats(0,initPart, initPart+partSize);
             parallelGrad.put(i,marginThr);
             
             mthread.getWrapper().put(new Pair<>(i, marginThr));
@@ -1712,8 +1713,8 @@ public class AnalyzeLClassifier {
             Margin mThr=parallelGrad.get(thrId);
             
             for(int i=0; i<mThr.getSubListOfFeats(0).size();i++){
-                int orIdx = mThr.getOrIndexFromShuffled(i);
-                allfeats[orIdx]=mThr.getPartialShuffledWeight(i);
+                int orIdx = mThr.getOrWeightIndex(i);
+                allfeats[orIdx]=mThr.getPartialWeight(i);
             }
         }
         //Final weights
