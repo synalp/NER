@@ -610,11 +610,12 @@ public class AnalyzeLClassifier {
                      stLCDictTestFeatures.put(numInstances, new ArrayList<>(features));                       
                                
             }
+            /*
             if(fileName.contains("train"))
                 serializingFeatures(stLCDictTrainFeatures,true);
             else
                 serializingFeatures(stLCDictTestFeatures,false);
-            
+            */
             
            inFile.close();
            
@@ -1656,7 +1657,7 @@ public class AnalyzeLClassifier {
         AutoTests.initR = CURRENTPARENTESTIMR0;
 
         System.out.println("init R "+CURRENTPARENTESTIMR0);
-        System.out.println("Number of features" + margin.getNfeats());
+        System.out.println("Number of features " + margin.getNfeats());
         
         if(computeF1){
             ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);

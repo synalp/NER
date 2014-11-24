@@ -345,7 +345,7 @@ public class Margin {
             }
             shuffleWeights.add(shuffleWeightsDim);
         }
-        
+        System.out.println("Shuffled weights:  sMap"+shuffleAndOrFeatIdxMap.size() + " orSMap" +orAndShuffleFeatIdxMap.size() );
         return shuffleWeights.get(0);
     }
     
