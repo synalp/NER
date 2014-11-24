@@ -55,6 +55,7 @@ public class MultiCoreStocCoordDescent  {
   		if ((priors[0]>priors[1] && post[0]<post[1])||(priors[0]<priors[1] && post[1]<post[0])) {
   			System.out.println("WARNING: detected prior inversion; inversing gauss "+Thread.currentThread().getId());
   			double[][] means = gmm.getMeans();
+  			System.out.println("before inversion means "+means[0][0]+" "+means[1][0]);
   			double m=means[0][0];
   			means[0][0]=means[1][0];
   			means[1][0]=m;
@@ -63,6 +64,7 @@ public class MultiCoreStocCoordDescent  {
   			means[1][1]=m;
   			post=gmm.trainWithoutInit(margin);
   			System.out.println("just after inversion train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
+  			System.out.println("after inversion means "+means[0][0]+" "+means[1][0]);
   		}
   	}
   	
