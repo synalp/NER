@@ -36,7 +36,6 @@ public class LinearModel {
 		final int[][] feats = data.getDataArray();
 		int[] refs = data.getLabelsArray();
 		double[][] w = model.weights();
-		System.out.println("debug w "+w.length+" "+w[0].length);
 		
 		int nok=0;
 		for (int i=0;i<feats.length;i++) {
