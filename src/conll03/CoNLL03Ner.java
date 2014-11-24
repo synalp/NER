@@ -370,7 +370,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,numIters,true);
+        lcclass.wkSupParallelStocCoordD(entity, true,numIters,true,true);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     
@@ -436,7 +436,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,niters,true);
+        lcclass.wkSupParallelStocCoordD(entity, true,niters,true,false);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
    

@@ -1613,7 +1613,7 @@ public class AnalyzeLClassifier {
     * @param sclass  Type of Classifier (pn or [pers,org,loc,prod])
     * @param closedForm used the closed form or trapezoid integration
     */ 
-  public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters, boolean isModelInMemory) {
+  public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters, boolean isModelInMemory, boolean computeF1) {
        CURRENTSETCLASSIFIER=sclass;
  
         boolean isMC=false;
@@ -1657,18 +1657,21 @@ public class AnalyzeLClassifier {
 
         System.out.println("init R "+CURRENTPARENTESTIMR0);
         System.out.println("Number of features" + margin.getNfeats());
-        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
-        columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", sclass));
-        CURENTPARENTF10=ColumnDataClassifier.macrof1;
-        if(!sclass.equals(CNConstants.ALL))
-            CURENTPARENTF10=columnDataClass.fs.get(sclass);            
+        
+        if(computeF1){
+            ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
+            columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", sclass));
+            CURENTPARENTF10=ColumnDataClassifier.macrof1;
+            if(!sclass.equals(CNConstants.ALL))
+                CURENTPARENTF10=columnDataClass.fs.get(sclass);   
+        }
         //by default give the initial weights for the first column column 0
         List<Double> shuffleWeights=margin.shuffleWeights();       
 
         
         float partiSize = (float) shuffleWeights.size()/numberOfThreads;
         int partSize= Math.round(partiSize);
-        MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters);
+        MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
         
         for(int i=0; i<margin.getNfeats(); i++)

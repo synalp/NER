@@ -186,7 +186,7 @@ public class AutoTests {
         priorsMap.put(CNConstants.PRNOUN, new Double(priorPN));
         lcclass.setPriors(priorsMap);
         GeneralConfig.nthreads=1;
-        lcclass.wkSupParallelStocCoordD(CNConstants.PRNOUN, true, nitersWeakSup, true);
+        lcclass.wkSupParallelStocCoordD(CNConstants.PRNOUN, true, nitersWeakSup, true,true);
         
         // check that the Gaussians match exactly the modes:
         Margin margin = lcclass.getMargin(CNConstants.PRNOUN);

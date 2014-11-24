@@ -134,9 +134,9 @@ public class MultiCoreStocCoordDescent  {
   }    
 
   
-  public MultiCoreStocCoordDescent(int niters, int nThreads, boolean isclose, boolean ismontecarlo, int numniiters){
+  public MultiCoreStocCoordDescent(int niters, int nThreads, boolean isclose, boolean ismontecarlo, int numniiters, boolean computeF1){
       this.nThreads = nThreads;
-      coordGradThr = new CoordinateGradThreadProcessor(niters, isclose,ismontecarlo,numniiters);
+      coordGradThr = new CoordinateGradThreadProcessor(niters, isclose,ismontecarlo,numniiters, computeF1);
       wrapper = new MulticoreWrapper(nThreads,coordGradThr);
   }
   
@@ -159,17 +159,18 @@ public class MultiCoreStocCoordDescent  {
       private boolean isMonteCarloNI=false;
       private int niters=100;
       private int numIterNumIntegr=100;
+      private boolean computeF1=true;
 
     public CoordinateGradThreadProcessor(){
 
     }
     
-    public CoordinateGradThreadProcessor(int niters,boolean isclose, boolean ismontecarlo, int numniiters){
+    public CoordinateGradThreadProcessor(int niters,boolean isclose, boolean ismontecarlo, int numniiters, boolean computeF1){
         this.isCloseForm=isclose;
         this.isMonteCarloNI= ismontecarlo;
         this.numIterNumIntegr=numniiters;
         this.niters=niters;
-
+        this.computeF1=computeF1;
     }
     
 
@@ -259,13 +260,17 @@ public class MultiCoreStocCoordDescent  {
         Arrays.fill(scores, 0.0);
         float estimr0=AnalyzeLClassifier.CURRENTPARENTESTIMR0;
         //plotR.addPoint(counter, estimr0);
-        columnDataClass.testClassifier(model, AnalyzeLClassifier.TESTFILE.replace("%S", currentClassifier));
-        double f1=ColumnDataClassifier.macrof1;
-        if(!currentClassifier.equals(CNConstants.ALL))
-                f1=columnDataClass.fs.get(currentClassifier);
-        //the following evaluation is used just to verify that the gradient do not degrade the f-measure on the train set
-        
-        double f1trainOr=AnalyzeLClassifier.CURENTPARENTF10;
+        double f1=0.0;
+        double f1trainOr=0.0;
+        if(computeF1){
+            columnDataClass.testClassifier(model, AnalyzeLClassifier.TESTFILE.replace("%S", currentClassifier));
+            f1=ColumnDataClassifier.macrof1;
+            if(!currentClassifier.equals(CNConstants.ALL))
+                    f1=columnDataClass.fs.get(currentClassifier);
+            //the following evaluation is used just to verify that the gradient do not degrade the f-measure on the train set
+
+            f1trainOr=AnalyzeLClassifier.CURENTPARENTF10;
+        }
         //plotF1.addPoint(counter,f1);   
         //copy the orginal weights before applying coordinate gradient
         margin.copyOrWeightsBeforGradient();
@@ -346,21 +351,23 @@ public class MultiCoreStocCoordDescent  {
                 weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- gradw[0] * eps);                    
                 margin.updatingStocGradientStep(0,featIdx, weightsForFeat.get(featIdx));
                 System.out.println("Iteration["+iter+"] Updated feature "+ margin.getOrIndexFromShuffled(featIdx));
-                columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", currentClassifier));
-                double f1train=ColumnDataClassifier.macrof1;
-                    if(!currentClassifier.equals(CNConstants.ALL))
-                        f1train=columnDataClass.fs.get(currentClassifier);
-                    /*
-                     * I'm not sure it's good to have such a hard decision there, because the "target" weights = the ones obtained when training
-                     * on a very large training corpus, are likely to get a lower F1 on the "small initial" train set than the initial weights
-                     * trained on this small corpus, simply because of overfitting / because there is less variability in the small corpus than in
-                     * the very large one. So it's probably better to rather combine this "F1-train" term with the risk into a new objective function. 
-                     */
-                if(f1train<f1trainOr){
-                    System.out.println("Iteration["+iter+"] Not accepted previous step of gradient "+f1train+" "+f1trainOr);   
-                    weightsForFeat.set(featIdx,w0); 
-                    margin.updatingStocGradientStep(0,featIdx, weightsForFeat.get(featIdx));
-                }    
+                if(computeF1){
+                    columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", currentClassifier));
+                    double f1train=ColumnDataClassifier.macrof1;
+                        if(!currentClassifier.equals(CNConstants.ALL))
+                            f1train=columnDataClass.fs.get(currentClassifier);
+                        /*
+                         * I'm not sure it's good to have such a hard decision there, because the "target" weights = the ones obtained when training
+                         * on a very large training corpus, are likely to get a lower F1 on the "small initial" train set than the initial weights
+                         * trained on this small corpus, simply because of overfitting / because there is less variability in the small corpus than in
+                         * the very large one. So it's probably better to rather combine this "F1-train" term with the risk into a new objective function. 
+                         */
+                    if(f1train<f1trainOr){
+                        System.out.println("Iteration["+iter+"] Not accepted previous step of gradient "+f1train+" "+f1trainOr);   
+                        weightsForFeat.set(featIdx,w0); 
+                        margin.updatingStocGradientStep(0,featIdx, weightsForFeat.get(featIdx));
+                    }    
+                } 
             }  
             counter++;
             estimr0 =(isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
@@ -369,17 +376,17 @@ public class MultiCoreStocCoordDescent  {
             lastRisk=(double)estimr0;
             //plotR.addPoint(counter, estimr0);
             System.out.println("*******************************");
-            
-            
+    
             model.setWeights(margin.getWeights());
             
-            columnDataClass.testClassifier(model, AnalyzeLClassifier.TESTFILE.replace("%S", currentClassifier));
-            f1=ColumnDataClassifier.macrof1;
-            if(!currentClassifier.equals(CNConstants.ALL))            
-                f1=columnDataClass.fs.get(currentClassifier);
-            //plotF1.addPoint(counter, f1);
-            System.out.println("*******************************"); 
-
+            if(computeF1){
+                columnDataClass.testClassifier(model, AnalyzeLClassifier.TESTFILE.replace("%S", currentClassifier));
+                f1=ColumnDataClassifier.macrof1;
+                if(!currentClassifier.equals(CNConstants.ALL))            
+                    f1=columnDataClass.fs.get(currentClassifier);
+                //plotF1.addPoint(counter, f1);
+                System.out.println("*******************************"); 
+            }
             //Histoplot.showit(margin.getScoreForAllInstancesLabel0( featsperInst, scores), featsperInst.size());
             //save the model regularly
             if(iter%30==0){
