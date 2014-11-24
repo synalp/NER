@@ -604,6 +604,20 @@ public class GMMDiag extends GMM {
     
     public int nIterDone=0;
     
+    public double[] trainWithoutInit(Margin margin) {
+        double loglike = getLoglike(margin);
+    	double previousLogLike=loglike;
+        double[] postPerClass=null;
+        nIterDone=0;
+        for (int iter=0;iter<nitersTraining;iter++,nIterDone++) {
+            postPerClass=trainViterbi(margin);
+            loglike = getLoglike(margin);
+            if(Math.abs(loglike-previousLogLike)<toleranceTraining) break;
+            previousLogLike=loglike;
+        }
+        return postPerClass;
+    }
+    
     /**
      * 
      * @param margin
@@ -622,27 +636,32 @@ public class GMMDiag extends GMM {
     	}
     	means[0][0]=scmax; means[0][1]=-scmax;
     	means[1][0]=scmin; means[1][1]=-scmin;
-        double loglike = getLoglike(margin);
-        
-        System.out.println("trainextrema loglike "+loglike+" nex "+margin.getNumberOfInstances());
-        double previousLogLike=loglike;
-        double[] postPerClass=null;
-        nIterDone=0;
-        for (int iter=0;iter<nitersTraining;iter++,nIterDone++) {
-            postPerClass=trainViterbi(margin);
-            loglike = getLoglike(margin);
-            if(Math.abs(loglike-previousLogLike)<toleranceTraining)
-                break;
-            
-            previousLogLike=loglike;
-            //sqerr = Double.NaN;
-            //if (oracleGMM!=null) sqerr = squareErr(oracleGMM);
-            
-            //System.out.println("trainviterbi iter "+iter+" loglike "+loglike+" nex "+margin.getNumberOfInstances()+ " sqerr "+sqerr);
-        }
-        return postPerClass;
+    	return trainWithoutInit(margin);
     }
-    
+    public double[] computePosteriors(Margin margin) {
+    	double[] nk = new double[nlabs];
+    	final float[] z = new float[nlabs];
+    	Arrays.fill(nk, 0.0);
+    	Arrays.fill(tmp, 0);
+    	int numInstances = margin.getNumberOfInstances();       
+    	for (int inst=0;inst<numInstances;inst++) {
+    		List<Integer> featuresByInstance = margin.getFeaturesPerInstance(inst);
+    		for (int lab=0;lab<nlabs;lab++)
+    			z[lab] = margin.getScore(featuresByInstance,lab);
+    		double normConst = logWeights[0] + getLoglike(0, z);
+    		tmp[0]=normConst;
+    		for (int y=1;y<nlabs;y++){
+    			tmp[y]=logWeights[y] + getLoglike(y, z);
+    			normConst=  logMath.addAsLinear((float)normConst,(float)tmp[y]);
+    		}
+    		for (int y=0;y<nlabs;y++){ 
+    			double posterior=logMath.logToLinear((float)tmp[y]-(float)normConst);
+    			nk[y]+=posterior;
+    		}        
+    	}
+    	return nk;
+    }
+
     public double squareErr(GMM g) {
         double sqerr=0;
         for (int y=0;y<nlabs;y++) {

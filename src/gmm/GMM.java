@@ -67,7 +67,7 @@ public class GMM {
     public double getVar(int y, int a, int b) {
         return vars[y].get(a, b);
     }
-    
+    public double[][] getMeans() {return means;}
     public double getMean(int y, int j) {
         return means[y][j];
     }

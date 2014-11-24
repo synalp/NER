@@ -118,8 +118,15 @@ public class AutoTests {
 		if (post[0]<2||post[1]<2) {
 			double po0 = post[0]/nex;
 			double po1 = post[1]/nex;
-			throw new Error("TEST ERROR: posteriors differ from priors "+po0+" "+po1+" "+priors[0]+" "+priors[1]);
+			throw new Error("TEST ERROR: degenerated posteriors "+po0+" "+po1+" "+priors[0]+" "+priors[1]);
 		}
+		
+		// also check that posteriors and priors are not inverted
+  		if ((priors[0]>priors[1] && post[0]<post[1])||(priors[0]<priors[1] && post[1]<post[0])) {
+			double po0 = post[0]/nex;
+			double po1 = post[1]/nex;
+  			throw new Error("TEST ERROR: inverted posteriors "+po0+" "+po1+" "+priors[0]+" "+priors[1]);
+  		}
 	}
 	
 	void genArtificialDataLC(float priorPN) {
