@@ -44,13 +44,13 @@ public class Margin {
     //paralell coordinate gradient
     
     private List<List<Double>> originalWeights = new ArrayList<>();
-    List<List<Double>> shuffleWeights = new ArrayList<>();
+    //List<List<Double>> shuffleWeights = new ArrayList<>();
     private int startIndex=0;
     private int endIndex=0;
     
     private List<List<Double>> subListOfFeatures= new ArrayList<>();
-    private HashMap<Integer,Integer> shuffleAndOrFeatIdxMap = new HashMap<>();
-    private HashMap<Integer,Integer> orAndShuffleFeatIdxMap = new HashMap<>();
+    //private HashMap<Integer,Integer> shuffleAndOrFeatIdxMap = new HashMap<>();
+    //private HashMap<Integer,Integer> orAndShuffleFeatIdxMap = new HashMap<>();
     double[][] orWeightsCopy ;
     
     //list of features in the labeled and unlabeled datasets
@@ -322,62 +322,62 @@ public class Margin {
         return originalWeights.get(dimension);
     }
     
-    public List<Double> shuffleWeights(){
-        
-        List<Integer> listOfIndexes = new ArrayList<>();
-        for(int i=0; i<getOrWeights(0).size();i++)
-            listOfIndexes.add(i);
-        
-        Collections.shuffle(listOfIndexes);       
-        List<Double> shuffledW0 = new ArrayList<>();
-        //set the indexes
-        for(int i=0;i<listOfIndexes.size();i++){
-            shuffledW0.add(getOrWeights(0).get(listOfIndexes.get(i)));
-            shuffleAndOrFeatIdxMap.put(i,listOfIndexes.get(i));
-            orAndShuffleFeatIdxMap.put(listOfIndexes.get(i), i);
-        } 
-        shuffleWeights.add(shuffledW0);
-        for(int col=1;col<getNlabs();col++){
-            List<Double> shuffleWeightsDim= new ArrayList<>();
-            for(int sIdx=0;sIdx<shuffledW0.size();sIdx++){
-               int orIdx=this.shuffleAndOrFeatIdxMap.get(sIdx);
-               shuffleWeightsDim.add(weights[orIdx][col]);              
-            }
-            shuffleWeights.add(shuffleWeightsDim);
-        }
-        System.out.println("Shuffled weights:  sMap"+shuffleAndOrFeatIdxMap.size() + " orSMap" +orAndShuffleFeatIdxMap.size() );
-        return shuffleWeights.get(0);
-    }
+//    public List<Double> shuffleWeights(){
+//        
+//        List<Integer> listOfIndexes = new ArrayList<>();
+//        for(int i=0; i<getOrWeights(0).size();i++)
+//            listOfIndexes.add(i);
+//        
+//        Collections.shuffle(listOfIndexes);       
+//        List<Double> shuffledW0 = new ArrayList<>();
+//        //set the indexes
+//        for(int i=0;i<listOfIndexes.size();i++){
+//            shuffledW0.add(getOrWeights(0).get(listOfIndexes.get(i)));
+//            shuffleAndOrFeatIdxMap.put(i,listOfIndexes.get(i));
+//            orAndShuffleFeatIdxMap.put(listOfIndexes.get(i), i);
+//        } 
+//        shuffleWeights.add(shuffledW0);
+//        for(int col=1;col<getNlabs();col++){
+//            List<Double> shuffleWeightsDim= new ArrayList<>();
+//            for(int sIdx=0;sIdx<shuffledW0.size();sIdx++){
+//               int orIdx=this.shuffleAndOrFeatIdxMap.get(sIdx);
+//               shuffleWeightsDim.add(weights[orIdx][col]);              
+//            }
+//            shuffleWeights.add(shuffleWeightsDim);
+//        }
+//        System.out.println("Shuffled weights:  sMap"+shuffleAndOrFeatIdxMap.size() + " orSMap" +orAndShuffleFeatIdxMap.size() );
+//        return shuffleWeights.get(0);
+//    }
     
     public void copySharedyInfoParallelGrad(Margin margin){
         this.featsperInst=margin.featsperInst;
         this.labelperInst=margin.labelperInst;
         this.originalWeights= margin.originalWeights;
-        this.shuffleWeights=margin.shuffleWeights;
-        this.shuffleAndOrFeatIdxMap.putAll(margin.shuffleAndOrFeatIdxMap);
-        this.orAndShuffleFeatIdxMap.putAll(margin.orAndShuffleFeatIdxMap); 
+        //this.shuffleWeights=margin.shuffleWeights;
+        //this.shuffleAndOrFeatIdxMap.putAll(margin.shuffleAndOrFeatIdxMap);
+        //this.orAndShuffleFeatIdxMap.putAll(margin.orAndShuffleFeatIdxMap); 
         this.trainFeatSize= margin.trainFeatSize;
         this.testFeatSize=margin.testFeatSize;
     }
     
-    public List<Double> getShuffleWeights(){
-        return this.shuffleWeights.get(0);
-    }
-    
-    public List<Double> getShuffleWeights(int dimension){
-        return this.shuffleWeights.get(dimension);
-    }   
-    public void setSubListOfShuffleFeats(int dimension, int startIdx, int endIdx){
-        this.startIndex=startIdx;
-        this.endIndex=endIdx;
-        if(endIdx>shuffleWeights.get(0).size())
-            endIdx=shuffleWeights.get(0).size();        
- 
-
-        subListOfFeatures.add(dimension,shuffleWeights.get(dimension).subList(startIdx, endIdx));
-        
-        
-    }
+//    public List<Double> getShuffleWeights(){
+//        return this.shuffleWeights.get(0);
+//    }
+//    
+//    public List<Double> getShuffleWeights(int dimension){
+//        return this.shuffleWeights.get(dimension);
+//    }   
+//    public void setSubListOfShuffleFeats(int dimension, int startIdx, int endIdx){
+//        this.startIndex=startIdx;
+//        this.endIndex=endIdx;
+//        if(endIdx>shuffleWeights.get(0).size())
+//            endIdx=shuffleWeights.get(0).size();        
+// 
+//
+//        subListOfFeatures.add(dimension,shuffleWeights.get(dimension).subList(startIdx, endIdx));
+//        
+//        
+//    }
     public void setSubListOfFeats(int dimension, int startIdx, int endIdx){
         this.startIndex=startIdx;
         this.endIndex=endIdx;
@@ -412,19 +412,19 @@ public class Margin {
         }       
     }
     
-    public void updatingStocGradientStep(int dimension,int subListIndex, double value){
-        int shuffledIndex= startIndex+subListIndex;
-        int index = shuffleAndOrFeatIdxMap.get(shuffledIndex);
-
-        if(dimension == 2){
-            weights[index][0]=value;
-            weights[index][1]=-weights[index][0]; 
-        }else{
-            weights[index][dimension]=value;
-        }
-        
-        
-    }
+//    public void updatingStocGradientStep(int dimension,int subListIndex, double value){
+//        int shuffledIndex= startIndex+subListIndex;
+//        int index = shuffleAndOrFeatIdxMap.get(shuffledIndex);
+//
+//        if(dimension == 2){
+//            weights[index][0]=value;
+//            weights[index][1]=-weights[index][0]; 
+//        }else{
+//            weights[index][dimension]=value;
+//        }
+//        
+//        
+//    }
     
     public void updatingGradientStep(int dimension,int subListIndex, double value){
         int index= startIndex+subListIndex;
@@ -436,12 +436,12 @@ public class Margin {
         }
         
     }    
-    public double[] getPartialShuffledWeight(int subListIndex){
-        int shuffledIndex= startIndex+subListIndex;
-        int index = shuffleAndOrFeatIdxMap.get(shuffledIndex);
-        return(weights[index]);
-       
-    }
+//    public double[] getPartialShuffledWeight(int subListIndex){
+//        int shuffledIndex= startIndex+subListIndex;
+//        int index = shuffleAndOrFeatIdxMap.get(shuffledIndex);
+//        return(weights[index]);
+//       
+//    }
      public double[] getPartialWeight(int subListIndex){
         int index= startIndex+subListIndex;
         
@@ -452,13 +452,13 @@ public class Margin {
         return orWeightsCopy;
     }
     
-    public int getOrIndexFromShuffled(int subListIndex){
-        int shuffledIndex= startIndex+subListIndex;
-        return this.shuffleAndOrFeatIdxMap.get(shuffledIndex);
-    }
-    public int getShuffledIndexFromOriginal(int orgIndex){
-        return this.orAndShuffleFeatIdxMap.get(orgIndex);
-    }    
+//    public int getOrIndexFromShuffled(int subListIndex){
+//        int shuffledIndex= startIndex+subListIndex;
+//        return this.shuffleAndOrFeatIdxMap.get(shuffledIndex);
+//    }
+//    public int getShuffledIndexFromOriginal(int orgIndex){
+//        return this.orAndShuffleFeatIdxMap.get(orgIndex);
+//    }    
     public int getOrWeightIndex(int subListIndex){
         int index= startIndex+subListIndex;
         return index;
