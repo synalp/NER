@@ -6,6 +6,7 @@ import edu.stanford.nlp.util.Pair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import linearclassifier.Margin;
 
 
@@ -35,7 +36,8 @@ import linearclassifier.Margin;
  * <!--
  * Modifications History
  * Date             Author   	Description
- * Feb 11, 2014     rojasbar  	Changing the class Corpus by AnalyzeClassifier
+ * Sept, 2014       rojasbar  	Changed trainViterbi, to compute the parameters based on the posterior probability.
+ * Feb 11, 2014     rojasbar    Changing the class Corpus by AnalyzeClassifier.
  * -->
  */
 public class GMMDiag extends GMM {
@@ -45,6 +47,7 @@ public class GMMDiag extends GMM {
     private float minMean=Float.MAX_VALUE;
     private float maxMean=Float.MIN_VALUE;
     private float maxSigma=Float.MIN_VALUE;
+    private Random rnd = new Random();
     
     // this is diagonal variance (not inverse !)
     double[][] diagvar;
@@ -310,17 +313,13 @@ public class GMMDiag extends GMM {
             //System.out.println("diagvar["+y+"]="+Arrays.toString(diagvar[y]));
         }
     }    
-    /**
-     * reassigns each frame to one mixture, and retrain the mean and var
-     * 
-     * @param analyzer
-     */
+
 
    
     /**
      * reassigns each frame to one mixture, and retrain the mean and var
      * 
-     * @param analyzer
+     * @param margin
      * @return the array of marginal posteriors per class
      */
     public double[] trainViterbi(Margin margin) {
@@ -524,7 +523,6 @@ public class GMMDiag extends GMM {
      * means10 = mean of scores computed with model 0 = mu10 = mu-y=1-NO (mu_kl)
      * means11 = mean of scores computed with model 1 = mu11 = mu-y=1-YES (mu_kk)
      * 
-     * @param analyze
      * @param margin 
      */
     @Override
@@ -602,7 +600,216 @@ public class GMMDiag extends GMM {
         //*/
     }
     
-    public int nIterDone=0;
+        public double[] trainStocViterbi(Margin margin) {
+        final float[] z = new float[nlabs];
+        final GMMDiag gmm0 = this.clone();
+        for (int i=0;i<nlabs;i++) {
+            Arrays.fill(means[i], 0);
+            Arrays.fill(diagvar[i], 0);
+        }
+        int[] nex = new int[nlabs];
+        double[] nk = new double[nlabs];
+        
+        Arrays.fill(nex, 0);
+        Arrays.fill(nk, 0.0);
+        int numInstances = margin.getNumberOfInstances();
+        int numSamples = 10000;
+        int[] samples = new int[numSamples];
+        for (int s=0;s<numSamples;s++) {
+            List<Integer> featuresByInstance = new ArrayList<>();
+            int inst= rnd.nextInt(numInstances);
+            samples[s]=inst;
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(inst);
+            for (int lab=0;lab<nlabs;lab++) {
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(inst, lab);
+                else                
+                    z[lab] = margin.getScore(featuresByInstance,lab);
+            }
+            Arrays.fill(tmp, 0);
+
+            //logWeights has already the priors which is the extra pattern pi
+            float normConst = logMath.linearToLog(0);
+            for (int y=0;y<nlabs;y++){ 
+                tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
+                if(y==0)
+                    normConst=(float)tmp[y];
+                else
+                    normConst=  logMath.addAsLinear(normConst,(float)tmp[y]);
+                
+            }
+            
+            for (int y=0;y<nlabs;y++){ 
+                nex[y]++;
+                //ex2lab[inst]=y;
+                double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                nk[y]+=posterior;
+                for (int l=0;l<nlabs;l++){ 
+                    means[y][l]+=posterior*z[l];  
+                   
+                }
+            }
+            //System.out.println(" instance "+inst + "\n normConst = "+ normConst +"  sum mean ["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"]  nk="+Arrays.toString(nk) );
+
+        }
+        
+        for (int y=0;y<nlabs;y++) {
+            if (nk[y]==0)
+                for (int i=0;i<nlabs;i++) 
+                    means[y][i]=0; //or means[y][i]=Float.MAX_VALUE; ?
+            else
+                for (int i=0;i<nlabs;i++){
+                    means[y][i]/=nk[y];
+                }    
+                
+                
+        }
+        //System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
+        for (int s=0;s<numSamples;s++) {
+            List<Integer> featuresByInstance = new ArrayList<>();
+            int inst=samples[s];
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(inst);
+            for (int i=0;i<nlabs;i++) {
+                if(Margin.GENERATEDDATA)
+                    z[i] = margin.getGenScore(inst, i);
+                else                
+                    z[i] = margin.getScore(featuresByInstance,i);
+            }
+
+            float normConst = logMath.linearToLog(0);
+            for (int y=0;y<nlabs;y++){ 
+                tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
+                if(y==0)
+                    normConst=(float)tmp[y];
+                else
+                    normConst=  logMath.addAsLinear(normConst,(float)tmp[y]);
+            }
+            for (int y=0;y<nlabs;y++){ 
+                double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                
+                for (int i=0;i<nlabs;i++){ 
+                    double mudiff = z[i]-means[y][i];
+                    diagvar[y][i]+=posterior*(mudiff*mudiff);
+                    
+                }
+                 
+            }
+            
+        }
+        
+        for (int y=0;y<nlabs;y++) {
+            double logdet=0;
+            if (nk[y]==0)
+                for (int i=0;i<nlabs;i++) {
+                    diagvar[y][i] = minvar;
+                    logdet += logMath.linearToLog(diagvar[y][i]);
+                }
+            else
+                for (int i=0;i<nlabs;i++) {
+                    diagvar[y][i] /= nk[y];
+                    
+                    if (diagvar[y][i] < minvar) 
+                        diagvar[y][i]=minvar;
+                    
+                    logdet += logMath.linearToLog(diagvar[y][i]);
+                }
+            double co=(double)nlabs*logMath.linearToLog(2.0*Math.PI) + logdet;
+            co/=2.0;
+            gconst[y]=co;
+            
+            //change logWeights ... or not ??
+            // logWeights[y]=logMath.linearToLog(nk[y]/nex[y]);
+           
+        }
+         //System.out.println("priors: "+ Arrays.toString(logWeights));
+        //System.out.println("trainviterbi");
+        //printMean();
+        //printVariace();   
+        return nk;
+    }
+    
+        public void trainStoch1gauss(Margin margin) {
+        final float[] z = new float[nlabs];
+        for (int i=0;i<nlabs;i++) {
+            Arrays.fill(means[i], 0);
+        }
+        int numInstances = margin.getNumberOfInstances();
+        int numSamples = 10000;
+        int[] samples = new int[numSamples];
+        for (int s=0;s<numSamples;s++) {
+            List<Integer> featuresByInstance = new ArrayList<>();
+            int ex=rnd.nextInt(numInstances);
+            samples[s]=ex;
+            if(!Margin.GENERATEDDATA)
+                featuresByInstance = margin.getFeaturesPerInstance(ex);
+            for (int lab=0;lab<nlabs;lab++) {
+                if(Margin.GENERATEDDATA)
+                    z[lab] = margin.getGenScore(ex, lab);
+                else                
+                    z[lab] = margin.getScore(featuresByInstance,lab);
+                //System.out.println("lab="+lab+" z[lab]="+z[lab]);
+                assert !Float.isNaN(z[lab]);
+            }
+            for (int i=0;i<nlabs;i++) {
+                means[0][i]+=z[i];
+            }
+        }
+        for (int i=0;i<nlabs;i++) {
+            means[0][i]/=(float)numSamples;
+            for (int j=1;j<nlabs;j++) means[j][i]=means[0][i];
+        }
+        Arrays.fill(diagvar[0], 0);
+        for (int s=0;s<numSamples;s++) {
+            List<Integer> featuresByInstance = new ArrayList<>();
+            int ex=samples[s];
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(ex);
+            for (int i=0;i<nlabs;i++) {
+                if(Margin.GENERATEDDATA)
+                    z[i] = margin.getGenScore(ex, i);
+                else                
+                    z[i] = margin.getScore(featuresByInstance,i);
+                assert !Float.isNaN(z[i]);
+                tmp[i] = z[i]-means[0][i];
+            }
+            for (int i=0;i<nlabs;i++) {
+                diagvar[0][i]+=tmp[i]*tmp[i];
+            }
+        }
+        assert numInstances>0;
+
+        // precompute gconst
+        /*
+         * log de
+         * (2pi)^{d/2} * |Covar|^{1/2} 
+         */
+        double logdet=0;
+        for (int i=0;i<nlabs;i++) {
+            
+            diagvar[0][i] /= (double) numInstances;
+            if (diagvar[0][i] < minvar) diagvar[0][i]=minvar;
+            for (int j=1;j<nlabs;j++) diagvar[j][i]=diagvar[0][i];
+            logdet += logMath.linearToLog(diagvar[0][i]);
+        }
+
+        
+            double co=(double)nlabs*logMath.linearToLog(2.0*Math.PI) + logdet;
+            co/=2.0;            
+            for (int i=0;i<nlabs;i++) gconst[i]=co; 
+            //double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y][l]);
+            //co/=2.0;
+
+        ///*
+        System.out.println("train1gauss");
+        printMean();
+        printVariace(); 
+        System.out.println("train1gauss var=["+gconst[0]+","+gconst[1]+"]");
+        //*/
+    }    
+        
+    public int nIterDone=0; 
     
     public double[] trainWithoutInit(Margin margin) {
         double loglike = getLoglike(margin);
@@ -617,7 +824,19 @@ public class GMMDiag extends GMM {
         }
         return postPerClass;
     }
-    
+     public double[] trainStocWithoutInit(Margin margin) {
+        double loglike = getLoglike(margin);
+    	double previousLogLike=loglike;
+        double[] postPerClass=null;
+        nIterDone=0;
+        for (int iter=0;iter<nitersTraining;iter++,nIterDone++) {
+            postPerClass=trainStocViterbi(margin);
+            loglike = getLoglike(margin);
+            if(Math.abs(loglike-previousLogLike)<toleranceTraining) break;
+            previousLogLike=loglike;
+        }
+        return postPerClass;
+    }   
     /**
      * 
      * @param margin
@@ -638,6 +857,23 @@ public class GMMDiag extends GMM {
     	means[1][0]=scmin; means[1][1]=-scmin;
     	return trainWithoutInit(margin);
     }
+    
+    public double[] trainStoc(Margin margin) {
+    	// just to compute the variance and gconst:
+    	trainStoch1gauss(margin);
+    	// compute extreme values
+    	List<List<Integer>> feats = margin.getFeaturesPerInstances();
+    	float scmin=Float.MAX_VALUE,scmax=-Float.MAX_VALUE;
+    	for (List<Integer> f : feats) {
+    		float sc=margin.getScore(f, 0);
+    		if (sc<scmin) scmin=sc;
+    		if (sc>scmax) scmax=sc;
+    	}
+    	means[0][0]=scmax; means[0][1]=-scmax;
+    	means[1][0]=scmin; means[1][1]=-scmin;
+    	return trainStocWithoutInit(margin);
+    }
+    
     public double[] computePosteriors(Margin margin) {
     	double[] nk = new double[nlabs];
     	final float[] z = new float[nlabs];

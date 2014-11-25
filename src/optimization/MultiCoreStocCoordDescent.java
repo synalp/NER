@@ -45,7 +45,7 @@ public class MultiCoreStocCoordDescent  {
   	GMMDiag gmm = new GMMDiag(priors.length, priors);
   	gmm.nitersTraining=1000;
   	gmm.toleranceTraining=0;
-  	double[] post=gmm.train(margin);
+  	double[] post=gmm.trainStoc(margin);
   	System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   	
   	{
@@ -62,7 +62,7 @@ public class MultiCoreStocCoordDescent  {
   			m=means[0][1];
   			means[0][1]=means[1][1];
   			means[1][1]=m;
-  			post=gmm.trainWithoutInit(margin);
+  			post=gmm.trainStocWithoutInit(margin);
   			System.out.println("just after inversion train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   			System.out.println("after inversion means "+means[0][0]+" "+means[1][0]);
   		}
