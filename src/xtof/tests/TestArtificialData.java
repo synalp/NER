@@ -4,10 +4,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Random;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
-
 import tools.CNConstants;
-import tools.Histoplot;
 import xtof.Corpus;
 import xtof.LinearModel;
 import xtof.Parms;
