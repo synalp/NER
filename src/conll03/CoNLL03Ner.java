@@ -451,7 +451,7 @@ public class CoNLL03Ner {
         //lcclass.testingClassifier(false, entity, false, false);
         lcclass.allweightsKeepingOnlyTrain(entity,trainSize,testSize,useExistingModels);
         
-        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        //ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         //columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);        
         HashMap<String,Double> priorsMap = new HashMap<>();
         

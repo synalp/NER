@@ -56,6 +56,9 @@ public class Margin {
     //list of features in the labeled and unlabeled datasets
     private Integer trainFeatSize;
     private Integer testFeatSize;
+    //stochastic gmm
+    private int numSamples;
+    
     
     public Margin(){
         
@@ -553,4 +556,13 @@ public class Margin {
         return this.testFeatSize;
     }   
 
+    public void setNumSamples(int nSamples){
+        this.numSamples=nSamples;
+    }
+    
+    public int getNumSamples(){
+        return this.numSamples;
+    }
+
+    
 }

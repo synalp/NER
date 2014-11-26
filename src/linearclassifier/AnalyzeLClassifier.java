@@ -109,6 +109,10 @@ public class AnalyzeLClassifier {
     
     private HashMap<Integer,Margin> parallelGrad = new HashMap<>();
     
+    //gmm sampling
+    private int numSamples;
+    
+    
     
     public AnalyzeLClassifier(){
         GeneralConfig.loadProperties();
@@ -583,10 +587,21 @@ public class AnalyzeLClassifier {
             inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), CNConstants.UTF8_ENCODING));
             
             numInstances=0;
-
+            List<String> lines = new ArrayList<>();
             for (;;) {
                 String line = inFile.readLine();
                 if (line==null) break;
+                lines.add(line);
+                numInstances++;  
+            }
+            int lineNumber=0;
+            numSamples = (int) Math.round(numInstances*0.1);
+            
+            
+            for (int i=0;i<numSamples;i++) {
+
+                int inst= rnd.nextInt(numInstances);
+                String line = lines.get(inst);
                 ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
                 Datum<String, String> datum = columnDataClass.makeDatumFromLine(line, 0);
                 Collection<String> features = datum.asFeatures();
@@ -604,11 +619,13 @@ public class AnalyzeLClassifier {
                 String label = line.substring(0, line.indexOf("\t"));
                 int labelId = model.labelIndex().indexOf(label);
                 labelperInst.add(labelId);
-                numInstances++;    
-                if(fileName.contains("train"))
-                    stLCDictTrainFeatures.put(numInstances, new ArrayList<>(features));
-                else
-                     stLCDictTestFeatures.put(numInstances, new ArrayList<>(features));                       
+                lineNumber++;
+                if(serializeFeatures){
+                    if(fileName.contains("train"))
+                        stLCDictTrainFeatures.put(numInstances, new ArrayList<>(features));
+                    else
+                         stLCDictTestFeatures.put(numInstances, new ArrayList<>(features)); 
+                }
                                
             }
             ///*
@@ -1646,6 +1663,8 @@ public class AnalyzeLClassifier {
         margin.setFeaturesPerInstance(featsperInst);
         margin.setLabelPerInstance(labelperInst);  
         margin.setNumberOfInstances(numInstances);
+        margin.setNumSamples(numSamples);
+        
         
         //checks whether or not the classifier is multiclass, if that is the case it uses numerical integration by default
         if(margin.getNlabs()>2){
