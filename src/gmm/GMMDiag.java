@@ -531,8 +531,8 @@ public class GMMDiag extends GMM {
         for (int i=0;i<nlabs;i++) {
             Arrays.fill(means[i], 0);
         }
-        int numInstances = margin.getNumberOfInstances();
-        for (int ex=0;ex<numInstances;ex++) {
+        int numSamples = margin.getNumSamples();
+        for (int ex=0;ex<numSamples;ex++) {
             List<Integer> featuresByInstance = new ArrayList<>();
             if(!Margin.GENERATEDDATA)
                 featuresByInstance = margin.getFeaturesPerInstance(ex);
@@ -549,11 +549,11 @@ public class GMMDiag extends GMM {
             }
         }
         for (int i=0;i<nlabs;i++) {
-            means[0][i]/=(float)numInstances;
+            means[0][i]/=(float)numSamples;
             for (int j=1;j<nlabs;j++) means[j][i]=means[0][i];
         }
         Arrays.fill(diagvar[0], 0);
-        for (int ex=0;ex<numInstances;ex++) {
+        for (int ex=0;ex<numSamples;ex++) {
             List<Integer> featuresByInstance = new ArrayList<>();
             if(!Margin.GENERATEDDATA)            
                 featuresByInstance = margin.getFeaturesPerInstance(ex);
@@ -569,7 +569,7 @@ public class GMMDiag extends GMM {
                 diagvar[0][i]+=tmp[i]*tmp[i];
             }
         }
-        assert numInstances>0;
+        assert numSamples>0;
 
         // precompute gconst
         /*
@@ -579,7 +579,7 @@ public class GMMDiag extends GMM {
         double logdet=0;
         for (int i=0;i<nlabs;i++) {
             
-            diagvar[0][i] /= (double) numInstances;
+            diagvar[0][i] /= (double) numSamples;
             if (diagvar[0][i] < minvar) diagvar[0][i]=minvar;
             for (int j=1;j<nlabs;j++) diagvar[j][i]=diagvar[0][i];
             logdet += logMath.linearToLog(diagvar[0][i]);

@@ -926,8 +926,8 @@ public class CoNLL03Ner {
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
-               conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
-               //conll.experimentsCRFPlusWkSupGWord(500, 50,false);
+               //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
+               conll.experimentsCRFPlusWkSupGWord(500, 50,false);
                break;
         case 7:
         	// TODO: tune parameters on dev
