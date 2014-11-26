@@ -249,7 +249,7 @@ public class MultiCoreStocCoordDescent  {
         
         final float eps = 0.1f;  
         Integer thrId = classInfoPerThread.first();
-        PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
+        //PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
         //PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
         Margin margin = classInfoPerThread.second();
         String currentClassifier=AnalyzeLClassifier.CURRENTSETCLASSIFIER;
@@ -264,7 +264,7 @@ public class MultiCoreStocCoordDescent  {
         double[] scores= new double[featsperInst.size()];
         Arrays.fill(scores, 0.0);
         float estimr0=AnalyzeLClassifier.CURRENTPARENTESTIMR0;
-        plotR.addPoint(counter, estimr0);
+        //plotR.addPoint(counter, estimr0);
         double f1=0.0;
         double f1trainOr=0.0;
         if(computeF1){
@@ -379,7 +379,7 @@ public class MultiCoreStocCoordDescent  {
             System.out.println("*******************************"); 
             System.out.println("RMCSC["+iter+"] = "+estimr0+" "+Thread.currentThread().getId());   
             lastRisk=(double)estimr0;
-            plotR.addPoint(counter, estimr0);
+            //plotR.addPoint(counter, estimr0);
             System.out.println("*******************************");
     
             model.setWeights(margin.getWeights());
