@@ -628,6 +628,7 @@ public class AnalyzeLClassifier {
                 }
                                
             }
+            numInstances=numSamples;
             ///*
             if(serializeFeatures){
                 if(fileName.contains("train"))
