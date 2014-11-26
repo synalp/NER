@@ -254,8 +254,11 @@ public class AnalyzeSVMClassifier implements Serializable{
                     if(dictFeatures.isEmpty())
                         deserializingFeatures();
                 }
+                //load stanford features
+                addStanfordLCFeatures(istrain);
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
                 int uttCounter=0;
+                int wordCounter=0;
                 for (;;) {
                     String filename = inFile.readLine();
                     if (filename==null) break;
@@ -309,17 +312,35 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     word.setLabel(lab);
                                     word.setUtterance(utt);
                                     words.add(word);
+                                    wordCounter++;
                                     /*
                                     if(!dictFeatures.containsKey(word.getContent()))
                                         dictFeatures.put(word.getContent(), dictFeatures.size()+1);
-                                    */
+                                    
                                     if(!dictFeatures.containsKey(word.getPosTag().getFName()))
                                         dictFeatures.put(word.getPosTag().getFName(), dictFeatures.size()+1);
                                     
                                     if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
                                         dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);                                    
+                                    */
+                                    List<String> addFeats=new ArrayList<>();
+                                    if(stdictTrainFeatures.containsKey(wordCounter))
+                                        addFeats = stdictTrainFeatures.get(wordCounter);
                                     
-                                    
+                                    if(addFeats.isEmpty())
+                                       ErrorsReporting.report("NOT FEATURES FOUND FOR WORD["+wordCounter+"] = "+word); 
+                                    //List<String> filteredFeats=new ArrayList<>();
+                                    for(String feat:addFeats){
+                                        /*
+                                        if(!feat.contains("#"))
+                                            continue;
+                                        //extracts the letter ngram features
+                                        //filteredFeats.add(feat);//*/
+                                        if(!dictFeatures.containsKey(feat))
+                                            dictFeatures.put(feat, dictFeatures.size()+1);
+                                    }
+                                    //add letter ngram features
+                                    word.setAdditionalFeats(addFeats);                                    
                                         
                             }
                             uttCounter++;
@@ -361,6 +382,7 @@ public class AnalyzeSVMClassifier implements Serializable{
                             
                             for(Word word:utt.getWords()){
                                 List<Integer> vals= new ArrayList<>();
+                                /*
                                 //int wordid= dictFeatures.get(word.getContent());
                                 int posid=dictFeatures.get(word.getPosTag().getFName());
                                 int wsid= dictFeatures.get(word.getLexicalUnit().getPattern());
@@ -372,10 +394,22 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     vector+=vals.get(i)+":1 ";
                                 
                                 vector=vector.trim();
+                                */
                                 //vector = word.getContent()+" "+vector;
                                 //Print the word form just to make the debug easy*/
                                 //outFile.append(word.getLabel()+"\t"+word.getContent()+" "+tree.trim()+" "+vector+"\n");
                                 //outFile.append(word.getLabel()+"\t"+tree.trim()+" "+vector+"\n");
+                                
+                                List<String> letterNgrams= word.getAdditionalFeats();
+                                for(String feat:letterNgrams){
+                                    vals.add(dictFeatures.get(feat));
+                                }
+
+                                Collections.sort(vals);
+                                String vector="";
+                                for(int i=0; i<vals.size();i++)                                
+                                    vector+=vals.get(i)+":1 ";                                
+                                
                                 if(onlyVector)
                                     outFile.append(word.getLabel()+"\t"+vector+"\n");
                                     //outFile.append(word.getLabel()+"\t"+vector+"\n");

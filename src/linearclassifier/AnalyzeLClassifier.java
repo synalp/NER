@@ -88,6 +88,7 @@ public class AnalyzeLClassifier {
     public static float  CURRENTPARENTESTIMR0=0f;
     public static double  CURENTPARENTF10=0f;
     public static boolean exitAfterTrainingFeaturization=false;
+    public static boolean serializeFeatures=false;
     private Random rnd = new Random();
     
     private String typeofClass="I0";  //possible values "IO","BIO","BILOU";
@@ -610,13 +611,14 @@ public class AnalyzeLClassifier {
                      stLCDictTestFeatures.put(numInstances, new ArrayList<>(features));                       
                                
             }
-            /*
-            if(fileName.contains("train"))
-                serializingFeatures(stLCDictTrainFeatures,true);
-            else
-                serializingFeatures(stLCDictTestFeatures,false);
-            */
-            
+            ///*
+            if(serializeFeatures){
+                if(fileName.contains("train"))
+                    serializingFeatures(stLCDictTrainFeatures,true);
+                else
+                    serializingFeatures(stLCDictTestFeatures,false);
+            //*/
+            }
            inFile.close();
            
         } catch (Exception ex) {
@@ -1689,7 +1691,8 @@ public class AnalyzeLClassifier {
             File thrfile = new File(binaryFile);
             
             Files.copy(mfile.toPath(), thrfile.toPath(),StandardCopyOption.REPLACE_EXISTING);
-            LinearClassifier modelThr = loadModelFromFile(binaryFile);   
+            //LinearClassifier modelThr = loadModelFromFile(binaryFile);   
+            LinearClassifier modelThr = model;
             Margin marginThr = new Margin(modelThr);
             marginThr.setBinaryFile(binaryFile);
             marginThr.setWeights(margin.getWeights());
