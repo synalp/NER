@@ -125,8 +125,9 @@ public class GMMDiag extends GMM {
     public double getLoglike(Margin margin) {
         final float[] z = new float[nlabs];
         double loglike=0;
-        int numInstances = margin.getNumberOfInstances();
-        for (int instance=0;instance<numInstances;instance++) {
+        //int numInstances = margin.getNumberOfInstances();
+        int numSamples = margin.getNumSamples();
+        for (int instance=0;instance<numSamples;instance++) {
             List<Integer> featuresByInstance = new ArrayList<>();
             if(!Margin.GENERATEDDATA)            
                 featuresByInstance = margin.getFeaturesPerInstance(instance);
