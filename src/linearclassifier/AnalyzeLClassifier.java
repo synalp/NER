@@ -1672,8 +1672,9 @@ public class AnalyzeLClassifier {
         //by default give the initial weights for the first column column 0
         //List<Double> shuffleWeights=margin.shuffleWeights();       
         
-        List<Double> sameWeights=margin.getOrWeights(0);    
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        //List<Double> sameWeights=margin.getOrWeights(0);  
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         int partSize= Math.round(partiSize);
         MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
@@ -1782,10 +1783,11 @@ public class AnalyzeLClassifier {
         System.out.println("init R "+estimr0);
         System.out.println("Number of features" + margin.getNfeats());
         
-        List<Double> sameWeights=margin.getOrWeights(0);       
-
+        //List<Double> sameWeights=margin.getOrWeights(0);       
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        
         int partSize= Math.round(partiSize);
         MultiCoreCoordinateDescent mthread = new MultiCoreCoordinateDescent(numberOfThreads,niters, closedForm, isMC,numIntIters);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
@@ -1886,10 +1888,11 @@ public class AnalyzeLClassifier {
         if(!sclass.equals(CNConstants.ALL))
             CURENTPARENTF10=columnDataClass.fs.get(sclass);    
         
-        List<Double> sameWeights=margin.getOrWeights(0);       
-
+        //List<Double> sameWeights=margin.getOrWeights(0);       
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        
         int partSize= Math.round(partiSize);
         MultiCoreFSCoordinateDesc mthread = new MultiCoreFSCoordinateDesc(numberOfThreads,niters, closedForm, isMC,numIntIters);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
