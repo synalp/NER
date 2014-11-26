@@ -1,7 +1,15 @@
 package test;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -14,6 +22,7 @@ import tools.CNConstants;
 import tools.GeneralConfig;
 import conll03.CoNLL03Ner;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
+import edu.stanford.nlp.classify.GeneralDataset;
 
 /**
  * This class is used to deploy, run and check tests automatically at every "git push" on GitLab with continuous integration.
@@ -176,6 +185,18 @@ public class AutoTests {
         // Warning: if we only sample the features that do not appear in training, then we have to have different features in the unlabeled part !
         AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
         lcclass.allweightsKeepingOnlyTrain(CNConstants.PRNOUN,Integer.MAX_VALUE,Integer.MAX_VALUE,false);
+        float f1=calcF1onTest(lcclass);
+        {
+        	lcclass.updatingPropFile(CNConstants.PRNOUN, false);
+            ColumnDataClassifier columnDataClass = new ColumnDataClassifier(lcclass.PROPERTIES_FILE);
+            String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", CNConstants.PRNOUN);
+            GeneralDataset datatr = columnDataClass.readTrainingExamples(tmpRealTrain);        
+            int[][] feats = datatr.getDataArray();
+            
+        	System.out.println("nf "+feats.length);
+//            System.out.println("testF1 after training: "+f1+" "+r1);
+        }
+        
         // randomize weights
         {
         	Random r= new Random();
@@ -186,8 +207,10 @@ public class AutoTests {
         			w[i][j]=r.nextDouble()-0.5;
         		}
         }
-        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
-        columnDataClass.testClassifier(lcclass.getModel(CNConstants.PRNOUN), AnalyzeLClassifier.TESTFILE);        
+        f1=calcF1onTest(lcclass);
+        float r1=lcclass.computeROfTheta();
+        System.out.println("testF1 after randomization: "+f1+" "+r1);
+        
         HashMap<String,Double> priorsMap = new HashMap<>();
         priorsMap.put("O", new Double(1-priorPN));
         priorsMap.put(CNConstants.PRNOUN, new Double(priorPN));
@@ -215,9 +238,40 @@ public class AutoTests {
       	double err = Math.abs(m0-xmin) + Math.abs(m1-xmax);
       	if (err>0.2) throw new Exception("Estimated gauss do not match real modes "+m0+" "+m1+" "+xmin+" "+xmax);
         
+        f1=calcF1onTest(lcclass);
+        r1=lcclass.computeROfTheta();
+        System.out.println("testF1 after unsup optim: "+f1+" "+r1);
+
+      	
       	// check that the risk decreases
         if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
         
         // TODO: check also F1 increases
+	}
+
+	private static float calcF1onTest(AnalyzeLClassifier lc) {
+		ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+		ByteArrayOutputStream bo = new ByteArrayOutputStream(10000);
+		PrintStream oldsterr = System.err;
+		System.setErr(new PrintStream(bo));
+		columnDataClass.testClassifier(lc.getModel(CNConstants.PRNOUN), AnalyzeLClassifier.TESTFILE);
+		System.setErr(oldsterr);
+		BufferedReader bf = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bo.toByteArray())));
+		float f1=Float.NaN;
+		try {
+			for (;;) {
+				String s=bf.readLine();
+				if (s==null) break;
+				int i=s.indexOf("Macro-averaged F1:");
+				if (i>=0) {
+					i=s.lastIndexOf(' ');
+					f1=Float.parseFloat(s.substring(i+1));
+					break;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return f1;
 	}
 }

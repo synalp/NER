@@ -1133,6 +1133,7 @@ public class AnalyzeLClassifier {
         float[] priors = getPriors();
         // get scores
         GMMDiag gmm = new GMMDiag(priors.length, priors);
+        // what is in marginMAP ? It maps a Margin, which contains the corpus for train, or test, or both ? and it is mapped to what ?
         gmm.train(marginMAP.get(sclassifier));
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
@@ -1626,8 +1627,10 @@ public class AnalyzeLClassifier {
 
         //train the classifier with a small set of train files
         
-        if(!isModelInMemory || !modelMap.containsKey(sclass) || !marginMAP.containsKey(sclass) )
+        if(!isModelInMemory || !modelMap.containsKey(sclass) || !marginMAP.containsKey(sclass) ) {
+        	System.out.println("RETRAINING model "+sclass);
             trainOneNERClassifier(sclass,false);  
+        }
 
         
         LinearClassifier model = modelMap.get(sclass);
@@ -1669,8 +1672,9 @@ public class AnalyzeLClassifier {
         //by default give the initial weights for the first column column 0
         //List<Double> shuffleWeights=margin.shuffleWeights();       
         
-        List<Double> sameWeights=margin.getOrWeights(0);    
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        //List<Double> sameWeights=margin.getOrWeights(0);  
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         int partSize= Math.round(partiSize);
         MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
@@ -1779,10 +1783,11 @@ public class AnalyzeLClassifier {
         System.out.println("init R "+estimr0);
         System.out.println("Number of features" + margin.getNfeats());
         
-        List<Double> sameWeights=margin.getOrWeights(0);       
-
+        //List<Double> sameWeights=margin.getOrWeights(0);       
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        
         int partSize= Math.round(partiSize);
         MultiCoreCoordinateDescent mthread = new MultiCoreCoordinateDescent(numberOfThreads,niters, closedForm, isMC,numIntIters);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
@@ -1883,10 +1888,11 @@ public class AnalyzeLClassifier {
         if(!sclass.equals(CNConstants.ALL))
             CURENTPARENTF10=columnDataClass.fs.get(sclass);    
         
-        List<Double> sameWeights=margin.getOrWeights(0);       
-
+        //List<Double> sameWeights=margin.getOrWeights(0);       
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        
         int partSize= Math.round(partiSize);
         MultiCoreFSCoordinateDesc mthread = new MultiCoreFSCoordinateDesc(numberOfThreads,niters, closedForm, isMC,numIntIters);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
@@ -3243,7 +3249,10 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         if(!useExistingModels)
             mfile.delete();
         updatingPropFile(entity, false);
-        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);   
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
+        // how to be sure that the features index read here are the same than below ?
+        // because this train file is the first to appear in the merge train+test file read below ?
+        // it's a bit risky, because if both corpora are put in reverse order one day...
         GeneralDataset datatr = columnDataClass.readTrainingExamples(tmpRealTrain);        
         LinearClassifier model = null;
         if(!mfile.exists()){
