@@ -1374,9 +1374,9 @@ public class AnalyzeSVMClassifier implements Serializable{
          //svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
          //Pruned trees
          //classifier type, isvector, isCW, isTopDown, isBottomUp, isPOS
-         //svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, false,false,true,true,true);
+         svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, false,true,true,true,false);
          //trees as string features for polynomial kernels
-         svmclass.savingWordsPolyFiles(CNConstants.PRNOUN);
+         //svmclass.savingWordsPolyFiles(CNConstants.PRNOUN);
          
          
      }

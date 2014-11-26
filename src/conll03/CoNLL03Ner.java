@@ -318,6 +318,34 @@ public class CoNLL03Ner {
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
     }
     
+        public void trainLC(String entity,boolean savingFiles, boolean useExistingModels){
+        AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
+        if(savingFiles){
+            generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
+            generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
+            generatingStanfordInputFiles(entity, "dev", false,CNConstants.CHAR_NULL);
+        }
+        AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
+        //if exist recreates the binary file
+        File mfile = new File(AnalyzeLClassifier.MODELFILE);
+        File mfile2 = new File(AnalyzeLClassifier.MODELFILE+"_COPY");
+        if(mfile.exists()){
+            try {
+                Files.copy(mfile.toPath(), mfile2.toPath(),StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
+        
+        lcclass.trainAllLinearClassifier(entity, false, false, false);
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
+        
+    }
+    
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int numIters,boolean useExistingModels){
         if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
@@ -738,7 +766,7 @@ public class CoNLL03Ner {
     
     public static final String[] TASKS = {
     	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags",  // 0 ... 4
-    	"weaklySupConll", "expGWord", "dev","priors"
+    	"weaklySupConll", "expGWord", "dev","priors","lc"
     };
     
     public static void main(String[] args){
@@ -789,6 +817,9 @@ public class CoNLL03Ner {
         	break;
         case 8:
                conll.computePriors(CNConstants.ALL,"dev");
+               break;
+        case 9:
+               conll.trainLC(CNConstants.PRNOUN,true, false);
                break;
         }
         

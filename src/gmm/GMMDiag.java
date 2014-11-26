@@ -613,7 +613,7 @@ public class GMMDiag extends GMM {
         Arrays.fill(nex, 0);
         Arrays.fill(nk, 0.0);
         int numInstances = margin.getNumberOfInstances();
-        int numSamples = 10000;
+        int numSamples = (int) Math.round(numInstances*0.1);
         int[] samples = new int[numSamples];
         for (int s=0;s<numSamples;s++) {
             List<Integer> featuresByInstance = new ArrayList<>();
@@ -736,7 +736,7 @@ public class GMMDiag extends GMM {
             Arrays.fill(means[i], 0);
         }
         int numInstances = margin.getNumberOfInstances();
-        int numSamples = 10000;
+        int numSamples = (int) Math.round(numInstances*0.1);
         int[] samples = new int[numSamples];
         for (int s=0;s<numSamples;s++) {
             List<Integer> featuresByInstance = new ArrayList<>();
