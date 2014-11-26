@@ -10,6 +10,7 @@ import gigaword.Conll03Preprocess;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -22,7 +23,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
+import jsafran.DetGraph;
+import jsafran.GraphIO;
+import jsafran.MateParser;
+import jsafran.POStagger;
 import linearclassifier.AnalyzeLClassifier;
+import org.apache.commons.io.FileUtils;
 import tools.CNConstants;
 import tools.GeneralConfig;
 import tools.PlotAPI;
@@ -318,6 +324,42 @@ public class CoNLL03Ner {
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
     }
     
+    public void trainLC(String entity,boolean savingFiles, boolean useExistingModels){
+        AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
+        if(savingFiles){
+            generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
+            generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
+            generatingStanfordInputFiles(entity, "dev", false,CNConstants.CHAR_NULL);
+        }
+        AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
+        //if exist recreates the binary file
+        File mfile = new File(AnalyzeLClassifier.MODELFILE);
+        File mfile2 = new File(AnalyzeLClassifier.MODELFILE+"_COPY");
+        if(mfile.exists()){
+            try {
+                Files.copy(mfile.toPath(), mfile2.toPath(),StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
+        
+        lcclass.trainAllLinearClassifier(entity, false, false, false);
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
+        
+        /*
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>(); 
+        AnalyzeLClassifier.serializeFeatures=true;
+        lcclass.getValues(AnalyzeLClassifier.TRAINFILE,lcclass.getModel(entity),featsperInst,labelperInst);
+        lcclass.getValues(AnalyzeLClassifier.TESTFILE,lcclass.getModel(entity),featsperInst,labelperInst);
+        */
+        
+    }
+    
     public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int numIters,boolean useExistingModels){
         if (trainSize>=0) AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
@@ -409,8 +451,8 @@ public class CoNLL03Ner {
         //lcclass.testingClassifier(false, entity, false, false);
         lcclass.allweightsKeepingOnlyTrain(entity,trainSize,testSize,useExistingModels);
         
-        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
-        columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);        
+        //ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        //columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);        
         HashMap<String,Double> priorsMap = new HashMap<>();
         
         if(!entity.equals(CNConstants.ALL)){
@@ -710,6 +752,7 @@ public class CoNLL03Ner {
      */
     public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize, boolean useExistingWSModel){
         runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel);
+        //runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,trainSize,testSize,10000, useExistingWSModel);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }   
     
@@ -736,9 +779,114 @@ public class CoNLL03Ner {
         System.out.println(Arrays.toString(priors));         
     }
     
+    public void convertingConll03to06(String dataset){
+        try {
+            BufferedReader inFile = null;
+            OutputStreamWriter outFile = null;
+            switch(dataset){
+                case "train":
+                    inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTrain)); 
+                    outFile = new OutputStreamWriter(new FileOutputStream(corpusDir+System.getProperty("file.separator")+corpusTrain+".conll"),CNConstants.UTF8_ENCODING);
+                    break;                            
+                case "dev": 
+                    inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusDev));
+                    outFile = new OutputStreamWriter(new FileOutputStream(corpusDir+System.getProperty("file.separator")+corpusDev+".conll"),CNConstants.UTF8_ENCODING);
+                    break;
+                case "test":    
+                    inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTest));
+                    outFile = new OutputStreamWriter(new FileOutputStream(corpusDir+System.getProperty("file.separator")+corpusTest+".conll"),CNConstants.UTF8_ENCODING);                    
+                    break;                            
+            }
+            int wordCounter=1;
+            for(;;){
+                
+               String line = inFile.readLine();
+                if(line == null)
+                   break;
+               if(line.startsWith("-DOCSTART-"))
+                   continue;
+               //utterance breaking
+               if(line.equals("")){
+                   wordCounter=1;
+                   outFile.append("\n");
+                   continue;
+               }    
+                   
+               String[] cols= line.split("\\s");
+               
+               outFile.append(wordCounter+"\t"+cols[0]+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[1]+"\t_\t_\t_\t_\t_\n");
+               wordCounter++;
+            } 
+            outFile.flush();
+            outFile.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    public void parsing(String dataset){
+            try {
+                GraphIO gio = new GraphIO(null);
+                OutputStreamWriter outFile =null;                
+                               
+//                OutputStreamWriter bigconllFile = new OutputStreamWriter(new FileOutputStream(new File("parse/all.in.conll"),true), CNConstants.UTF8_ENCODING);
+                for (;;) {
+                    String s = "";
+                    switch(dataset){
+                        case "train":
+                            s = corpusDir+System.getProperty("file.separator")+corpusTrain+".conll";
+                            break;                            
+                        case "dev": 
+                            s = corpusDir+System.getProperty("file.separator")+corpusDev+".conll";
+                            break;
+                        case "test":    
+                            s = corpusDir+System.getProperty("file.separator")+corpusTest+".conll";
+                            break;                            
+                    }
+                    
+                    if (s==null) break;
+                    List<DetGraph> graphs = gio.loadAllGraphs(s);
+                    String filename=s.trim().replaceAll("[\\s]+"," ");
+//                    String inconll="parse/"+filename+".in.conll";
+                    String path="parse/en/";
+                    
+                    File outfile=new File(path+filename+".out.conll");
+                    System.out.println("Processing file: "+ filename);
+                    if(outfile.exists())
+                        continue;
+                    
+//                    GraphIO.saveConLL09(graphs, null, inconll);
+//                    BufferedReader inconllFile= new BufferedReader(new FileReader(inconll));
+//                    
+//                    for(;;){
+//                        String line=inconllFile.readLine();
+//                        if (line==null) break;
+//                        bigconllFile.append(line);
+//                    }
+//                    bigconllFile.flush();  
+                    POStagger.setEnglishModels();
+                    //String model="en.mate.model";
+                    String model="mate.mods.WSJ";
+                                        
+                    MateParser.setMods(model); 
+                    try{
+                        MateParser.parseAll(graphs);
+                        File tmpFile = new File("_mate_out.conll");
+                        FileUtils.copyFile(tmpFile, outfile);
+                    }catch(Exception ex){
+                        System.out.println("ERROR PARSING FILE : "+filename);
+                        continue;
+                    }    
+                }      
+            } catch (Exception e) {
+                    e.printStackTrace();
+            }
+                    
+     }    
+    
     public static final String[] TASKS = {
     	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags",  // 0 ... 4
-    	"weaklySupConll", "expGWord", "dev","priors"
+    	"weaklySupConll", "expGWord", "dev","priors","conv", "lc"
+
     };
     
     public static void main(String[] args){
@@ -779,8 +927,9 @@ public class CoNLL03Ner {
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
-               //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
-               conll.experimentsCRFPlusWkSupGWord(500, 50,false);
+               conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
+               //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, 3000000,false);
+               //conll.experimentsCRFPlusWkSupGWord(500, 50,false);
                break;
         case 7:
         	// TODO: tune parameters on dev
@@ -790,6 +939,16 @@ public class CoNLL03Ner {
         case 8:
                conll.computePriors(CNConstants.ALL,"dev");
                break;
+        case 9:
+               conll.convertingConll03to06("train");
+               conll.convertingConll03to06("test");
+               conll.convertingConll03to06("dev");
+               break;
+            
+        case 10:
+               conll.trainLC(CNConstants.PRNOUN,true, false);
+               break;
+
         }
         
         // PLEASE DONT UNCOMMENT ANY LINE BELOW! rather add a task and arg on the command-line  

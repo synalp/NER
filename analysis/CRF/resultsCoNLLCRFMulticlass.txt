@@ -116,3 +116,16 @@ e88298 Priors on dev
 {MISC=0.02468751184642315, PER=0.06130991876125336, O=0.8325026035308838, LOC=0.040769439190626144, ORG=0.04073050245642662}
 [0.8325026, 0.040730502, 0.04076944, 0.024687512, 0.06130992]
 
+====================================================================================================================
+5413f1   CoNLL03Ner.conll.experimentsCRFPlusWkSupGWord(500, 50,false);
+	 CoNLL03Ner.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel);
+ Stochastic gmm training
+====================================================================================================================
+
+     [java] ./scripts/evalconll.sh analysis/CRF/test.all.log
+     [java] processed 46435 tokens with 5616 phrases; found: 5558 phrases; correct: 4923.
+     [java] accuracy:  97.57%; precision:  88.58%; recall:  87.66%; FB1:  88.12
+     [java]               LOC: precision:  90.34%; recall:  90.94%; FB1:  90.64  1677
+     [java]              MISC: precision:  80.35%; recall:  78.17%; FB1:  79.25  682
+     [java]               ORG: precision:  85.09%; recall:  82.15%; FB1:  83.60  1590
+     [java]               PER: precision:  93.66%; recall:  94.07%; FB1:  93.86  1609

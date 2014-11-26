@@ -43,7 +43,7 @@ public class Margin {
     
     //paralell coordinate gradient
     
-    private List<List<Double>> originalWeights = new ArrayList<>();
+    //private List<List<Double>> originalWeights = new ArrayList<>();
     //List<List<Double>> shuffleWeights = new ArrayList<>();
     private int startIndex=0;
     private int endIndex=0;
@@ -56,6 +56,9 @@ public class Margin {
     //list of features in the labeled and unlabeled datasets
     private Integer trainFeatSize;
     private Integer testFeatSize;
+    //stochastic gmm
+    private int numSamples;
+    
     
     public Margin(){
         
@@ -304,23 +307,26 @@ public class Margin {
     /**
      * The inner list contains all the weights for a given column of the matrix of weights
      */
-    public void setOrWeights(){
-       
-        for(int col=0; col<weights[0].length; col++){
-            List<Double> dim = new ArrayList<>();
-            for(int i=0;i< weights.length;i++){
-                dim.add(weights[i][col]);
-            }
-            originalWeights.add(dim);
-        }
-    }
-    
-    public List<Double> getOrWeights(int dimension){
-        if(originalWeights.isEmpty())
-            setOrWeights();
-        
-        return originalWeights.get(dimension);
-    }
+  
+//    public void setOrWeights(){
+//       
+//        for(int col=0; col<weights[0].length; col++){
+//            List<Double> dim = new ArrayList<>();
+//            for(int i=0;i< weights.length;i++){
+//                dim.add(weights[i][col]);
+//            }
+//            originalWeights.add(dim);
+//        }
+//    }
+//    
+//
+//    
+//    public List<Double> getOrWeights(int dimension){
+//        if(originalWeights.isEmpty())
+//            setOrWeights();
+//        
+//        return originalWeights.get(dimension);
+//    }
     
 //    public List<Double> shuffleWeights(){
 //        
@@ -352,7 +358,7 @@ public class Margin {
     public void copySharedyInfoParallelGrad(Margin margin){
         this.featsperInst=margin.featsperInst;
         this.labelperInst=margin.labelperInst;
-        this.originalWeights= margin.originalWeights;
+        //this.originalWeights= margin.originalWeights;
         //this.shuffleWeights=margin.shuffleWeights;
         //this.shuffleAndOrFeatIdxMap.putAll(margin.shuffleAndOrFeatIdxMap);
         //this.orAndShuffleFeatIdxMap.putAll(margin.orAndShuffleFeatIdxMap); 
@@ -381,20 +387,32 @@ public class Margin {
     public void setSubListOfFeats(int dimension, int startIdx, int endIdx){
         this.startIndex=startIdx;
         this.endIndex=endIdx;
-        if(endIdx>originalWeights.get(dimension).size())
-            endIdx=originalWeights.get(dimension).size();
-        subListOfFeatures.add(originalWeights.get(dimension).subList(startIdx, endIdx));
+        if(endIdx>weights.length)
+            endIdx=weights.length;
         
-        
+        for(int col=0; col<weights[0].length; col++){
+            List<Double> dim = new ArrayList<>();
+            for(int i=startIdx; i< endIdx;i++){
+                dim.add(weights[i][col]);
+            }
+            subListOfFeatures.add(dim);
+        }
+           
     } 
     public void setSubListOfFeats(int dimension){
         if(this.endIndex==0)
             return;
 
-        if(endIndex>originalWeights.get(dimension).size())
-            endIndex=originalWeights.get(dimension).size();
-        subListOfFeatures.add(originalWeights.get(dimension).subList(startIndex, endIndex));
+        if(endIndex>weights.length)
+            endIndex=weights.length;
         
+        for(int col=0; col<weights[0].length; col++){
+            List<Double> dim = new ArrayList<>();
+            for(int i=startIndex; i< endIndex;i++){
+                dim.add(weights[i][col]);
+            }
+            subListOfFeatures.add(dim);
+        }        
         
     }      
     public List<Double> getSubListOfFeats(int dimension){
@@ -538,4 +556,13 @@ public class Margin {
         return this.testFeatSize;
     }   
 
+    public void setNumSamples(int nSamples){
+        this.numSamples=nSamples;
+    }
+    
+    public int getNumSamples(){
+        return this.numSamples;
+    }
+
+    
 }

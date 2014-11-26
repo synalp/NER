@@ -88,6 +88,7 @@ public class AnalyzeLClassifier {
     public static float  CURRENTPARENTESTIMR0=0f;
     public static double  CURENTPARENTF10=0f;
     public static boolean exitAfterTrainingFeaturization=false;
+    public static boolean serializeFeatures=false;
     private Random rnd = new Random();
     
     private String typeofClass="I0";  //possible values "IO","BIO","BILOU";
@@ -107,6 +108,10 @@ public class AnalyzeLClassifier {
     private long elapsedTime;
     
     private HashMap<Integer,Margin> parallelGrad = new HashMap<>();
+    
+    //gmm sampling
+    private int numSamples;
+    
     
     
     public AnalyzeLClassifier(){
@@ -582,10 +587,21 @@ public class AnalyzeLClassifier {
             inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), CNConstants.UTF8_ENCODING));
             
             numInstances=0;
-
+            List<String> lines = new ArrayList<>();
             for (;;) {
                 String line = inFile.readLine();
                 if (line==null) break;
+                lines.add(line);
+                numInstances++;  
+            }
+            int lineNumber=0;
+            numSamples = (int) Math.round(numInstances*0.1);
+            
+            
+            for (int i=0;i<numSamples;i++) {
+
+                int inst= rnd.nextInt(numInstances);
+                String line = lines.get(inst);
                 ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
                 Datum<String, String> datum = columnDataClass.makeDatumFromLine(line, 0);
                 Collection<String> features = datum.asFeatures();
@@ -603,20 +619,24 @@ public class AnalyzeLClassifier {
                 String label = line.substring(0, line.indexOf("\t"));
                 int labelId = model.labelIndex().indexOf(label);
                 labelperInst.add(labelId);
-                numInstances++;    
-                if(fileName.contains("train"))
-                    stLCDictTrainFeatures.put(numInstances, new ArrayList<>(features));
-                else
-                     stLCDictTestFeatures.put(numInstances, new ArrayList<>(features));                       
+                lineNumber++;
+                if(serializeFeatures){
+                    if(fileName.contains("train"))
+                        stLCDictTrainFeatures.put(numInstances, new ArrayList<>(features));
+                    else
+                         stLCDictTestFeatures.put(numInstances, new ArrayList<>(features)); 
+                }
                                
             }
-            /*
-            if(fileName.contains("train"))
-                serializingFeatures(stLCDictTrainFeatures,true);
-            else
-                serializingFeatures(stLCDictTestFeatures,false);
-            */
-            
+            numInstances=numSamples;
+            ///*
+            if(serializeFeatures){
+                if(fileName.contains("train"))
+                    serializingFeatures(stLCDictTrainFeatures,true);
+                else
+                    serializingFeatures(stLCDictTestFeatures,false);
+            //*/
+            }
            inFile.close();
            
         } catch (Exception ex) {
@@ -1644,6 +1664,8 @@ public class AnalyzeLClassifier {
         margin.setFeaturesPerInstance(featsperInst);
         margin.setLabelPerInstance(labelperInst);  
         margin.setNumberOfInstances(numInstances);
+        margin.setNumSamples(numSamples);
+        
         
         //checks whether or not the classifier is multiclass, if that is the case it uses numerical integration by default
         if(margin.getNlabs()>2){
@@ -1672,8 +1694,9 @@ public class AnalyzeLClassifier {
         //by default give the initial weights for the first column column 0
         //List<Double> shuffleWeights=margin.shuffleWeights();       
         
-        List<Double> sameWeights=margin.getOrWeights(0);    
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        //List<Double> sameWeights=margin.getOrWeights(0);  
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         int partSize= Math.round(partiSize);
         MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
@@ -1688,7 +1711,8 @@ public class AnalyzeLClassifier {
             File thrfile = new File(binaryFile);
             
             Files.copy(mfile.toPath(), thrfile.toPath(),StandardCopyOption.REPLACE_EXISTING);
-            LinearClassifier modelThr = loadModelFromFile(binaryFile);   
+            //LinearClassifier modelThr = loadModelFromFile(binaryFile);   
+            LinearClassifier modelThr = model;
             Margin marginThr = new Margin(modelThr);
             marginThr.setBinaryFile(binaryFile);
             marginThr.setWeights(margin.getWeights());
@@ -1782,10 +1806,11 @@ public class AnalyzeLClassifier {
         System.out.println("init R "+estimr0);
         System.out.println("Number of features" + margin.getNfeats());
         
-        List<Double> sameWeights=margin.getOrWeights(0);       
-
+        //List<Double> sameWeights=margin.getOrWeights(0);       
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        
         int partSize= Math.round(partiSize);
         MultiCoreCoordinateDescent mthread = new MultiCoreCoordinateDescent(numberOfThreads,niters, closedForm, isMC,numIntIters);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
@@ -1886,10 +1911,11 @@ public class AnalyzeLClassifier {
         if(!sclass.equals(CNConstants.ALL))
             CURENTPARENTF10=columnDataClass.fs.get(sclass);    
         
-        List<Double> sameWeights=margin.getOrWeights(0);       
-
+        //List<Double> sameWeights=margin.getOrWeights(0);       
+        double[][] sameWeights = margin.getWeights();
+        float partiSize = (float) sameWeights.length/numberOfThreads;
         
-        float partiSize = (float) sameWeights.size()/numberOfThreads;
+        
         int partSize= Math.round(partiSize);
         MultiCoreFSCoordinateDesc mthread = new MultiCoreFSCoordinateDesc(numberOfThreads,niters, closedForm, isMC,numIntIters);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
