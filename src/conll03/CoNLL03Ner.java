@@ -324,7 +324,7 @@ public class CoNLL03Ner {
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
     }
     
-        public void trainLC(String entity,boolean savingFiles, boolean useExistingModels){
+    public void trainLC(String entity,boolean savingFiles, boolean useExistingModels){
         AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
@@ -349,6 +349,14 @@ public class CoNLL03Ner {
         lcclass.trainAllLinearClassifier(entity, false, false, false);
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
+        
+        /*
+        List<List<Integer>> featsperInst = new ArrayList<>(); 
+        List<Integer> labelperInst = new ArrayList<>(); 
+        AnalyzeLClassifier.serializeFeatures=true;
+        lcclass.getValues(AnalyzeLClassifier.TRAINFILE,lcclass.getModel(entity),featsperInst,labelperInst);
+        lcclass.getValues(AnalyzeLClassifier.TESTFILE,lcclass.getModel(entity),featsperInst,labelperInst);
+        */
         
     }
     
