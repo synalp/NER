@@ -124,4 +124,7 @@ package tools;
     
     //StanfodNER class
     public static String SNERJAR="lib/StanfordNER.jar";
+    
+    //autotest oracle
+    public static String AUTOTESTORACLE="autotest_oracle";
 }
