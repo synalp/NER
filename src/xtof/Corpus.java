@@ -109,6 +109,7 @@ public class Corpus {
 		return resFile;
 	}
 	// needs the train file to initialize a dataset
+	// approximate size: 1M exemples = 150 MB
 	public static Corpus buildFeatureFile(String train, String unlabFile) {
 		Corpus c = new Corpus();
 		c.columnDataClassifier = new ColumnDataClassifier("etc/slinearclassifier.props");
@@ -119,7 +120,7 @@ public class Corpus {
 			DataOutputStream g = new DataOutputStream(new FileOutputStream("unlabfeats.dat"));
 			BufferedReader f = new BufferedReader(new FileReader(unlabFile));
 			for (int line=0;;line++) {
-				if (line%1000==0) System.out.print("nex "+line+"\r");
+				if (line%1000==0) System.out.println("nex "+line);
 				String s=f.readLine();
 				if (s==null) break;
 				Datum d=c.columnDataClassifier.makeDatumFromLine(s, line);
@@ -140,6 +141,9 @@ public class Corpus {
 			}
 			f.close();
 			// save also the feature index
+			// later on, to reuse this index, you must load the very same training set first,
+			// just to initialize properly the feature Index, and then complete/fill in the feature
+			// Index with the additional Strings that have been saved here...
 			g.writeInt(featureIndex.size());
 			for (int i=0;i<featureIndex.size();i++)
 				g.writeUTF(featureIndex.get(i));
