@@ -127,4 +127,5 @@ package tools;
     
     //autotest oracle
     public static String AUTOTESTORACLE="autotest_oracle";
+    public static String AUTOTESTPNORACLE="autotest_pnoracle";
 }

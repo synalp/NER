@@ -263,7 +263,16 @@ public class CoNLL03Ner {
                             String outClass = label;
                             String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
                             outFile.append(newLine);
-                	  } else if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
+                	  } else if(wSupModelFile.equals(CNConstants.AUTOTESTPNORACLE)){
+                             String line =lines.get(i);
+                            String label = line.substring(0,line.indexOf("\t"));
+                            String outClass = label;
+                            String prefix=outClass.substring(0,label.indexOf("-")+1);
+                            if(!prefix.isEmpty())
+                                outClass = CNConstants.PRNOUN;                            
+                            String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
+                            outFile.append(newLine);                             
+                          }else if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
                             AnalyzeLClassifier.MODELFILE=wSupModelFile;
                             // you load the model for every line i ??!!
                             LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
@@ -757,7 +766,7 @@ public class CoNLL03Ner {
     }  
     
     public void trainCRFPlusWkSupGold(String entity, boolean savingFiles){
-        String wksupModel=CNConstants.AUTOTESTORACLE;
+        String wksupModel=CNConstants.AUTOTESTPNORACLE;
         AnalyzeCRFClassifier crfclass = new AnalyzeCRFClassifier();
         crfclass.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,feat=3,answer=4 "); 
         if(savingFiles){
@@ -959,9 +968,9 @@ public class CoNLL03Ner {
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
-               conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
+               //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
                //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, 3000000,false);
-               //conll.experimentsCRFPlusWkSupGWord(500, 50,false);
+               conll.experimentsCRFPlusWkSupGWord(500, 50,false);
                break;
         case 7:
         	// TODO: tune parameters on dev

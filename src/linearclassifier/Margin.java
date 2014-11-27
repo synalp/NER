@@ -56,10 +56,12 @@ public class Margin {
     //list of features in the labeled and unlabeled datasets
     private Integer trainFeatSize;
     private Integer testFeatSize;
-    //stochastic gmm
-    private int numSamples;
-    
-    
+
+    //stochastic training
+    private int numSamples = 0;
+    private int[] samples= null;    
+    private Random rnd = new Random();
+     
     public Margin(){
         
     }
@@ -556,13 +558,28 @@ public class Margin {
         return this.testFeatSize;
     }   
 
-    public void setNumSamples(int nSamples){
-        this.numSamples=nSamples;
+    public int[] sampling(double percentage){
+        numInstances= getNumberOfInstances();
+        numSamples = (int) Math.round(numInstances*percentage);
+        samples= new int[numSamples];
+        for (int s=0;s<numSamples;s++) {
+            
+            int ex = rnd.nextInt(numSamples);
+            samples[s]=ex;
+        } 
+        return samples;
     }
-    
+
     public int getNumSamples(){
         return this.numSamples;
     }
-
     
+    public void setSamples(int[] samples){
+        this.samples = samples;
+        numSamples = samples.length;
+    }
+    
+    public int[] getSamples(){
+        return this.samples;
+    }
 }

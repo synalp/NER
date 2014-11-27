@@ -163,7 +163,7 @@ public class MultiCoreCoordinateDescent  {
         if(priors.length>2)
             isMC=true;
         // get scores
-        GMMDiag gmm = new GMMDiag(priors.length, priors);
+        GMMDiag gmm = new GMMDiag(priors.length, priors,isCloseForm);
         gmm.train(margin);
         /*System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");

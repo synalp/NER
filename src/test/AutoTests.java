@@ -229,7 +229,7 @@ public class AutoTests {
         	if (x>xmax) xmax=x;
         }
         final float[] priors = AnalyzeLClassifier.getPriors();
-      	GMMDiag gmm = new GMMDiag(priors.length, priors);
+      	GMMDiag gmm = new GMMDiag(priors.length, priors,true);
       	gmm.nitersTraining=1000;
       	gmm.toleranceTraining=0;
       	gmm.train(margin);
