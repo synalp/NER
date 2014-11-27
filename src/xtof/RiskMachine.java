@@ -57,6 +57,12 @@ public class RiskMachine {
 	  	return t1+t2+t3+t4;
 	}
 	
+	/**
+	 * This class does a full EM training of a 2-class GMM, without taking into account priors !
+	 * 
+	 * @author xtof
+	 *
+	 */
 	private class GMMDiag {
 		// mean0 always represents the mode with the highest score
 		public float mean0, var0, gconst0, logw0;

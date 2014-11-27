@@ -119,7 +119,7 @@
 	<java classname="xtof.tests.TestGigaword"
 	   fork="true"
            failonerror="true"
-           maxmemory="1g">
+           maxmemory="14g">
            <arg value="500m"/>
 	   <classpath refid="run.classpath" />
        </java>
