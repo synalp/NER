@@ -42,10 +42,10 @@ public class MultiCoreStocCoordDescent  {
   	//final float[] priors = computePriors(sclassifier,model);
   	final float[] priors = AnalyzeLClassifier.getPriors();
   	// get scores
-  	GMMDiag gmm = new GMMDiag(priors.length, priors);
+  	GMMDiag gmm = new GMMDiag(priors.length, priors,true);
   	gmm.nitersTraining=1000;
   	gmm.toleranceTraining=0;
-  	double[] post=gmm.train(margin);
+  	double[] post=gmm.trainStoc(margin);
   	System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   	
   	{
@@ -62,7 +62,7 @@ public class MultiCoreStocCoordDescent  {
   			m=means[0][1];
   			means[0][1]=means[1][1];
   			means[1][1]=m;
-  			post=gmm.trainWithoutInit(margin);
+  			post=gmm.trainStocWithoutInit(margin);
   			System.out.println("just after inversion train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   			System.out.println("after inversion means "+means[0][0]+" "+means[1][0]);
   		}
@@ -223,7 +223,7 @@ public class MultiCoreStocCoordDescent  {
         if(priors.length>2)
             isMC=true;          
         // get scores
-        GMMDiag gmm = new GMMDiag(priors.length, priors);
+        GMMDiag gmm = new GMMDiag(priors.length, priors,isCloseForm);
         gmm.train(margin);
         /*System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
@@ -249,7 +249,7 @@ public class MultiCoreStocCoordDescent  {
         
         final float eps = 0.1f;  
         Integer thrId = classInfoPerThread.first();
-        //PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
+        PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
         //PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
         Margin margin = classInfoPerThread.second();
         String currentClassifier=AnalyzeLClassifier.CURRENTSETCLASSIFIER;
@@ -264,7 +264,7 @@ public class MultiCoreStocCoordDescent  {
         double[] scores= new double[featsperInst.size()];
         Arrays.fill(scores, 0.0);
         float estimr0=AnalyzeLClassifier.CURRENTPARENTESTIMR0;
-        //plotR.addPoint(counter, estimr0);
+        plotR.addPoint(counter, estimr0);
         double f1=0.0;
         double f1trainOr=0.0;
         if(computeF1){
@@ -279,6 +279,7 @@ public class MultiCoreStocCoordDescent  {
         //plotF1.addPoint(counter,f1);   
         //copy the orginal weights before applying coordinate gradient
         margin.copyOrWeightsBeforGradient();
+        
         HashSet<String> emptyfeats = new HashSet<>();
         for (int iter=0;iter<niters;iter++) {
             int dimIdx=0;
@@ -379,7 +380,7 @@ public class MultiCoreStocCoordDescent  {
             System.out.println("*******************************"); 
             System.out.println("RMCSC["+iter+"] = "+estimr0+" "+Thread.currentThread().getId());   
             lastRisk=(double)estimr0;
-            //plotR.addPoint(counter, estimr0);
+            plotR.addPoint(counter, estimr0);
             System.out.println("*******************************");
     
             model.setWeights(margin.getWeights());
@@ -405,7 +406,8 @@ public class MultiCoreStocCoordDescent  {
                 } catch (IOException ex) {
 
                 }
-           }                
+           } 
+           margin.sampling(0.1);
         }
         for(String emptyW:emptyfeats){
             System.out.println(emptyW);

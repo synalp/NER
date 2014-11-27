@@ -75,7 +75,7 @@ public class TestingMultiGMM {
             margin.generateRandomScore(numinst,priors);
             */
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
-            GMMDiag gmmMD = new GMMDiag(priors.length, priors);
+            GMMDiag gmmMD = new GMMDiag(priors.length, priors,false);
             gmmMD.train(margin);
             String mean="mean=[";
             for(int i=0; i<  gmmMD.getDimension();i++){
@@ -183,7 +183,7 @@ public class TestingMultiGMM {
             +gmm.getVar(1)+" , "+gmm.getVar(1));
             System.out.println("GMM trained");      
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
-            GMMDiag gmmMD = new GMMDiag(priors.length, priors);
+            GMMDiag gmmMD = new GMMDiag(priors.length, priors,false);
             gmmMD.train(margin);
             System.out.println("mean=[ "+gmmMD.getMean(0,0)+" , "+gmmMD.getMean(0,1)+";\n"+
             +gmmMD.getMean(1,0)+" , "+gmmMD.getMean(1,1)+"]");

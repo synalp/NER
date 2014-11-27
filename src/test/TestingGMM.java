@@ -88,7 +88,7 @@ public class TestingGMM {
             means[retry][1]=gmm.getMean(1);
             
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
-            GMMDiag gmmMD = new GMMDiag(2, priors);
+            GMMDiag gmmMD = new GMMDiag(2, priors,true);
 
             gmmMD.train(margin);
             System.out.println("mean=[ "+gmmMD.getMean(0,0)+" , "+gmmMD.getMean(0,1)+";\n"+
@@ -174,7 +174,7 @@ public class TestingGMM {
             +gmm.getVar(1)+" , "+gmm.getVar(1));
             System.out.println("GMM trained");      
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
-            GMMDiag gmmMD = new GMMDiag(2, priors);
+            GMMDiag gmmMD = new GMMDiag(2, priors,false);
             gmmMD.train(margin);
             System.out.println("mean=[ "+gmmMD.getMean(0,0)+" , "+gmmMD.getMean(0,1)+";\n"+
             +gmmMD.getMean(1,0)+" , "+gmmMD.getMean(1,1)+"]");
@@ -239,7 +239,7 @@ public class TestingGMM {
             +gmm.getVar(1)+" , "+gmm.getVar(1));
             System.out.println("GMM trained");      
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
-            GMMDiag gmmMD = new GMMDiag(priors.length, priors);
+            GMMDiag gmmMD = new GMMDiag(priors.length, priors,false);
             gmmMD.train(margin);
             System.out.println("mean=[ "+gmmMD.getMean(0,0)+" , "+gmmMD.getMean(0,1)+";\n"+
             +gmmMD.getMean(1,0)+" , "+gmmMD.getMean(1,1)+"]");
@@ -251,8 +251,12 @@ public class TestingGMM {
     }       
         
     public static void main(String[] args){
-        //TestingGMM.TestingGMMWithGeneratedData();
-        //TestingGMM.TestingGMMWithClassifierWeights();
-        TestingGMM.TestingGMMCoNLLData();
+        try {
+            TestingGMM.TestingGMMWithGeneratedData();
+            //TestingGMM.TestingGMMCoNLLData();
+            //TestingGMM.TestingGMMCoNLLData();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }
