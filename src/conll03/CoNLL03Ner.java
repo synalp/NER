@@ -256,13 +256,13 @@ public class CoNLL03Ner {
                   if(!isCRF) 
                     outFile.append(lines.get(i)+"\t"+context+"\n"); 
                   else{
-                	  if (wSupModelFile.equals("autotest_oracle")) {
+                	  if (wSupModelFile.equals(CNConstants.AUTOTESTORACLE)) {
                 		  // special case, just for testing: put the oracle class in the additional column
-                          String line =lines.get(i);
-                          String label = line.substring(0,line.indexOf("\t"));
-                          String outClass = label;
-                          String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
-                          outFile.append(newLine);
+                            String line =lines.get(i);
+                            String label = line.substring(0,line.indexOf("\t"));
+                            String outClass = label;
+                            String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
+                            outFile.append(newLine);
                 	  } else if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
                             AnalyzeLClassifier.MODELFILE=wSupModelFile;
                             // you load the model for every line i ??!!
@@ -741,8 +741,8 @@ public class CoNLL03Ner {
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }
     /**
-     * This method first train a weakly supervised algorithm for 
-     * with the following train data configured in : corpusTrainOpenNLP
+     * This method first train a weakly supervised algorithm  
+     * with the train data configured in : corpusTrainOpenNLP
      * It uses as unlabeled data Gigaword as configured in :corpusGigaTrain
      * in the ner.properties file.
      * Then it uses the predictions of the weakly supervised model when training and testing the
@@ -754,7 +754,39 @@ public class CoNLL03Ner {
         runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel);
         //runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,trainSize,testSize,10000, useExistingWSModel);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
-    }   
+    }  
+    
+    public void trainCRFPlusWkSupGold(String entity, boolean savingFiles){
+        String wksupModel=CNConstants.AUTOTESTORACLE;
+        AnalyzeCRFClassifier crfclass = new AnalyzeCRFClassifier();
+        crfclass.updatingMappingBkGPropFile(entity,"O","word=0,tag=1,chunk=2,feat=3,answer=4 "); 
+        if(savingFiles){
+            //generate the files
+            generatingStanfordInputFiles(entity, "train", true,wksupModel);
+            generatingStanfordInputFiles(entity, "test", true,wksupModel);
+            generatingStanfordInputFiles(entity, "dev", true,wksupModel);
+        }
+        AnalyzeCRFClassifier.TRAINFILE=TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF");
+        AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
+        //if exist recreates the binary file
+        File mfile = new File(AnalyzeLClassifier.MODELFILE);
+        File mfile2 = new File(AnalyzeLClassifier.MODELFILE+"_COPY_"+CNConstants.AUTOTESTORACLE);
+        if(mfile.exists()){
+            try {
+                Files.copy(mfile.toPath(), mfile2.toPath(),StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        
+
+        crfclass.trainAllCRFClassifier(entity, false, false);
+        AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
+        crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+        AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
+        evaluatingCRFResults(entity);
+        conllEvaluation(AnalyzeCRFClassifier.OUTFILE);        
+    }
     
     public void computePriors(String entity,String trainSet){
         AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", entity);
@@ -885,7 +917,7 @@ public class CoNLL03Ner {
     
     public static final String[] TASKS = {
     	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags",  // 0 ... 4
-    	"weaklySupConll", "expGWord", "dev","priors","conv", "lc"
+    	"weaklySupConll", "expGWord", "dev","priors","conv", "lc","crfwsgoal"
 
     };
     
@@ -947,6 +979,9 @@ public class CoNLL03Ner {
             
         case 10:
                conll.trainLC(CNConstants.PRNOUN,true, false);
+               break;
+        case 11:
+               conll.trainCRFPlusWkSupGold(CNConstants.ALL, true);
                break;
 
         }
