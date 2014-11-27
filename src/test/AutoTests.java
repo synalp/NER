@@ -74,8 +74,8 @@ public class AutoTests {
     	
     	// Test by training a CRF on a small training corpus with an extra-column-feature that contains oracle class
     	// and check that the F1 of the CRF is close to 100%
-    	conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, 20, "autotest_oracle");
-    	conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,"autotest_oracle");
+    	conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, 20, CNConstants.AUTOTESTORACLE);
+    	conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.AUTOTESTORACLE);
     	float f1_oracle=conll.trainStanfordCRF(CNConstants.ALL, false, true,false);
     	System.out.println("testCRFF1s "+f1+" "+f1_oracle);
     	if (f1_oracle<=f1) throw new Exception("ORACLE F1 is not better than F1");
