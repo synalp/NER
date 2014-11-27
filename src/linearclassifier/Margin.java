@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import org.apache.commons.math3.distribution.NormalDistribution;
+import tools.CNConstants;
 import tools.Histoplot;
 
 /**
@@ -39,8 +40,9 @@ public class Margin {
     private int numInstances=0;
     private float[][] generatedScores;
     private List<List<Integer>> featsperInst = new ArrayList<>();
-    private List<Integer> labelperInst = new ArrayList<>();    
-    
+    private List<Integer> labelperInst = new ArrayList<>(); 
+    private HashMap<Integer,List<Integer>> instPerFeatures= new HashMap<>();
+       
     //paralell coordinate gradient
     
     //private List<List<Double>> originalWeights = new ArrayList<>();
@@ -61,6 +63,9 @@ public class Margin {
     private int numSamples = 0;
     private int[] samples= null;    
     private Random rnd = new Random();
+    
+    private int threadIteration = 0;
+    private int threadFeatIdx=CNConstants.INT_NULL;
      
     public Margin(){
         
@@ -446,7 +451,7 @@ public class Margin {
 //        
 //    }
     
-    public void updatingGradientStep(int dimension,int subListIndex, double value){
+    public void updatingGradientStep(int dimension,int subListIndex, double value, int iter){
         int index= startIndex+subListIndex;
         if(dimension == 2){
             weights[index][0]=value;
@@ -454,7 +459,8 @@ public class Margin {
         }else{
             weights[index][dimension]=value;
         }
-        
+        this.threadFeatIdx=index;
+        this.threadIteration=iter;
     }    
 //    public double[] getPartialShuffledWeight(int subListIndex){
 //        int shuffledIndex= startIndex+subListIndex;
@@ -523,6 +529,18 @@ public class Margin {
       return this.featsperInst;   
     }  
     
+    public void setInstancesPerFeatures(HashMap<Integer,List<Integer>> insperFeat){
+        this.instPerFeatures=insperFeat;
+    }
+    
+    public HashMap<Integer,List<Integer>> getInstancesPerFeatures(){
+        return this.instPerFeatures;
+    }
+    
+    public List<Integer> getInstancesperFeat(Integer featIdx){
+        return instPerFeatures.get(featIdx);
+    }
+    
     public void setLabelPerInstance(List<Integer> lblPerInsts){
         this.labelperInst=lblPerInsts;
         this.numInstances=lblPerInsts.size();
@@ -581,5 +599,19 @@ public class Margin {
     
     public int[] getSamples(){
         return this.samples;
+    }
+    
+//    public void setThreadIterInfo(int iter, int featIdx){
+//        this.threadIteration=iter;
+//        this.threadFeatIdx=featIdx;
+//    }
+    public int getThreadIteration(){
+        return this.threadIteration;
+    }
+    public List<Integer> getInstancesCurrThrFeat(){
+        if(threadFeatIdx==CNConstants.INT_NULL)
+            return new ArrayList<>();
+        
+        return instPerFeatures.get(threadFeatIdx);
     }
 }

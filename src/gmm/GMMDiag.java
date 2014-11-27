@@ -53,7 +53,12 @@ public class GMMDiag extends GMM {
     
     // this is diagonal variance (not inverse !)
     double[][] diagvar;
-    
+    //for the partitioning -> approximate EM
+    double[][] previousMuPart;
+    double[] previousSumXPart;
+    double[] sumXPart;
+    double[] postPart;
+    double[] nkPart;
     // parameters to tune;
     public static double splitRatio=0.1;
     public static int nitersTraining=20;
@@ -492,6 +497,183 @@ public class GMMDiag extends GMM {
         return nk;
     }
     
+    public double[][] computePartitionMu(Margin margin, GMM gmm0,float[] z,int[] nex){
+        double[][] muPart1= new double[means.length][];
+        nkPart = new double[nlabs];
+        sumXPart=new double[z.length];
+        postPart=new double[z.length];
+        for (int i=0;i<nlabs;i++) {
+            Arrays.fill(muPart1[i], 0);
+        }        
+        List<Integer> instances = margin.getInstancesCurrThrFeat();
+        
+        for (int i=0;i<instances.size();i++) {
+            List<Integer> featuresByInstance = new ArrayList<>();
+            int inst= instances.get(i);
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(inst);
+            if(isBinaryConstrained){
+                if(Margin.GENERATEDDATA)
+                    z[0] = margin.getGenScore(inst, 0);
+                else
+                    z[0] = margin.getScore(featuresByInstance,0);
+                z[1]=-z[0];
+                
+            }else{
+                for (int lab=0;lab<nlabs;lab++) {
+                    if(Margin.GENERATEDDATA)
+                        z[lab] = margin.getGenScore(inst, lab);
+                    else                
+                        z[lab] = margin.getScore(featuresByInstance,lab);
+                }
+            }
+            Arrays.fill(tmp, 0);
+
+
+            //logWeights has already the priors which is the extra pattern pi
+            float normConst = logMath.linearToLog(0);
+            for (int y=0;y<nlabs;y++){ 
+                tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
+                if(y==0)
+                    normConst=(float)tmp[y];
+                else
+                    normConst=  logMath.addAsLinear(normConst,(float)tmp[y]);
+
+            }
+
+            for (int y=0;y<nlabs;y++){ 
+                nex[y]++;
+                //ex2lab[inst]=y;
+                double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                nkPart[y]+=posterior;
+                sumXPart[y]+=z[y];
+                postPart[y]=posterior;
+                for (int l=0;l<nlabs;l++){ 
+                    muPart1[y][l]+=posterior*z[l];  
+                    if(this.isBinaryConstrained)
+                        break;
+                        
+                }
+
+            }
+            
+            //System.out.println(" instance "+inst + "\n normConst = "+ normConst +"  sum mean ["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"]  nk="+Arrays.toString(nk) );
+            
+        } 
+        if(isBinaryConstrained){
+           muPart1[0][0]=(nkPart[0]==0)?0:muPart1[0][0]/nkPart[0];
+           muPart1[0][1]=-muPart1[0][0];
+           muPart1[1][0]=(nkPart[1]==0)?0:muPart1[1][0]/nkPart[1];
+           muPart1[1][1]=-muPart1[1][0];           
+        }else{
+            for (int y=0;y<nlabs;y++) {
+                if (nkPart[y]==0)
+                    for (int l=0;l<nlabs;l++) 
+                        muPart1[y][l]=0; //or means[y][i]=Float.MAX_VALUE; ?
+                else
+                    for (int l=0;l<nlabs;l++){
+                        muPart1[y][l]/=nkPart[y];
+                    }    
+
+
+            }
+        } 
+        return muPart1;
+    }
+    
+    public double[] trainApproximatedEM(Margin margin) {
+        
+        previousMuPart= new double[means.length][];
+        for (int i=0;i<nlabs;i++) {
+            Arrays.fill(previousMuPart[i], 0);
+        } 
+ 
+        final float[] z = new float[nlabs];
+        //keep a copy of the previous mean and variance
+        final GMMDiag gmm0 = this.clone();
+        for (int i=0;i<nlabs;i++) {
+            Arrays.fill(means[i], 0);
+            Arrays.fill(diagvar[i], 0);
+        }
+        int[] nex = new int[nlabs];
+        double[] nk = new double[nlabs];
+        
+        Arrays.fill(nex, 0);
+        Arrays.fill(nk, 0.0);
+        List<Integer> instances = margin.getInstancesCurrThrFeat();
+        
+        int iter = margin.getThreadIteration();
+        if(iter%1000==0){
+            previousMuPart=computePartitionMu( margin,  gmm0, z,nex);
+            previousSumXPart=sumXPart;
+            return trainViterbi(margin);
+        }   
+
+        double[][] newMuPart1=computePartitionMu( margin,  gmm0, z,nex);
+        nk=nkPart;
+        //here I have the mean for the instances impacted by the thread
+        for (int y=0;y<nlabs;y++)
+            for (int l=0;l<nlabs;l++)
+                means[y][l]=gmm0.means[y][l]-previousMuPart[y][l]+newMuPart1[y][l];
+                
+        //System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
+
+        double[][] prvMuDif= new double[means.length][];
+        for (int y=0;y<nlabs;y++){ 
+            double posterior=postPart[y];
+            for (int l=0;l<nlabs;l++){ 
+                double mudiff = (sumXPart[y]*sumXPart[y]);
+                prvMuDif[y][l]= (nlabs*posterior)*(previousSumXPart[y]*previousSumXPart[y]);
+                diagvar[y][l]=(nlabs*posterior)*mudiff;
+                if(this.isBinaryConstrained)
+                    break;
+            }
+
+
+        }
+
+        for (int y=0;y<nlabs;y++) {
+            double logdet=0;
+            if (nk[y]==0){
+                for (int i=0;i<nlabs;i++) {
+                    diagvar[y][i] = minvar;
+                    logdet += logMath.linearToLog(diagvar[y][i]);
+                }
+            }else{
+                if(this.isBinaryConstrained){
+                    diagvar[y][0] = gmm0.diagvar[y][0]- (prvMuDif[y][0]/nk[y] -previousMuPart[y][0])+ (diagvar[y][0]/nk[y]-means[y][0]);
+                    
+                    if (diagvar[y][0] < minvar) 
+                        diagvar[y][0]=minvar;
+                    
+                    diagvar[y][1] = diagvar[y][0];
+                    logdet += logMath.linearToLog(diagvar[y][0]); 
+                    logdet += logMath.linearToLog(diagvar[y][1]); 
+                }else
+                    for (int i=0;i<nlabs;i++) {
+                        //diagvar[y][i] /= nk[y];
+                        diagvar[y][i] = gmm0.diagvar[y][i]- (prvMuDif[y][i]/nk[y] -previousMuPart[y][i])+ (diagvar[y][i]/nk[y]-means[y][i]);
+                        if (diagvar[y][i] < minvar) 
+                            diagvar[y][i]=minvar;
+
+                        logdet += logMath.linearToLog(diagvar[y][i]);
+                    }
+            }    
+            double co=(double)nlabs*logMath.linearToLog(2.0*Math.PI) + logdet;
+            co/=2.0;
+            gconst[y]=co;
+            
+            //change logWeights ... or not ??
+            // logWeights[y]=logMath.linearToLog(nk[y]/nex[y]);
+           
+        }
+         //System.out.println("priors: "+ Arrays.toString(logWeights));
+        //System.out.println("trainviterbi");
+        //printMean();
+        //printVariace();   
+        return nk;
+    }    
+    
     /**
      * Assuming all mixtures are initially equal, moves away in opposite directions every mixture
      */
@@ -666,8 +848,12 @@ public class GMMDiag extends GMM {
         System.out.println("train1gauss var=["+gconst[0]+","+gconst[1]+"]");
         //*/
     }
-    
-        public double[] trainStocViterbi(Margin margin) {
+    /**
+     * Uses a randomly selected subset of instances
+     * @param margin
+     * @return 
+     */
+    public double[] trainStocViterbi(Margin margin) {
         final float[] z = new float[nlabs];
         final GMMDiag gmm0 = this.clone();
         for (int i=0;i<nlabs;i++) {

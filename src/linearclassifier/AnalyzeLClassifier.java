@@ -103,6 +103,7 @@ public class AnalyzeLClassifier {
 
     private List<List<Integer>> featperInstance = new ArrayList<>();
     private List<Integer> lblperInstance = new ArrayList<>();
+    private HashMap<Integer,List<Integer>> instPerFeatures= new HashMap<>();
     private HashMap<Integer,List<String>> stLCDictTrainFeatures=new HashMap<>();
     private HashMap<Integer,List<String>> stLCDictTestFeatures=new HashMap<>();
     private long elapsedTime;
@@ -615,12 +616,22 @@ public class AnalyzeLClassifier {
                 Datum<String, String> datum = columnDataClass.makeDatumFromLine(line, 0);
                 Collection<String> features = datum.asFeatures();
                 
+                
                 List<Integer> feats = new ArrayList<>();
                 //take the id (index) of the features
                 for(String f:features){
-
-                    if(model.featureIndex().indexOf(f)>-1)
-                        feats.add(model.featureIndex().indexOf(f));
+                    if(model.featureIndex().indexOf(f)>-1){
+                        int idx = model.featureIndex().indexOf(f);
+                        feats.add(idx);
+                        
+                        List<Integer> insts= new ArrayList<>();
+                        if(instPerFeatures.containsKey(idx))
+                            insts=new ArrayList(instPerFeatures.get(idx));
+                        
+                        insts.add(i);    
+                        instPerFeatures.put(idx,insts);
+                           
+                    }
                 }
                 //System.out.println("feats[:"+numInstances+"]="+feats);
                 featsperInst.add(feats);
@@ -664,6 +675,8 @@ public class AnalyzeLClassifier {
             }
         }
     }
+    
+    
     public void setNumberOfInstances(int numInst){
         this.numInstances=numInst;
     }
@@ -1678,6 +1691,7 @@ public class AnalyzeLClassifier {
         getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
         margin.setFeaturesPerInstance(featsperInst);
         margin.setLabelPerInstance(labelperInst);  
+        margin.setInstancesPerFeatures(instPerFeatures);
         margin.setNumberOfInstances(numInstances);
                 
         
@@ -2879,12 +2893,15 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
     private void serializingFeatsPerInstance(boolean isTrain){
     try{
             String featPerInst="";
+            String instPerFeat="";
             String lblPerInst="";
             if(isTrain){
                 featPerInst="StanfordLCTrainFeaturePerInstance.ser";
+                instPerFeat="StanfordLCTrainInstancePerFeature.ser";
                 lblPerInst="StanfordLCTrainLabelPerInstance.ser";
             }else{
                 featPerInst="StanfordLCTestFeaturePerInstance.ser";
+                instPerFeat="StanfordLCTestInstancePerFeature.ser";
                 lblPerInst="StanfordLCTestLabelPerInstance.ser";
             }    
             FileOutputStream fileOut =  new FileOutputStream(featPerInst);
@@ -2892,6 +2909,11 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             out.writeObject(featperInstance);
             out.close();
             fileOut.close();
+            fileOut =  new FileOutputStream(instPerFeat);
+            out =  new ObjectOutputStream(fileOut);
+            out.writeObject(instPerFeatures);
+            out.close();
+            fileOut.close();             
             fileOut =  new FileOutputStream(lblPerInst);
             out =  new ObjectOutputStream(fileOut);
             out.writeObject(lblperInstance);
@@ -2906,15 +2928,18 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
     public void deserializingFeatsPerInstance(boolean isTrain){
       try
       {
-        HashMap<Integer,List<String>> vocFeats = new HashMap<>();
+        
         String fileName="";
+        String instPerFeat="";
         String lblPerInst="";
         if(isTrain){
             fileName="StanfordLCTrainFeaturePerInstance.ser";
+            instPerFeat="StanfordLCTrainInstancePerFeature.ser";
             lblPerInst="StanfordLCTrainLabelPerInstance.ser";
             
         }else{
             fileName="StanfordLCTestFeaturePerInstance.ser";  
+            instPerFeat="StanfordLCTestInstancePerFeature.ser";
             lblPerInst="StanfordLCTestLabelPerInstance.ser";
         }    
         FileInputStream fileIn =  new FileInputStream(fileName);
@@ -2923,6 +2948,12 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         System.out.println("loading features per instance: "+featperInstance.size());
         in.close();
         fileIn.close();
+        fileIn =  new FileInputStream(instPerFeat);
+        in = new ObjectInputStream(fileIn);
+        instPerFeatures = (HashMap<Integer,List<Integer>>) in.readObject();
+        System.out.println("loading labels per instance: "+instPerFeatures.size());
+        in.close();
+        fileIn.close();        
         fileIn =  new FileInputStream(lblPerInst);
         in = new ObjectInputStream(fileIn);
         lblperInstance = (List<Integer>) in.readObject();

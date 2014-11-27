@@ -240,19 +240,19 @@ public class MultiCoreCoordinateDescent  {
                     double deltaW=w0 + w0*delta;
                     System.out.println("****** deltaWNC="+deltaW);
                     weightsForFeat.set(featIdx, deltaW);
-                    margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx));
+                    margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx),iter);
                     float estimr = (isCloseForm)?MultiCoreStocCoordDescent.computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
 
                     gradw[0] = (estimr-estimr0)/(w0*delta);
                     System.out.println("grad "+gradw[0]);
                     System.out.println("****** w0="+w0);
                     weightsForFeat.set(featIdx, w0); 
-                    margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx));
+                    margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx),iter);
                     if (gradw[0]==0) 
                             emptyfeats.add("["+featIdx+","+0+"]");
                     else{  
                         weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- gradw[0] * eps);                    
-                        margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx));
+                        margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx),iter);
                         System.out.println("Updated feature "+ margin.getOrWeightIndex(featIdx));
                         columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", currentClassifier));
 
@@ -261,7 +261,7 @@ public class MultiCoreCoordinateDescent  {
                             f1train=columnDataClass.fs.get(currentClassifier);                    
                         if(f1train<f1trainOr){
                             weightsForFeat.set(featIdx,w0); 
-                            margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx));
+                            margin.updatingGradientStep(dim,featIdx, weightsForFeat.get(featIdx),iter);
                         }    
                     }  
                     counter++;

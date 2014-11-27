@@ -341,21 +341,21 @@ public class MultiCoreStocCoordDescent  {
             
             System.out.println("****** deltaWMC="+deltaW);
             weightsForFeat.set(featIdx, deltaW);
-            margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx));
+            margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
             float estimr = (isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
 
             gradw[0] = (estimr-estimr0)/(deltaW-w0);
             System.out.println("grad "+gradw[0]);
             System.out.println("****** w0="+w0);
             weightsForFeat.set(featIdx, w0); 
-            margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx));
+            margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
             if (gradw[0]==0) {
             	// why preventing future modifications of these weights ? They may induce risk change at the next iterations !
             	// for instance, their impact may be quasi-nul in some regions, but larger elsewhere...
                     // emptyfeats.add("["+featIdx+","+0+"]");
             }else{  
                 weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- gradw[0] * eps);                    
-                margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx));
+                margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
                 System.out.println("Iteration["+iter+"] Updated feature "+ margin.getOrWeightIndex(featIdx));
                 if(computeF1){
                     columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", currentClassifier));
@@ -371,7 +371,7 @@ public class MultiCoreStocCoordDescent  {
                     if(f1train<f1trainOr){
                         System.out.println("Iteration["+iter+"] Not accepted previous step of gradient "+f1train+" "+f1trainOr);   
                         weightsForFeat.set(featIdx,w0); 
-                        margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx));
+                        margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
                     }    
                 } 
             }  
