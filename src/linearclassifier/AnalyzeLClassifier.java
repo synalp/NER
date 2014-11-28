@@ -585,15 +585,21 @@ public class AnalyzeLClassifier {
         
         //Load everything for previously serialized features per instances
         if(featperInstance.isEmpty()){
+            try{
             if(fileName.contains("train"))
                 deserializingFeatsPerInstance(true);
             else
-                deserializingFeatures(false);
+                deserializingFeatsPerInstance(false);
+            }catch(Exception ex){
+                featperInstance=new ArrayList<>();
+            }
         }
         
-        if(!featperInstance.isEmpty())
+        if(!featperInstance.isEmpty()){
+            featsperInst.addAll(featperInstance);
+            labelperInst.addAll(lblperInstance);
             return;
-        
+        }
         BufferedReader inFile = null;
         try {
             inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), CNConstants.UTF8_ENCODING));
@@ -640,8 +646,7 @@ public class AnalyzeLClassifier {
                 int labelId = model.labelIndex().indexOf(label);
                 labelperInst.add(labelId);
                 lineNumber++;
-                boolean istrain=(fileName.contains("train"))?true:false;
-                serializingFeatsPerInstance(istrain);
+
                 
                 if(serializeFeatures){
                     if(fileName.contains("train"))
@@ -663,6 +668,8 @@ public class AnalyzeLClassifier {
             
            this.featperInstance=featsperInst;
            this.lblperInstance=labelperInst;
+           boolean istrain=(fileName.contains("train"))?true:false;
+           serializingFeatsPerInstance(istrain);           
            inFile.close();
            
         } catch (Exception ex) {
@@ -676,7 +683,109 @@ public class AnalyzeLClassifier {
         }
     }
     
-    
+    public void getValues(String fileName, LinearClassifier model,boolean useSerializedFeatInst){
+        
+            
+        //Load everything for previously serialized features per instances
+        
+        if(useSerializedFeatInst && featperInstance.isEmpty()){
+            try{
+            if(fileName.contains("train"))
+                deserializingFeatsPerInstance(true);
+            else
+                deserializingFeatsPerInstance(false);
+            }catch(Exception ex){
+                featperInstance=new ArrayList<>();
+            }
+            numInstances=featperInstance.size();
+        }
+        
+        if(!featperInstance.isEmpty())
+            return;
+        
+        lblperInstance.clear();
+        instPerFeatures.clear();
+        BufferedReader inFile = null;
+        try {
+            inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), CNConstants.UTF8_ENCODING));
+            
+            numInstances=0;
+            List<String> lines = new ArrayList<>();
+            for (;;) {
+                String line = inFile.readLine();
+                if (line==null) break;
+                lines.add(line);
+                numInstances++;  
+            }
+            int lineNumber=0;
+                       
+            
+            for (int i=0;i<numInstances;i++) {
+
+                String line = lines.get(i);
+                ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
+                Datum<String, String> datum = columnDataClass.makeDatumFromLine(line, 0);
+                Collection<String> features = datum.asFeatures();
+                
+                
+                List<Integer> feats = new ArrayList<>();
+                //take the id (index) of the features
+                for(String f:features){
+                    if(model.featureIndex().indexOf(f)>-1){
+                        int idx = model.featureIndex().indexOf(f);
+                        feats.add(idx);
+                        
+                        List<Integer> insts= new ArrayList<>();
+                        if(instPerFeatures.containsKey(idx))
+                            insts=new ArrayList(instPerFeatures.get(idx));
+                        
+                        insts.add(i);    
+                        instPerFeatures.put(idx,insts);
+                           
+                    }
+                }
+                //System.out.println("feats[:"+numInstances+"]="+feats);
+                featperInstance.add(feats);
+                //take the id (index) of the labels
+                String label = line.substring(0, line.indexOf("\t"));
+                int labelId = model.labelIndex().indexOf(label);
+                lblperInstance.add(labelId);
+                lineNumber++;
+
+                
+                if(serializeFeatures){
+                    if(fileName.contains("train"))
+                        stLCDictTrainFeatures.put(numInstances, new ArrayList<>(features));
+                    else
+                         stLCDictTestFeatures.put(numInstances, new ArrayList<>(features)); 
+                } 
+                               
+            }
+            
+            
+            if(serializeFeatures){
+                if(fileName.contains("train"))
+                    serializingFeatures(stLCDictTrainFeatures,true);
+                else
+                    serializingFeatures(stLCDictTestFeatures,false);
+            
+            }
+            
+
+           boolean istrain=(fileName.contains("train"))?true:false;
+           serializingFeatsPerInstance(istrain);           
+           inFile.close();
+           
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                inFile.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }    
     public void setNumberOfInstances(int numInst){
         this.numInstances=numInst;
     }
@@ -1182,7 +1291,7 @@ public class AnalyzeLClassifier {
         // get scores
         GMMDiag gmm = new GMMDiag(priors.length, priors,true);
         // what is in marginMAP ? It maps a Margin, which contains the corpus for train, or test, or both ? and it is mapped to what ?
-        gmm.trainStoc(marginMAP.get(sclassifier));
+        gmm.trainApproximation(marginMAP.get(sclassifier));
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
         System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
@@ -1663,7 +1772,7 @@ public class AnalyzeLClassifier {
     * @param sclass  Type of Classifier (pn or [pers,org,loc,prod])
     * @param closedForm used the closed form or trapezoid integration
     */ 
-  public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters, boolean isModelInMemory, boolean computeF1) {
+  public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters, boolean isModelInMemory, boolean computeF1,boolean useSerializedFeatInst) {
        CURRENTSETCLASSIFIER=sclass;
  
         boolean isMC=false;
@@ -1686,11 +1795,10 @@ public class AnalyzeLClassifier {
         CURRENTPARENTMARGIN=margin;
         
         //scan the test instances for train the gmm
-        List<List<Integer>> featsperInst = new ArrayList<>(); 
-        List<Integer> labelperInst = new ArrayList<>(); 
-        getValues(TESTFILE.replace("%S", sclass),model,featsperInst,labelperInst);
-        margin.setFeaturesPerInstance(featsperInst);
-        margin.setLabelPerInstance(labelperInst);  
+
+        getValues(TESTFILE.replace("%S", sclass),model,useSerializedFeatInst);
+        margin.setFeaturesPerInstance(featperInstance);
+        margin.setLabelPerInstance(lblperInstance);  
         margin.setInstancesPerFeatures(instPerFeatures);
         margin.setNumberOfInstances(numInstances);
                 
@@ -1705,7 +1813,8 @@ public class AnalyzeLClassifier {
         //Histoplot.showit(scorest,featsperInst.size());
         
         System.out.println("Working with classifier "+sclass);
-        margin.sampling(0.1);
+        //margin.sampling(0.1);
+        
         CURRENTPARENTESTIMR0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
         AutoTests.initR = CURRENTPARENTESTIMR0;
 
@@ -1745,7 +1854,8 @@ public class AnalyzeLClassifier {
             marginThr.setBinaryFile(binaryFile);
             marginThr.setWeights(margin.getWeights());
             marginThr.copySharedyInfoParallelGrad(margin);
-            marginThr.setSamples(margin.getSamples());
+            marginThr.setInstancesPerFeatures(instPerFeatures);
+            //marginThr.setSamples(margin.getSamples());
             
             //copy the weights
             int initPart=i*partSize;
@@ -2972,6 +3082,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
       } 
    
     } 
+    
+    
     
     public void generatingArffData(boolean istrain){
         

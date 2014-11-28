@@ -421,7 +421,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,numIters,true,true);
+        lcclass.wkSupParallelStocCoordD(entity, true,numIters,true,true,true);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     
@@ -431,7 +431,8 @@ public class CoNLL03Ner {
      * @param savingFiles 
      */
 
-    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize, int niters, boolean useExistingModels){
+    public void runningWeaklySupStanfordLC(String entity,boolean savingFiles, int trainSize, int testSize, int niters, boolean useExistingModels,
+            boolean useSerializedFeatInst){
         
         AnalyzeLClassifier.TRAINSIZE=trainSize;
         AnalyzeLClassifier.TESTSIZE=testSize;
@@ -487,7 +488,7 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,niters,true,false);
+        lcclass.wkSupParallelStocCoordD(entity, true,niters,true,false,useSerializedFeatInst);
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
    
@@ -759,8 +760,9 @@ public class CoNLL03Ner {
      * @param trainSize
      * @param testSize 
      */
-    public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize, boolean useExistingWSModel){
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel);
+    public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize, boolean useExistingWSModel, boolean useSerializedFeats){
+        
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel,useSerializedFeats);
         //runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,trainSize,testSize,10000, useExistingWSModel);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }  
@@ -953,7 +955,7 @@ public class CoNLL03Ner {
         	break;
         case 2:
                 //testset = gigaword
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500,1000,true);
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500,1000,true,true);
                 break;
         case 3:
                 conll.trainStanfordCRF(CNConstants.ALL, false, true,false);
@@ -970,7 +972,7 @@ public class CoNLL03Ner {
         case 6:
                //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
                //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, 3000000,false);
-               conll.experimentsCRFPlusWkSupGWord(500, 50,false);
+               conll.experimentsCRFPlusWkSupGWord(500, 50,false,true);
                break;
         case 7:
         	// TODO: tune parameters on dev

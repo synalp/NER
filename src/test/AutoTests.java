@@ -98,7 +98,7 @@ public class AutoTests {
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
         // which GMMDiag is used ? GMMD1Diag or GMMDiag ?
         // GMMDiag.nitersTraining=1000;
-        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,100,false);
+        conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,100,false,false);
         if (finalR-initR>=0) throw new Exception("WeakSup R does not decrease: "+initR+" "+finalR);
 	}
 	
@@ -216,7 +216,7 @@ public class AutoTests {
         priorsMap.put(CNConstants.PRNOUN, new Double(priorPN));
         lcclass.setPriors(priorsMap);
         GeneralConfig.nthreads=1;
-        lcclass.wkSupParallelStocCoordD(CNConstants.PRNOUN, true, nitersWeakSup, true,true);
+        lcclass.wkSupParallelStocCoordD(CNConstants.PRNOUN, true, nitersWeakSup, true,true,false);
         
         // check that the Gaussians match exactly the modes:
         Margin margin = lcclass.getMargin(CNConstants.PRNOUN);

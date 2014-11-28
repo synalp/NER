@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import linearclassifier.Margin;
+import tools.CNConstants;
 import utils.ErrorsReporting;
 
 
@@ -53,16 +54,14 @@ public class GMMDiag extends GMM {
     
     // this is diagonal variance (not inverse !)
     double[][] diagvar;
-    //for the partitioning -> approximate EM
-    double[][] previousMuPart;
-    double[] previousSumXPart;
-    double[] sumXPart;
-    double[] postPart;
+
+    
     double[] nkPart;
     // parameters to tune;
     public static double splitRatio=0.1;
     public static int nitersTraining=20;
     public static double toleranceTraining=0.0004; //2e-05;
+    private int CURRENTGMMTRITER=CNConstants.INT_NULL;
     
     int[] samples = null;
     
@@ -335,6 +334,7 @@ public class GMMDiag extends GMM {
      */
     public double[] trainViterbi(Margin margin) {
         final float[] z = new float[nlabs];
+        margin.sumXSqAll= new double[nlabs];
         final GMMDiag gmm0 = this.clone();
         for (int i=0;i<nlabs;i++) {
             Arrays.fill(means[i], 0);
@@ -384,7 +384,7 @@ public class GMMDiag extends GMM {
                 //ex2lab[inst]=y;
                 double posterior=logMath.logToLinear((float)tmp[y]-normConst);
                 nk[y]+=posterior;
-
+                margin.sumXSqAll[y]+=posterior*z[y]*z[y];
                 for (int l=0;l<nlabs;l++){ 
                     means[y][l]+=posterior*z[l];  
                     if(this.isBinaryConstrained)
@@ -398,12 +398,15 @@ public class GMMDiag extends GMM {
 
         }
         if(isBinaryConstrained){
+           margin.sumXSqAll[0]=(nk[0]==0)?0:margin.sumXSqAll[0]/nk[0];
            means[0][0]=(nk[0]==0)?0:means[0][0]/nk[0];
            means[0][1]=-means[0][0];
+           margin.sumXSqAll[1]=(nk[1]==0)?0:margin.sumXSqAll[1]/nk[1];
            means[1][0]=(nk[1]==0)?0:means[1][0]/nk[1];
            means[1][1]=-means[1][0];           
         }else{
             for (int y=0;y<nlabs;y++) {
+                margin.sumXSqAll[y]=(nk[y]==0)?0:margin.sumXSqAll[y]/nk[y];
                 if (nk[y]==0)
                     for (int i=0;i<nlabs;i++) 
                         means[y][i]=0; //or means[y][i]=Float.MAX_VALUE; ?
@@ -498,10 +501,10 @@ public class GMMDiag extends GMM {
     }
     
     public double[][] computePartitionMu(Margin margin, GMM gmm0,float[] z,int[] nex){
-        double[][] muPart1= new double[means.length][];
+        double[][] muPart1= new double[means.length][means[0].length];
         nkPart = new double[nlabs];
-        sumXPart=new double[z.length];
-        postPart=new double[z.length];
+        margin.sumXSqPart=new double[z.length];
+        //postPart=new double[z.length];
         for (int i=0;i<nlabs;i++) {
             Arrays.fill(muPart1[i], 0);
         }        
@@ -546,8 +549,8 @@ public class GMMDiag extends GMM {
                 //ex2lab[inst]=y;
                 double posterior=logMath.logToLinear((float)tmp[y]-normConst);
                 nkPart[y]+=posterior;
-                sumXPart[y]+=z[y];
-                postPart[y]=posterior;
+                margin.sumXSqPart[y]+=posterior*(z[y]*z[y]);
+                
                 for (int l=0;l<nlabs;l++){ 
                     muPart1[y][l]+=posterior*z[l];  
                     if(this.isBinaryConstrained)
@@ -561,8 +564,10 @@ public class GMMDiag extends GMM {
             
         } 
         if(isBinaryConstrained){
+           margin.sumXSqPart[0]=(nkPart[0]==0)?0:margin.sumXSqPart[0]/nkPart[0];
            muPart1[0][0]=(nkPart[0]==0)?0:muPart1[0][0]/nkPart[0];
            muPart1[0][1]=-muPart1[0][0];
+           margin.sumXSqPart[1]=(nkPart[1]==0)?0:margin.sumXSqPart[1]/nkPart[1];
            muPart1[1][0]=(nkPart[1]==0)?0:muPart1[1][0]/nkPart[1];
            muPart1[1][1]=-muPart1[1][0];           
         }else{
@@ -578,60 +583,69 @@ public class GMMDiag extends GMM {
 
             }
         } 
+        
         return muPart1;
     }
     
     public double[] trainApproximatedEM(Margin margin) {
         
-        previousMuPart= new double[means.length][];
-        for (int i=0;i<nlabs;i++) {
-            Arrays.fill(previousMuPart[i], 0);
-        } 
- 
+        int iter = margin.getThreadIteration();
+        //before splitting in threads
+        if(iter==CNConstants.INT_NULL)
+            return trainViterbi(margin);
+        
         final float[] z = new float[nlabs];
         //keep a copy of the previous mean and variance
         final GMMDiag gmm0 = this.clone();
-        for (int i=0;i<nlabs;i++) {
-            Arrays.fill(means[i], 0);
-            Arrays.fill(diagvar[i], 0);
-        }
+
         int[] nex = new int[nlabs];
         double[] nk = new double[nlabs];
         
         Arrays.fill(nex, 0);
         Arrays.fill(nk, 0.0);
-        List<Integer> instances = margin.getInstancesCurrThrFeat();
-        
-        int iter = margin.getThreadIteration();
-        if(iter%1000==0){
-            previousMuPart=computePartitionMu( margin,  gmm0, z,nex);
-            previousSumXPart=sumXPart;
-            return trainViterbi(margin);
-        }   
 
+        //when already running in multithreads
+        if(iter%1000==0){
+            //do this computations only in the last gmm iteration
+            if(CURRENTGMMTRITER==nitersTraining-1){
+                margin.previousMuPart=computePartitionMu( margin,  gmm0, z,nex);
+                System.arraycopy( margin.sumXSqPart, 0,margin.previousSumXPart1 , 0, margin.sumXSqPart.length );
+                
+
+            }
+            return trainViterbi(margin);
+        } 
+        //compute again the new means
+        for (int i=0;i<nlabs;i++) {
+            Arrays.fill(means[i], 0);
+            Arrays.fill(diagvar[i], 0);
+        }
+        System.out.println("all sum of ss Xpart = "+Arrays.toString(margin.sumXSqAll));
+        System.out.println("previous sum of ss Xpart = "+Arrays.toString(margin.previousSumXPart1));
         double[][] newMuPart1=computePartitionMu( margin,  gmm0, z,nex);
+        System.out.println("sum of ss Xpart = "+Arrays.toString(margin.sumXSqPart));
+        /*
+        for (int l=0;l<nlabs;l++){
+            margin.sumXSqAll[l]=Math.abs(margin.sumXSqPart[l]+margin.sumXSqAll[l]-margin.previousSumXPart1[l]);
+        } */ 
+        System.out.println("NEW all sum of ss Xpart = "+Arrays.toString(margin.sumXSqAll));
         nk=nkPart;
+        System.out.println("previous mu thread partition");
+        printMatrix(margin.previousMuPart);           
+        System.out.println("current mu thread partition");
+        printMatrix(newMuPart1);         
         //here I have the mean for the instances impacted by the thread
         for (int y=0;y<nlabs;y++)
-            for (int l=0;l<nlabs;l++)
-                means[y][l]=gmm0.means[y][l]-previousMuPart[y][l]+newMuPart1[y][l];
-                
+            for (int l=0;l<nlabs;l++){
+                means[y][l]=gmm0.means[y][l]-margin.previousMuPart[y][l]+newMuPart1[y][l];
+            } 
+        System.out.println("*********debugging*******");
+        printMean();        
         //System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
-
-        double[][] prvMuDif= new double[means.length][];
-        for (int y=0;y<nlabs;y++){ 
-            double posterior=postPart[y];
-            for (int l=0;l<nlabs;l++){ 
-                double mudiff = (sumXPart[y]*sumXPart[y]);
-                prvMuDif[y][l]= (nlabs*posterior)*(previousSumXPart[y]*previousSumXPart[y]);
-                diagvar[y][l]=(nlabs*posterior)*mudiff;
-                if(this.isBinaryConstrained)
-                    break;
-            }
-
-
-        }
-
+        System.out.println("NEW all sum of ss Xpart = "+Arrays.toString(margin.sumXSqAll));
+        System.out.println("previousSumXPart1 = "+Arrays.toString(margin.previousSumXPart1));
+        System.out.println("sum of ss Xpart = "+Arrays.toString(margin.sumXSqPart));
+        
         for (int y=0;y<nlabs;y++) {
             double logdet=0;
             if (nk[y]==0){
@@ -641,7 +655,8 @@ public class GMMDiag extends GMM {
                 }
             }else{
                 if(this.isBinaryConstrained){
-                    diagvar[y][0] = gmm0.diagvar[y][0]- (prvMuDif[y][0]/nk[y] -previousMuPart[y][0])+ (diagvar[y][0]/nk[y]-means[y][0]);
+         
+                    diagvar[y][0] =  (margin.sumXSqAll[y]-margin.previousSumXPart1[y] + margin.sumXSqPart[y])-means[y][0];
                     
                     if (diagvar[y][0] < minvar) 
                         diagvar[y][0]=minvar;
@@ -651,8 +666,10 @@ public class GMMDiag extends GMM {
                     logdet += logMath.linearToLog(diagvar[y][1]); 
                 }else
                     for (int i=0;i<nlabs;i++) {
+                                    
                         //diagvar[y][i] /= nk[y];
-                        diagvar[y][i] = gmm0.diagvar[y][i]- (prvMuDif[y][i]/nk[y] -previousMuPart[y][i])+ (diagvar[y][i]/nk[y]-means[y][i]);
+                        //diagvar[y][i] = (margin.previousSumXPart1[y] + margin.sumXSqAll[y]-margin.sumXSqPart[y])-means[y][i];
+                        diagvar[y][i] = (margin.sumXSqAll[y]-margin.previousSumXPart1[y] + margin.sumXSqPart[y])-means[y][i];
                         if (diagvar[y][i] < minvar) 
                             diagvar[y][i]=minvar;
 
@@ -668,9 +685,9 @@ public class GMMDiag extends GMM {
            
         }
          //System.out.println("priors: "+ Arrays.toString(logWeights));
-        //System.out.println("trainviterbi");
+        System.out.println("trainApproximatedEM");
         //printMean();
-        //printVariace();   
+        printVariace();   
         return nk;
     }    
     
@@ -1136,6 +1153,30 @@ public class GMMDiag extends GMM {
         }
         return postPerClass;
     }
+    public double[] trainApproxWithoutInit(Margin margin) {
+        double loglike = getLoglike(margin);
+    	double previousLogLike=loglike;
+        double[] postPerClass=null;
+        nIterDone=0;
+        for (int iter=0;iter<nitersTraining;iter++,nIterDone++) {
+            CURRENTGMMTRITER=iter;
+            postPerClass=trainApproximatedEM(margin);
+            loglike = getLoglike(margin);
+            if(Math.abs(loglike-previousLogLike)<toleranceTraining) break;
+            previousLogLike=loglike;
+        }
+        System.out.println("***end of training******");
+        printMean();
+        printVariace();
+        System.out.println("previous mu thread partition");
+        if(margin.previousMuPart != null)
+            printMatrix(margin.previousMuPart); 
+        System.out.println("sumXSqAll=" + Arrays.toString(margin.sumXSqAll));
+        if(margin.sumXSqPart != null)
+        System.out.println("sumXSqPart="+Arrays.toString(margin.sumXSqPart));
+        
+        return postPerClass;
+    }    
      public double[] trainStocWithoutInit(Margin margin) {
         double loglike = getLoglike(margin);
     	double previousLogLike=loglike;
@@ -1185,6 +1226,21 @@ public class GMMDiag extends GMM {
     	means[1][0]=scmin; means[1][1]=-scmin;
     	return trainStocWithoutInit(margin);
     }
+    public double[] trainApproximation(Margin margin) {
+    	// just to compute the variance and gconst:
+    	train1gauss(margin);
+    	// compute extreme values
+    	List<List<Integer>> feats = margin.getFeaturesPerInstances();
+    	float scmin=Float.MAX_VALUE,scmax=-Float.MAX_VALUE;
+    	for (List<Integer> f : feats) {
+    		float sc=margin.getScore(f, 0);
+    		if (sc<scmin) scmin=sc;
+    		if (sc>scmax) scmax=sc;
+    	}
+    	means[0][0]=scmax; means[0][1]=-scmax;
+    	means[1][0]=scmin; means[1][1]=-scmin;
+    	return trainApproxWithoutInit(margin);
+    }    
     
     public double[] computePosteriors(Margin margin) {
     	double[] nk = new double[nlabs];
@@ -1272,5 +1328,20 @@ public class GMMDiag extends GMM {
             }    
             var+="]";
             System.out.println(var);        
-    }    
+    }  
+    
+        public void printMatrix(double[][] m){
+            String matrix="=[";
+            for(int i=0; i<  m.length;i++){
+                for(int j=0; j<  m[i].length;j++){
+                    matrix+= m[i][j];
+                    if(j<nlabs-1)
+                        matrix+=" , ";
+                } 
+                if(i<nlabs-1)
+                    matrix+=";";
+            }    
+            matrix+="]";
+            System.out.println(matrix);        
+    }
 }

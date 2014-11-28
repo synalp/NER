@@ -64,8 +64,14 @@ public class Margin {
     private int[] samples= null;    
     private Random rnd = new Random();
     
-    private int threadIteration = 0;
+    private int threadIteration = CNConstants.INT_NULL;
     private int threadFeatIdx=CNConstants.INT_NULL;
+    
+    //for the partitioning -> approximate EM
+    public double[][] previousMuPart;
+    public double[] previousSumXPart1;
+    public double[] sumXSqPart;
+    public double[] sumXSqAll;
      
     public Margin(){
         
@@ -609,9 +615,9 @@ public class Margin {
         return this.threadIteration;
     }
     public List<Integer> getInstancesCurrThrFeat(){
-        if(threadFeatIdx==CNConstants.INT_NULL)
+        if(threadFeatIdx==CNConstants.INT_NULL || !instPerFeatures.containsKey(threadFeatIdx))
             return new ArrayList<>();
         
-        return instPerFeatures.get(threadFeatIdx);
+        return new ArrayList<>(instPerFeatures.get(threadFeatIdx));
     }
 }
