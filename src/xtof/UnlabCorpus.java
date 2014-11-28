@@ -19,13 +19,15 @@ public class UnlabCorpus {
 	int featureSpaceSize;
 	int[][] feats;
 	Random rand = new Random();
+	
+	final float delta=0.1f, epsilon=0.1f; 
+	final int beta = 20;
 
 	public static void main(String args[]) {
 		UnlabCorpus m = loadFeatureFile();
 		LinearModelNoStanford c = new LinearModelNoStanford(m);
 		float[] sc = c.computeAllScores();
-		final float delta=0.2f, epsilon=0.2f; 
-		m.buildcoreset(sc, delta, epsilon);
+		m.buildcoreset(sc,100);
 	}
 
 	public int closestidx;
@@ -55,7 +57,7 @@ public class UnlabCorpus {
 	}
 
 	// delta gives the probability that the result is outside the bounds
-	public void buildcoreset(float[] d, final float delta, final float epsilon) {
+	public float[][] buildcoreset(float[] d, int nsets) {
 		LogMath logMath = new LogMath();
 		int sizeDprim=d.length, sizeB=0;
 		final float lnd = logMath.linearToLog(1/delta);
@@ -64,7 +66,7 @@ public class UnlabCorpus {
 
 		{
 			float[] b = new float[d.length/5]; // b is smaller than d; but how much ?
-			float[] s = new float[(int)(20*lnd)];
+			float[] s = new float[beta];
 			while (sizeDprim>s.length) {
 				int nEx2remove = sizeDprim/2 - s.length;
 System.out.println("nex to remove "+nEx2remove+" "+s.length);
@@ -125,26 +127,30 @@ System.out.println("nex to remove "+nEx2remove+" "+s.length);
 				float dist = Math.abs(b[closestB[i]]-d[i]);
 				m[i]=5/sizeDb[closestB[i]]+dist*dist/z;
 			}
-			System.gc();
+
+			float zz = 0;
+			for (float x : m) zz+=x;
+			for (int i=0;i<m.length;i++) m[i]/=zz;
+			System.out.println("Importance weights "+m[0]+" "+m[1]+" ...");
+
+			// we can now sample from this multinomial
+			//		int npts = (int)(20*(double)(sizeB*sizeB)*lnd/(epsilon*epsilon));
+			int npts = nsets;
+			System.out.println("npts to sample "+npts+" "+d.length+" "+sizeB);
+			if (npts>d.length/10) {
+				System.out.println("ERROR: coresets too large");
+				return null;
+			}
+
+			float[][] res = new float[nsets][2];
+			for (int ii=0;ii<npts;ii++) {
+				int i=sample_Mult(m);
+				res[ii][0]=d[i];
+				float gamma = zz/(float)npts/m[i];
+				res[ii][1]=gamma;
+			}
+			return res;
 		}
-		float z = 0;
-		for (float x : m) z+=x;
-		for (int i=0;i<m.length;i++) m[i]/=z;
-		System.out.println("Importance weights "+m[0]+" "+m[1]+" ...");
-		
-		// we can now sample from this multinomial
-		int npts = (int)(20*(double)(sizeB*sizeB)*lnd/(epsilon*epsilon));
-		System.out.println("npts to sample "+npts+" "+d.length+" "+sizeB);
-		if (npts>d.length/10) {
-			System.out.println("ERROR: coresets too large");
-			return;
-		}
-		HashSet<Integer> cidx = new HashSet<Integer>();
-		while (cidx.size()<npts) {
-			int i=sample_Mult(m);
-			cidx.add(i);
-		}
-		System.out.println("sample done "+cidx.size());
 	}
 
 	private int sample_Mult(float[] th) {
@@ -167,7 +173,7 @@ System.out.println("nex to remove "+nEx2remove+" "+s.length);
 		c.featureSpaceSize=0;
 		try {
 			DataInputStream g = new DataInputStream(new FileInputStream("unlabfeats.dat"));
-			final int nmax = 10000;
+			final int nmax = 60000;
 			c.feats = new int[nmax][];
 			for (int i=0;i<nmax;i++) {
 				int nf = g.readInt();
