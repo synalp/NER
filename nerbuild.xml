@@ -75,6 +75,7 @@
         <mkdir dir="${build}"/>
         <mkdir dir="${dist}"/>
 	<mkdir dir="etc"/>
+	<mkdir dir="reports"/>
 	<copy todir="etc">
 	    <fileset dir="templates" includes="**/*"/>
   	</copy>
@@ -140,5 +141,24 @@
                     
             </java>            
     </target>
+
+<target name="test" depends="compile">
+  <junit fork="yes" haltonfailure="yes" printsummary="withOutAndErr">
+    <batchtest fork="yes" todir="reports" >
+      <fileset dir="${build}">
+        <include name="**/*Test.class" />
+      </fileset>
+    </batchtest>
+    <formatter type="xml" />
+    <classpath refid="run.classpath" />
+  </junit>
+ <junitreport todir="reports">
+    <fileset dir="reports">
+      <include name="TEST-*.xml" />
+    </fileset>
+    <report todir="reports" />
+  </junitreport>
+</target>
+
 </project>
 

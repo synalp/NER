@@ -18,7 +18,7 @@ import xtof.RiskMachine;
  * @author xtof
  *
  */
-public class TestCoresets {
+public class CoresetsTest {
 
 	/**
 	 * Test method for {@link xtof.Coresets#buildcoreset(float[], int)}.
