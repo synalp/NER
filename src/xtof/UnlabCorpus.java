@@ -24,6 +24,10 @@ public class UnlabCorpus {
 	public static void main(String args[]) {
 		// first train the classifier to get good initial weights
 		CoNLL03Ner conll = new CoNLL03Ner();
+		// warning: its impossible to change 20 to another number of sentences
+		// because the features loaded next in loadFeatureFile() have been computed
+		// with a "train" pre-corpus of only 20 sentences.
+		// So, the feature indexes will differ...
         conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
 		Corpus ctrain = new Corpus("conll.pn.tab.LC.train", null, null, null);
 		LinearModel mod=LinearModel.train(ctrain.columnDataClassifier, ctrain.trainData);
