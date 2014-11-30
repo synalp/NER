@@ -5,6 +5,9 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.util.Arrays;
 
+import conll03.CoNLL03Ner;
+
+import tools.CNConstants;
 import tools.Histoplot;
 import xtof.Coresets.GMMDiag;
 
@@ -19,8 +22,24 @@ public class UnlabCorpus {
 	public int[][] feats;
 
 	public static void main(String args[]) {
+		// first train the classifier to get good initial weights
+		CoNLL03Ner conll = new CoNLL03Ner();
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
+		Corpus ctrain = new Corpus("conll.pn.tab.LC.train", null, null, null);
+		LinearModel mod=LinearModel.train(ctrain.columnDataClassifier, ctrain.trainData);
+		float acc = mod.test(ctrain.trainData);
+		System.out.println("acc LC train "+acc+" "+mod.getWeights().length);
+		
 		UnlabCorpus m = loadFeatureFile();
 		LinearModelNoStanford c = new LinearModelNoStanford(m);
+		// project training weights onto these weigths
+		// the feats index are the same, because both train and unlab have been created in the same order
+		for (int i=0;i<mod.getWeights().length;i++) {
+			c.w[i]=(float)mod.getWeights()[i][0];
+		}
+		float acc2 = c.test(ctrain.trainData);
+		System.out.println("acc2 LC train "+acc2+" "+c.w.length);
+		
 		float[] sc = c.computeAllScores();
 		RiskMachine.GMMDiag gmm = new RiskMachine.GMMDiag();
 		double[] post = gmm.train(sc);
