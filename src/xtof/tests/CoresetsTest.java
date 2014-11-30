@@ -21,6 +21,9 @@ import xtof.RiskMachine;
 public class CoresetsTest {
 
 	/**
+	 * Test that when the loglikes respectively computed on the original dataset
+	 * and on the coresets are close.
+	 * 
 	 * Test method for {@link xtof.Coresets#buildcoreset(float[], int)}.
 	 */
 	@Test

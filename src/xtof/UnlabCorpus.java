@@ -1,13 +1,12 @@
 package xtof;
 
-import gmm.LogMath;
-
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
+
+import tools.Histoplot;
+import xtof.Coresets.GMMDiag;
 
 /**
  * contains only the features from the gigaword
@@ -23,8 +22,21 @@ public class UnlabCorpus {
 		UnlabCorpus m = loadFeatureFile();
 		LinearModelNoStanford c = new LinearModelNoStanford(m);
 		float[] sc = c.computeAllScores();
-		Coresets cs = new Coresets();
-		cs.buildcoreset(sc,100);
+		RiskMachine.GMMDiag gmm = new RiskMachine.GMMDiag();
+		double[] post = gmm.train(sc);
+		System.out.println("post "+post[0]+" "+post[1]);
+		System.out.println("means "+gmm.mean0+" "+gmm.mean1);
+		
+		/*
+		 * les post estimes ici sont completement faux: on trouve du presque 50%
+		 * alors que les priors calcules sur le train de 20 phrases donnent 14%
+		 */
+		
+		Histoplot.showit(sc);
+		
+		
+//		Coresets cs = new Coresets();
+//		cs.buildcoreset(sc,100);
 	}
 
 	public static UnlabCorpus loadFeatureFile() {
@@ -33,8 +45,9 @@ public class UnlabCorpus {
 		int nread = 0;
 		c.featureSpaceSize=0;
 		try {
+			// this file has been saved in TestGigaword
 			DataInputStream g = new DataInputStream(new FileInputStream("unlabfeats.dat"));
-			final int nmax = 60000;
+			final int nmax = 800;
 			c.feats = new int[nmax][];
 			for (int i=0;i<nmax;i++) {
 				int nf = g.readInt();
