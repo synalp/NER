@@ -9,6 +9,10 @@ import edu.stanford.nlp.classify.LinearClassifier;
 public class LinearModel {
 	LinearClassifier model;
 	
+	public double[][] getWeights() {
+		return model.weights();
+	}
+	
 	public static LinearModel train(ColumnDataClassifier cdc, GeneralDataset data) {
 		LinearModel m = new LinearModel();
         m.model = (LinearClassifier) cdc.makeClassifier(data);
@@ -61,7 +65,7 @@ public class LinearModel {
 		{
 			for (int i=0;i<sc.length;i++) sc[i]=getSCore(feats[i]);
 			RiskMachine rr = new RiskMachine(priors);
-			prevRisk=rr.computeRisk(sc);
+			prevRisk=rr.computeRisk(sc,new RiskMachine.GMMDiag());
 		}
 		float acc = test(data);
 		System.out.println("SCD iter -1 "+prevRisk+" acc "+acc);
@@ -73,7 +77,7 @@ public class LinearModel {
 			{
 				for (int ii=0;ii<sc.length;ii++) sc[ii]=getSCore(feats[ii]);
 				RiskMachine rr = new RiskMachine(priors);
-				newRisk=rr.computeRisk(sc);
+				newRisk=rr.computeRisk(sc,new RiskMachine.GMMDiag());
 			}
 			float grad=(newRisk-prevRisk)/Parms.finiteDiffDelta;
 			if (grad!=0) {
@@ -82,7 +86,7 @@ public class LinearModel {
 				{
 					for (int ii=0;ii<sc.length;ii++) sc[ii]=getSCore(feats[ii]);
 					RiskMachine rr = new RiskMachine(priors);
-					prevRisk=rr.computeRisk(sc);
+					prevRisk=rr.computeRisk(sc,new RiskMachine.GMMDiag());
 				}
 				acc = test(data);
 				System.out.println("SCD iter "+i+" "+prevRisk+" acc "+acc);

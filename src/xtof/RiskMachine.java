@@ -13,22 +13,16 @@ import gmm.LogMath;
  *
  */
 public class RiskMachine {
-	GMMDiag gmm;
 	double[] post, priors;
 	
 	public RiskMachine(double[] priors) {
 		this.priors=priors;
 	}
 	
-	public float[] getMeans() {
-		float[] mm = {gmm.mean0,gmm.mean1};
-		return mm;
-	}
 	public double[] getPosteriors() {return post;}
 	
-	public float computeRisk(float[] scores) {
+	public float computeRisk(float[] scores, GMMDiag gmm) {
 		// first, I find the 2 modes of the scores, without using any prior, just by looking at the data:
-		gmm = new GMMDiag();
 	  	post=gmm.train(scores);
 	  	// then I switch priors if they are in reverse order than post
 	  	if ((priors[0]>priors[1] && post[1]>post[0])||
@@ -63,11 +57,11 @@ public class RiskMachine {
 	 * @author xtof
 	 *
 	 */
-	private class GMMDiag {
+	public static class GMMDiag {
 		// mean0 always represents the mode with the highest score
 		public float mean0, var0, gconst0, logw0;
 		public float mean1, var1, gconst1, logw1;
-		private LogMath logMath = new LogMath();
+		protected LogMath logMath = new LogMath();
 		
 		public double[] train(float[] x) {
 			train1gauss(x);
@@ -123,13 +117,23 @@ public class RiskMachine {
 			}
 			return post;
 		}
-		private float getLoglike(float m, float v, float g, float x) {
+		public float getLoglike(float[] sc) {
+			float l=0;
+			for (int i=0;i<sc.length;i++) {
+				float ll = logw0+getLoglike(mean0, var0, gconst0, sc[i]);
+				l=logMath.addAsLinear(l, ll);
+				ll = logw1+getLoglike(mean1, var1, gconst1, sc[i]);
+				l=logMath.addAsLinear(l, ll);
+			}
+			return l;
+		}
+		protected float getLoglike(float m, float v, float g, float x) {
 			double inexp=((x-m)*(x-m))/v;
 	        inexp/=2.0;
 	        double loglikeYt = - g - inexp;
 	        return (float)loglikeYt;
 		}
-		private float calcGconst(float var) {
+		protected float calcGconst(float var) {
 			double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(var);
 			co/=2.0;            
 			return (float)co;
