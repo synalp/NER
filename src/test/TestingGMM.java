@@ -40,7 +40,8 @@ public class TestingGMM {
             priorsMap.put(sclass, new Double(0.1));
             analyzing.setPriors(priorsMap); 
             AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
-
+            File file = new File(AnalyzeLClassifier.MODELFILE.replace("%s", sclass));
+            file.delete();
             analyzing.trainAllLinearClassifier(sclass,false, false, false);
             //analyzing.testingClassifier(true, sclass, false, false);
             LinearClassifier model = analyzing.getModel(sclass);
@@ -88,7 +89,7 @@ public class TestingGMM {
             means[retry][1]=gmm.getMean(1);
             
             System.out.println("******  MULTIDIMENSIONAL GMM ********");
-            GMMDiag gmmMD = new GMMDiag(2, priors,true);
+            GMMDiag gmmMD = new GMMDiag(2, priors,false);
 
             gmmMD.train(margin);
             System.out.println("mean=[ "+gmmMD.getMean(0,0)+" , "+gmmMD.getMean(0,1)+";\n"+

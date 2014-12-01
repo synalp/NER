@@ -68,10 +68,14 @@ public class Margin {
     private int threadFeatIdx=CNConstants.INT_NULL;
     
     //for the partitioning -> approximate EM
+    public boolean lastRperSCDIter=false;
+    public double[][] previousMean;
     public double[][] previousMuPart;
     public double[] previousSumXPart1;
     public double[] sumXSqPart;
     public double[] sumXSqAll;
+    public double[] nkAll;
+    public double[] post;
      
     public Margin(){
         
