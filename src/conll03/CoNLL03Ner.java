@@ -33,6 +33,7 @@ import tools.CNConstants;
 import tools.GeneralConfig;
 import tools.PlotAPI;
 import utils.ErrorsReporting;
+import xtof.UnlabCorpus;
 
 /**
  * Reads the CoNLL03 corpus
@@ -88,45 +89,46 @@ public class CoNLL03Ner {
     * @param isCRF
     * @param wSupModelFile 
     */ 
-   public void generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, String wSupModelFile){
+   public String generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, String wSupModelFile){
        if(dataset.equals("gigaw"))
-          generatingStanfordInputFiles(entity,dataset,isCRF,(isCRF)?0:AnalyzeLClassifier.TESTSIZE,wSupModelFile); 
+          return generatingStanfordInputFiles(entity,dataset,isCRF,(isCRF)?0:AnalyzeLClassifier.TESTSIZE,wSupModelFile); 
        else    
-          generatingStanfordInputFiles(entity,dataset,isCRF,(isCRF|| (!dataset.equals("train")&&!dataset.equals("tropennlp")))?0:AnalyzeLClassifier.TRAINSIZE,wSupModelFile);
+    	   return generatingStanfordInputFiles(entity,dataset,isCRF,(isCRF|| (!dataset.equals("train")&&!dataset.equals("tropennlp")))?0:AnalyzeLClassifier.TRAINSIZE,wSupModelFile);
    }
    // I need a bit more flexibility and control over the size of the datasets that are produced
    // so I'ved added this method but still keeping the default behavior the same with the previous method
-   public void generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, int limitsize, String wSupModelFile){
+   public String generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, int limitsize, String wSupModelFile){
         BufferedReader inFile = null;
         OutputStreamWriter outFile =null;
         HashMap<String,String> wordclasses = new HashMap<>();
         List<String> lines = new ArrayList<>();
         List<String> wordInLine= new ArrayList<>();
+        String outfilename=null;
         try{
             switch(dataset){
                 case "train":
                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTrain)); 
                     
                     if(isCRF)
-                        outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);
+                        outfilename = TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF");
                     else
-                        outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+                        outfilename = TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
                     break;
                 case "dev":
                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusDev)); 
                     
                     if(isCRF)
-                        outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);  
+                        outfilename = DEVFILE.replace("%S", entity).replace("%CLASS", "CRF");
                     else
-                        outFile = new OutputStreamWriter(new FileOutputStream(DEVFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+                        outfilename = DEVFILE.replace("%S", entity).replace("%CLASS", "LC");
                     break;
                 case "test":
                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTest)); 
                     
                     if(isCRF)
-                        outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);                      
+                        outfilename = TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");                      
                     else
-                        outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+                        outfilename = TESTFILE.replace("%S", entity).replace("%CLASS", "LC");
                     break;
                 case "gigaw":
                     String gwDir=GeneralConfig.corpusGigaDir;
@@ -136,7 +138,7 @@ public class CoNLL03Ner {
                     }
                     inFile = new BufferedReader(new FileReader(gwDir+System.getProperty("file.separator")+gwData)); 
                     TESTFILE=TESTFILE.replace("conll", "gw").replace("%S", entity).replace("%CLASS", "LC");
-                    outFile = new OutputStreamWriter(new FileOutputStream(TESTFILE),CNConstants.UTF8_ENCODING);
+                    outfilename = TESTFILE;
                     break;  
                 case "tropennlp":
                     String newtagData = GeneralConfig.corpusTrainOpenNLP;
@@ -146,12 +148,13 @@ public class CoNLL03Ner {
                      inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+newtagData)); 
                     
                     if(isCRF)
-                        outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF")),CNConstants.UTF8_ENCODING);
+                        outfilename = TRAINFILE.replace("%S", entity).replace("%CLASS", "CRF");
                     else
-                        outFile = new OutputStreamWriter(new FileOutputStream(TRAINFILE.replace("%S", entity).replace("%CLASS", "LC")),CNConstants.UTF8_ENCODING);
+                        outfilename = TRAINFILE.replace("%S", entity).replace("%CLASS", "LC");
                     break;                   
-                 
             }
+            outFile = new OutputStreamWriter(new FileOutputStream(outfilename),CNConstants.UTF8_ENCODING);
+
             if(!isCRF){
                 BufferedReader distSemFile = new BufferedReader(new FileReader("scripts/egw.bnc.200.pruned"));
                 while(true){
@@ -234,8 +237,6 @@ public class CoNLL03Ner {
                    wordInLine.add(cols[0]);
                    //outFile.append(label+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[2]+"\t"+wordClass+"\n");    
                }
-               
-
            }
             
            if(!isCRF || (isCRF && !wSupModelFile.equals(CNConstants.CHAR_NULL) ) ){
@@ -269,11 +270,17 @@ public class CoNLL03Ner {
                             String outClass = label;
                             String prefix=outClass.substring(0,label.indexOf("-")+1);
                             if(!prefix.isEmpty())
-                                outClass = CNConstants.PRNOUN;                            
+                            	outClass = CNConstants.PRNOUN;                            
                             String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
-                            outFile.append(newLine);                             
-                          }else if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
-                            AnalyzeLClassifier.MODELFILE=wSupModelFile;
+                            outFile.append(newLine);                            
+                	  } else if(wSupModelFile.equals(CNConstants.TABLE_IN_UNLABCORPUS)){
+                		  String line =lines.get(i);
+                          String label = line.substring(0,line.indexOf("\t"));
+                		  String weaksupClass = "WS"+UnlabCorpus.LCrec[i];
+                		  String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+weaksupClass+"\t"+label+"\n";
+                		  outFile.append(newLine);                            
+                	  }else if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
+                		  AnalyzeLClassifier.MODELFILE=wSupModelFile;
                             // you load the model for every line i ??!!
                             LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
                             ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
@@ -283,21 +290,17 @@ public class CoNLL03Ner {
                             String label = line.substring(0,line.indexOf("\t"));
                             String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+outClass+"\t"+label+"\n";
                             outFile.append(newLine);
-
                        }                      
                   }
-                  
                }
-                  
            }
-            
-            outFile.flush();
-            outFile.close();
-            inFile.close();            
-
+           outFile.flush();
+           outFile.close();
+           inFile.close();            
         }catch(Exception ex){
             ex.printStackTrace();
         }
+        return outfilename;
     }
     
     public void testingNewWeightsLC(String entity,boolean savingFiles, int trainSize, int testSize, boolean useExistingModels){

@@ -2,6 +2,8 @@ package xtof;
 
 import java.util.Random;
 
+import xtof.LinearModel.TestResult;
+
 import edu.stanford.nlp.classify.GeneralDataset;
 
 public class LinearModelNoStanford {
@@ -28,11 +30,11 @@ public class LinearModelNoStanford {
 		return sc;
 	}
 
-	public float test(GeneralDataset data) {
+	public TestResult test(GeneralDataset data) {
 		final int[][] feats = data.getDataArray();
 		int[] refs = data.getLabelsArray();
 		
-		int nok=0;
+		TestResult res = new TestResult();
 		for (int i=0;i<feats.length;i++) {
 			double sc=0;
 			for (int j=0;j<feats[i].length;j++) {
@@ -40,10 +42,23 @@ public class LinearModelNoStanford {
 			}
 			int rec=0;
 			if (sc<0) rec=1;
-			if (rec==refs[i]) nok++;
+			res.addRec(refs[i], rec);
 		}
-		float acc = (float)nok/(float)feats.length;
-		return acc;
+		return res;
+	}
+	public int[] predict(GeneralDataset data) {
+		final int[][] feats = data.getDataArray();
+		int[] rec = new int[feats.length];
+		
+		for (int i=0;i<feats.length;i++) {
+			double sc=0;
+			for (int j=0;j<feats[i].length;j++) {
+				sc+=w[feats[i][j]];
+			}
+			rec[i]=0;
+			if (sc<0) rec[i]=1;
+		}
+		return rec;
 	}
 	
 	public void optimizeRisk() {
