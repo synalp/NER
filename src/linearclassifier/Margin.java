@@ -8,6 +8,7 @@ import edu.emory.mathcs.backport.java.util.Collections;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.util.Index;
 import edu.stanford.nlp.util.Triple;
+import gmm.GMMDiag;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -76,6 +77,7 @@ public class Margin {
     public double[] sumXSqAll;
     public double[] nkAll;
     public double[] post;
+    public GMMDiag previousGmm=null;
      
     public Margin(){
         

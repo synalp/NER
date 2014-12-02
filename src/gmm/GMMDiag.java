@@ -588,7 +588,7 @@ public class GMMDiag extends GMM {
             return trainViterbi(margin);
         
         final float[] z = new float[nlabs];
-        //keep a copy of the previous mean and variance
+
         final GMMDiag gmm0 = this.clone();
 
         int[] nex = new int[nlabs];
@@ -598,16 +598,31 @@ public class GMMDiag extends GMM {
         
 
         //when already running in multithreads
-        if(iter%1000==0){
+        if(iter%40==0){
             //do this computations only in the last gmm iteration of the last computation of R in the SGD iteration
-            if(CURRENTGMMTRITER==nitersTraining-1&&margin.lastRperSCDIter){
-                margin.previousMuPart=computePartitionMu( margin,  gmm0, z,nex);
-                System.arraycopy( margin.sumXSqPart, 0,margin.previousSumXPart1 , 0, margin.sumXSqPart.length );
-                
-
-            }
+//            if(CURRENTGMMTRITER==nitersTraining-1&&margin.lastRperSCDIter){
+//                margin.previousMuPart=computePartitionMu( margin,  gmm0, z,nex);
+//                System.arraycopy( margin.sumXSqPart, 0,margin.previousSumXPart1 , 0, margin.sumXSqPart.length );
+//                
+//
+//            }
             return trainViterbi(margin);
-        } 
+        }
+        
+         //keep a copy of the previous mean and variance
+        if(margin.previousGmm!=null){
+            for(int i=0; i< nlabs; i++){
+                System.arraycopy( margin.previousGmm.means[i], 0,means[i] , 0, nlabs ); 
+                System.arraycopy( margin.previousGmm.diagvar[i], 0,diagvar[i] , 0, nlabs ); 
+            }    
+        }          
+        //compute previous mean for the partition at iteration 0 of gmm
+        if(CURRENTGMMTRITER==0&&!margin.lastRperSCDIter){
+            margin.previousMuPart=computePartitionMu( margin,  gmm0, z,nex);
+            System.arraycopy( margin.sumXSqPart, 0,margin.previousSumXPart1 , 0, margin.sumXSqPart.length );  
+            
+        }
+     
         //compute again the new means
         for (int i=0;i<nlabs;i++) {
             Arrays.fill(means[i], 0);
@@ -1227,7 +1242,7 @@ public class GMMDiag extends GMM {
     }
     public double[] trainApproximation(Margin margin) {
     	// just to compute the variance and gconst:
-    	train1gauss(margin);
+    	//train1gauss(margin);
     	// compute extreme values
     	List<List<Integer>> feats = margin.getFeaturesPerInstances();
     	float scmin=Float.MAX_VALUE,scmax=-Float.MAX_VALUE;
