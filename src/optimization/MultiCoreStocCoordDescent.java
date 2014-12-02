@@ -286,6 +286,26 @@ public class MultiCoreStocCoordDescent  {
         //copy the orginal weights before applying coordinate gradient
         margin.copyOrWeightsBeforGradient();
         
+        List<Integer> trainFeatsInSubSet = new ArrayList<>();
+        for(int index=0; index<margin.getTrainFeatureSize();index++){
+
+            if(margin.isIndexInSubset(index))
+                trainFeatsInSubSet.add(index);
+
+
+        }    
+        List<Integer> testFeatsInSubSet = new ArrayList<>();
+        for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
+            double[] sc = new double[margin.getNlabs()];
+            sc[0]=uDist.sample();
+            sc[1]=-sc[0];
+            margin.setWeight(index,sc);
+            if(margin.isIndexInSubset(index))
+                testFeatsInSubSet.add(index);
+
+
+        }            
+        
         HashSet<String> emptyfeats = new HashSet<>();
         for (int iter=0;iter<niters;iter++) {
             int dimIdx=0;
@@ -298,25 +318,8 @@ public class MultiCoreStocCoordDescent  {
             //int selectedFeats[] = margin.getTopWeights(0.3,50);
             //List<Integer> trainFeats = margin.getTrainFeatureIndexes();
             //List<Integer> testFeats = margin.getTestFeatureIndexes();
-            List<Integer> trainFeatsInSubSet = new ArrayList<>();
-            for(int index=0; index<margin.getTrainFeatureSize();index++){
-                
-                if(margin.isIndexInSubset(index))
-                    trainFeatsInSubSet.add(index);
-                    
-                    
-            }            
-            List<Integer> testFeatsInSubSet = new ArrayList<>();
-            for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
-                double[] sc = new double[margin.getNlabs()];
-                sc[0]=uDist.sample();
-                sc[1]=-sc[0];
-                margin.setWeight(index,sc);
-                if(margin.isIndexInSubset(index))
-                    testFeatsInSubSet.add(index);
-                    
-                    
-            }
+          
+
             
             final double[] gradw = new double[weightsForFeat.size()];
             double rndVal = rnd.nextDouble();   
