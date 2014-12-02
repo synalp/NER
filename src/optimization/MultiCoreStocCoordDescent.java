@@ -94,7 +94,7 @@ public class MultiCoreStocCoordDescent  {
       //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
       
       float r= computeR(gmm, priors,true); //xtof
-              
+      margin.previousGmm = gmm;        
       return r;
       
   }
@@ -252,7 +252,7 @@ public class MultiCoreStocCoordDescent  {
         final float eps = 0.1f;  
         Integer thrId = classInfoPerThread.first();
         PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
-        //PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
+        PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
         Margin margin = classInfoPerThread.second();
         String currentClassifier=AnalyzeLClassifier.CURRENTSETCLASSIFIER;
         int nLabels = margin.getNlabs();
@@ -280,7 +280,7 @@ public class MultiCoreStocCoordDescent  {
 
             f1trainOr=AnalyzeLClassifier.CURENTPARENTF10;
         }
-        //plotF1.addPoint(counter,f1);   
+        plotF1.addPoint(counter,f1);   
         //copy the orginal weights before applying coordinate gradient
         margin.copyOrWeightsBeforGradient();
         
@@ -396,10 +396,10 @@ public class MultiCoreStocCoordDescent  {
                 f1=ColumnDataClassifier.macrof1;
                 if(!currentClassifier.equals(CNConstants.ALL))            
                     f1=columnDataClass.fs.get(currentClassifier);
-                //plotF1.addPoint(counter, f1);
+                plotF1.addPoint(counter, f1);
                 System.out.println("*******************************"); 
             }
-            //Histoplot.showit(margin.getScoreForAllInstancesLabel0( featsperInst, scores), featsperInst.size());
+            Histoplot.showit(margin.getScoreForAllInstancesLabel0( featsperInst, scores), featsperInst.size());
             //save the model regularly
             if(iter%30==0){
                 File mfile = new File(margin.getBinaryFile());

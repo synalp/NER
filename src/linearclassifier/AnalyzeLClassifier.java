@@ -1274,7 +1274,7 @@ public class AnalyzeLClassifier {
         // get scores
         GMMDiag gmm = new GMMDiag(priors.length, priors,true);
         // what is in marginMAP ? It maps a Margin, which contains the corpus for train, or test, or both ? and it is mapped to what ?
-        gmm.trainApproximation(marginMAP.get(sclassifier));
+        gmm.train(marginMAP.get(sclassifier));
         //gmm.train(marginMAP.get(sclassifier));
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
@@ -3564,7 +3564,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         priorMap.put(CNConstants.NOCLASS, new Double(0.9));
         priorMap.put(CNConstants.PRNOUN, new Double(0.1));
         setPriors(priorMap);
-        Long beforeUnsup=System.currentTimeMillis();
+        //Long beforeUnsup=System.currentTimeMillis();
         System.out.println("generated data:"+ Margin.GENERATEDDATA);
         allweightsKeepingOnlyTrain(CNConstants.PRNOUN,20, true,false,false);
         //analyzing.wkSupParallelCoordD(CNConstants.PRNOUN, true);
