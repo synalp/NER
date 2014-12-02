@@ -583,6 +583,15 @@ public class GMMDiag extends GMM {
     public double[] trainApproximatedEM(Margin margin) {
         
         int iter = margin.getThreadIteration();
+         //keep a copy of the previous mean and variance
+        if(margin.previousGmm!=null){
+            for(int i=0; i< nlabs; i++){
+                System.arraycopy( margin.previousGmm.means[i], 0,means[i] , 0, nlabs ); 
+                System.arraycopy( margin.previousGmm.diagvar[i], 0,diagvar[i] , 0, nlabs ); 
+            }    
+        }else{
+            train1gauss(margin);
+        }         
         //before splitting in threads
         if(iter==CNConstants.INT_NULL)
             return trainViterbi(margin);
@@ -609,13 +618,7 @@ public class GMMDiag extends GMM {
             return trainViterbi(margin);
         }
         
-         //keep a copy of the previous mean and variance
-        if(margin.previousGmm!=null){
-            for(int i=0; i< nlabs; i++){
-                System.arraycopy( margin.previousGmm.means[i], 0,means[i] , 0, nlabs ); 
-                System.arraycopy( margin.previousGmm.diagvar[i], 0,diagvar[i] , 0, nlabs ); 
-            }    
-        }          
+         
         //compute previous mean for the partition at iteration 0 of gmm
         if(CURRENTGMMTRITER==0&&!margin.lastRperSCDIter){
             margin.previousMuPart=computePartitionMu( margin,  gmm0, z,nex);
