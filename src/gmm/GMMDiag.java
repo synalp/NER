@@ -613,7 +613,7 @@ public class GMMDiag extends GMM {
         if(margin.previousGmm!=null){
             for(int i=0; i< nlabs; i++){
                 System.arraycopy( margin.previousGmm.means[i], 0,means[i] , 0, nlabs ); 
-                System.arraycopy( margin.previousGmm.diagvar, 0,diagvar[i] , 0, nlabs ); 
+                System.arraycopy( margin.previousGmm.diagvar[i], 0,diagvar[i] , 0, nlabs ); 
             }    
         }          
         //compute previous mean for the partition at iteration 0 of gmm
