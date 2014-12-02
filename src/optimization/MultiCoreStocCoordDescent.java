@@ -46,6 +46,7 @@ public class MultiCoreStocCoordDescent  {
   	gmm.nitersTraining=1000;
   	gmm.toleranceTraining=0;
   	double[] post=gmm.trainApproximation(margin);
+        //double[] post=gmm.train(margin);
   	System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   	
   	{
@@ -63,6 +64,7 @@ public class MultiCoreStocCoordDescent  {
   			means[0][1]=means[1][1];
   			means[1][1]=m;
   			post=gmm.trainApproxWithoutInit(margin);
+                        //post=gmm.trainWithoutInit(margin);
   			System.out.println("just after inversion train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   			System.out.println("after inversion means "+means[0][0]+" "+means[1][0]);
   		}
@@ -249,7 +251,7 @@ public class MultiCoreStocCoordDescent  {
         
         final float eps = 0.1f;  
         Integer thrId = classInfoPerThread.first();
-        //PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
+        PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
         //PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
         Margin margin = classInfoPerThread.second();
         String currentClassifier=AnalyzeLClassifier.CURRENTSETCLASSIFIER;
@@ -266,7 +268,7 @@ public class MultiCoreStocCoordDescent  {
         double[] scores= new double[featsperInst.size()];
         Arrays.fill(scores, 0.0);
         float estimr0=AnalyzeLClassifier.CURRENTPARENTESTIMR0;
-        //plotR.addPoint(counter, estimr0);
+        plotR.addPoint(counter, estimr0);
         double f1=0.0;
         double f1trainOr=0.0;
         if(computeF1){
@@ -352,11 +354,11 @@ public class MultiCoreStocCoordDescent  {
             System.out.println("****** w0="+w0);
             weightsForFeat.set(featIdx, w0); 
             margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
-            if (gradw[0]==0) {
+            
             	// why preventing future modifications of these weights ? They may induce risk change at the next iterations !
             	// for instance, their impact may be quasi-nul in some regions, but larger elsewhere...
                     // emptyfeats.add("["+featIdx+","+0+"]");
-            }else{  
+            if (gradw[0]!=0) {
                 weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- gradw[0] * eps);                    
                 margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
                 System.out.println("Iteration["+iter+"] Updated feature "+ margin.getOrWeightIndex(featIdx));
@@ -384,7 +386,7 @@ public class MultiCoreStocCoordDescent  {
             System.out.println("*******************************"); 
             System.out.println("RMCSC["+iter+"] = "+estimr0+" "+Thread.currentThread().getId());   
             lastRisk=(double)estimr0;
-            //plotR.addPoint(counter, estimr0);
+            plotR.addPoint(counter, estimr0);
             System.out.println("*******************************");
     
             model.setWeights(margin.getWeights());

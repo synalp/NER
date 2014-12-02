@@ -153,7 +153,6 @@ public class AnalyzeLClassifier {
      * @param iswiki 
      */
     public void updatingPropFile(String nameEntity, boolean iswiki){
-       
 
         Properties prop = new Properties();
         try {
@@ -180,7 +179,7 @@ public class AnalyzeLClassifier {
         }
         
    }     
-        
+      
    public  void saveGroups(String sclass,boolean bltrain, boolean iswiki, boolean allLower){
        //only one proper noun classifier
        String[] classStr={ONLYONEPNOUNCLASS};
@@ -1276,6 +1275,7 @@ public class AnalyzeLClassifier {
         GMMDiag gmm = new GMMDiag(priors.length, priors,true);
         // what is in marginMAP ? It maps a Margin, which contains the corpus for train, or test, or both ? and it is mapped to what ?
         gmm.trainApproximation(marginMAP.get(sclassifier));
+        //gmm.train(marginMAP.get(sclassifier));
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
         System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
@@ -3056,7 +3056,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         fileIn.close();      
       }catch(IOException i)
       {
-         i.printStackTrace();
+         featperInstance=new ArrayList<>();
          
       }catch(ClassNotFoundException c)
       {
@@ -3271,14 +3271,22 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
      * @param isLower 
      */
     public void allweightsKeepingOnlyTrain(String entity, int trainSize, boolean isSavingFiles, boolean isWiki, boolean isLower){
-       
-        File listTrainSet = new File(AnalyzeLClassifier.LISTTRAINFILES);
-        File listTestSet = new File(AnalyzeLClassifier.LISTTESTFILES);
-        String allTrainAndTest="listTrainTest.xmll".replace("%S", entity);
-        File trainAndTest = new File(allTrainAndTest);        
+        
+        AnalyzeLClassifier.TRAINSIZE=trainSize;
+
+        if(isSavingFiles){
+            saveGroups(entity,true,isWiki, isLower);
+            saveGroups(entity,false,isWiki, isLower);
+        }   
+ 
+        File trainSet = new File(AnalyzeLClassifier.TRAINFILE.replace("%S", entity));
+        File testSet = new File(AnalyzeLClassifier.TESTFILE.replace("%S", entity));
+        String allTrainAndTest=AnalyzeLClassifier.TRAINFILE.replace("%S", entity)+"andtest";
+        File trainAndTest = new File(allTrainAndTest);          
+            
         try {
-            String file1Str = org.apache.commons.io.FileUtils.readFileToString(listTrainSet);
-            String file2Str = org.apache.commons.io.FileUtils.readFileToString(listTestSet);
+            String file1Str = org.apache.commons.io.FileUtils.readFileToString(trainSet);
+            String file2Str = org.apache.commons.io.FileUtils.readFileToString(testSet);
             // Write the file
             org.apache.commons.io.FileUtils.write(trainAndTest, file1Str);
             org.apache.commons.io.FileUtils.write(trainAndTest, file2Str, true); // true for append
@@ -3288,7 +3296,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             ex.printStackTrace();
         }
        //Train all train and test data
-        AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
+        
         String tmpRealTrain=AnalyzeLClassifier.TRAINFILE.replace("%S", entity);
 
         String realTrainModel=MODELFILE.replace("%S", entity);
@@ -3547,6 +3555,23 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         }       
     }
     
+    public void testingWSupOnEster(){
+        reInitializingEsterFiles();
+        AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
+        File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
+        mfile.delete();
+        HashMap<String,Double> priorMap = new HashMap<>();
+        priorMap.put(CNConstants.NOCLASS, new Double(0.9));
+        priorMap.put(CNConstants.PRNOUN, new Double(0.1));
+        setPriors(priorMap);
+        Long beforeUnsup=System.currentTimeMillis();
+        System.out.println("generated data:"+ Margin.GENERATEDDATA);
+        allweightsKeepingOnlyTrain(CNConstants.PRNOUN,20, true,false,false);
+        //analyzing.wkSupParallelCoordD(CNConstants.PRNOUN, true);
+        //analyzing.wkSupParallelFSCoordD(CNConstants.PRNOUN, true,50);
+        wkSupParallelStocCoordD(CNConstants.PRNOUN, true,100,true,true,false);        
+    }
+    
    public static void main(String args[]) {
         AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
         
@@ -3595,17 +3620,18 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //analyzing.evalutatingF1AndR();
         /*
         // Checking WEAKLY SUPERVISED OPTIONS
-        //File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
-        //mfile.delete();
+        File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
+        mfile.delete();
         HashMap<String,Double> priorMap = new HashMap<>();
         priorMap.put(CNConstants.NOCLASS, new Double(0.9));
         priorMap.put(CNConstants.PRNOUN, new Double(0.1));
         analyzing.setPriors(priorMap);
         Long beforeUnsup=System.currentTimeMillis();
         System.out.println("generated data:"+ Margin.GENERATEDDATA);
+        analyzing.allweightsKeepingOnlyTrain(CNConstants.PRNOUN,20, true,false,false);
         //analyzing.wkSupParallelCoordD(CNConstants.PRNOUN, true);
-        analyzing.wkSupParallelFSCoordD(CNConstants.PRNOUN, true,50);
-        //analyzing.wkSupParallelStocCoordD(CNConstants.PRNOUN, true);
+        //analyzing.wkSupParallelFSCoordD(CNConstants.PRNOUN, true,50);
+        analyzing.wkSupParallelStocCoordD(CNConstants.PRNOUN, true,100,false,true,false);
         //analyzing.wkSupClassifierConstr(CNConstants.PRNOUN,true);
         //analyzing.wkSConstrStochCoordGr(CNConstants.PRNOUN,true);
         //analyzing.unsupervisedClassifier(CNConstants.PRNOUN,false);
@@ -3682,8 +3708,9 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
          */
         //analyzing.allweightsKeepingOnlyTrain(CNConstants.PRNOUN,20, true, false, false);
         //testing new weights
-        CoNLL03Ner conll = new CoNLL03Ner();
-        conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 50,500,false);
+        //CoNLL03Ner conll = new CoNLL03Ner();
+        //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 50,500,false);
+        analyzing.testingWSupOnEster();
     }
   
 }
