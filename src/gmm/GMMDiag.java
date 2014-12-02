@@ -583,15 +583,7 @@ public class GMMDiag extends GMM {
     public double[] trainApproximatedEM(Margin margin) {
         
         int iter = margin.getThreadIteration();
-         //keep a copy of the previous mean and variance
-        if(margin.previousGmm!=null){
-            for(int i=0; i< nlabs; i++){
-                System.arraycopy( margin.previousGmm.means[i], 0,means[i] , 0, nlabs ); 
-                System.arraycopy( margin.previousGmm.diagvar[i], 0,diagvar[i] , 0, nlabs ); 
-            }    
-        }else{
-            train1gauss(margin);
-        }         
+         
         //before splitting in threads
         if(iter==CNConstants.INT_NULL)
             return trainViterbi(margin);
@@ -1246,6 +1238,15 @@ public class GMMDiag extends GMM {
     public double[] trainApproximation(Margin margin) {
     	// just to compute the variance and gconst:
     	//train1gauss(margin);
+         //keep a copy of the previous mean and variance
+        if(margin.previousGmm!=null){
+            for(int i=0; i< nlabs; i++){
+                System.arraycopy( margin.previousGmm.means[i], 0,means[i] , 0, nlabs ); 
+                System.arraycopy( margin.previousGmm.diagvar[i], 0,diagvar[i] , 0, nlabs ); 
+            }    
+        }else{
+            train1gauss(margin);
+        }        
     	// compute extreme values
     	List<List<Integer>> feats = margin.getFeaturesPerInstances();
     	float scmin=Float.MAX_VALUE,scmax=-Float.MAX_VALUE;
