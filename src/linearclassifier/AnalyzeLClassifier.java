@@ -52,6 +52,7 @@ import jsafran.GraphIO;
 import optimization.MultiCoreCoordinateDescent;
 import optimization.MultiCoreFSCoordinateDesc;
 import optimization.MultiCoreStocCoordDescent;
+import org.apache.commons.math3.distribution.UniformRealDistribution;
 import resources.WikipediaAPI;
 import test.AutoTests;
 import tools.CNConstants;
@@ -1758,7 +1759,7 @@ public class AnalyzeLClassifier {
     */ 
   public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters, boolean isModelInMemory, boolean computeF1,boolean useSerializedFeatInst) {
        CURRENTSETCLASSIFIER=sclass;
- 
+        UniformRealDistribution uDist = new UniformRealDistribution(-1,1);
         boolean isMC=false;
         int numIntIters=100;
         if(GeneralConfig.nthreads==CNConstants.INT_NULL){
@@ -1842,6 +1843,25 @@ public class AnalyzeLClassifier {
             //marginThr.setSamples(margin.getSamples());
             
             //copy the weights
+            List<Integer> trainFeatsInSubSet = new ArrayList<>();
+            for(int index=0; index<margin.getTrainFeatureSize();index++){
+
+                if(margin.isIndexInSubset(index))
+                    trainFeatsInSubSet.add(index);
+
+
+            }    
+            margin.setTrainFeatsInSSet(trainFeatsInSubSet);
+            List<Integer> testFeatsInSubSet = new ArrayList<>();
+            for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
+                double[] sc = new double[margin.getNlabs()];
+                sc[0]=uDist.sample();
+                sc[1]=-sc[0];
+                margin.setWeight(index,sc);
+                if(margin.isIndexInSubset(index))
+                    testFeatsInSubSet.add(index);
+            }   
+            margin.setTestFeatsInSSet(testFeatsInSubSet);
             int initPart=i*partSize;
             marginThr.setSubListOfFeats(0,initPart, initPart+partSize);
             parallelGrad.put(i,marginThr);
