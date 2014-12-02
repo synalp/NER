@@ -9,7 +9,6 @@ import conll03.CoNLL03Ner;
 
 import tools.CNConstants;
 import tools.Histoplot;
-import xtof.Coresets.GMMDiag;
 
 /**
  * contains only the features from the gigaword
@@ -18,9 +17,24 @@ import xtof.Coresets.GMMDiag;
  *
  */
 public class UnlabCorpus {
+	final static int nmax = 1000000;
+
 	public int featureSpaceSize;
 	public int[][] feats;
+	public int[][] feat2obs;
+	public int[] feat2obsLengths;
 
+	/**
+	 * This is where the real job is done:
+	 * - train a Stanford linear classifier on 20 training utts
+	 * - load the features from the gigaword, create a linear model with these features
+	 * - project the Stanford LC weights to initizalize this "big" LC, check that the accuracy is preserved
+	 * - Compute the scores, train an initial GMM with classical EM
+	 * - Build the mapping feature -> instances in the gigaword corpus
+	 * - Optimize the risk in "fast mode", without knowing the scores
+	 * 
+	 * @param args
+	 */
 	public static void main(String args[]) {
 		// first train the classifier to get good initial weights
 		CoNLL03Ner conll = new CoNLL03Ner();
@@ -44,19 +58,11 @@ public class UnlabCorpus {
 		float acc2 = c.test(ctrain.trainData);
 		System.out.println("acc2 LC train "+acc2+" "+c.w.length);
 		
-		float[] sc = c.computeAllScores();
-		RiskMachine.GMMDiag gmm = new RiskMachine.GMMDiag();
-		double[] post = gmm.train(sc);
-		System.out.println("post "+post[0]+" "+post[1]);
-		System.out.println("means "+gmm.mean0+" "+gmm.mean1);
+		// Optimize the risk using the assumption that the posterior stays constant
+		m.buildFeat2ExampleIndex();
+		c.optimizeRisk();
 		
-		/*
-		 * les post estimes ici sont completement faux: on trouve du presque 50%
-		 * alors que les priors calcules sur le train de 20 phrases donnent 14%
-		 */
-		
-		Histoplot.showit(sc);
-		
+		// TODO: reparse the train + test to add the predicted class, then train the CRF and evaluate it
 		
 //		Coresets cs = new Coresets();
 //		cs.buildcoreset(sc,100);
@@ -70,7 +76,6 @@ public class UnlabCorpus {
 		try {
 			// this file has been saved in TestGigaword
 			DataInputStream g = new DataInputStream(new FileInputStream("unlabfeats.dat"));
-			final int nmax = 800;
 			c.feats = new int[nmax][];
 			for (int i=0;i<nmax;i++) {
 				int nf = g.readInt();
@@ -90,5 +95,20 @@ public class UnlabCorpus {
 		}
 		System.out.println("loading done "+nread);
 		return c;
+	}
+	
+	public void buildFeat2ExampleIndex() {
+		feat2obsLengths = new int[featureSpaceSize];
+		Arrays.fill(feat2obsLengths, 0);
+		feat2obs = new int[featureSpaceSize][100];
+		for (int ex=0;ex<feats.length;ex++) {
+			for (int f : feats[ex]) {
+				int n=feat2obsLengths[f];
+				if (n>=feat2obs[f].length) feat2obs[f] = Arrays.copyOf(feat2obs[f], feat2obs[f].length+100);
+				feat2obs[f][n]=ex;
+				feat2obsLengths[f]++;
+			}
+		}
+		System.out.println("feat2obs index built");
 	}
 }
