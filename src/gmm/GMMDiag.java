@@ -342,7 +342,7 @@ public class GMMDiag extends GMM {
         }
         int[] nex = new int[nlabs];
         margin.nkAll = new double[nlabs];
-        margin.post = new double[nlabs];
+        
         
         Arrays.fill(nex, 0);
         Arrays.fill(margin.nkAll, 0.0);
@@ -384,7 +384,6 @@ public class GMMDiag extends GMM {
                 nex[y]++;
                 //ex2lab[inst]=y;
                 double posterior=logMath.logToLinear((float)tmp[y]-normConst);
-                margin.post[y]=posterior;
                 margin.nkAll[y]+=posterior;
                 margin.sumXSqAll[y]+=posterior*z[y]*z[y];
                 for (int l=0;l<nlabs;l++){ 
@@ -419,7 +418,7 @@ public class GMMDiag extends GMM {
             }
         }
         //System.out.println("["+ means[0][0]+","+means[0][1]+";\n"+ means[1][0]+","+means[1][1]+"] " + " nk="+Arrays.toString(nk) );   
-        /*
+        ///*
          //REMOVED ALL THIS CODE, EXTRA SCAN OVER ALL THE EXAMPLES TOO COSTLY
         for (int inst=0;inst<numInstances;inst++) {
             List<Integer> featuresByInstance = new ArrayList<>();
@@ -460,7 +459,7 @@ public class GMMDiag extends GMM {
             }
             
         }
-        */
+        //*/
         
         for (int y=0;y<nlabs;y++) {
             double logdet=0;
@@ -471,8 +470,8 @@ public class GMMDiag extends GMM {
                 }
             }else{
                 if(this.isBinaryConstrained){
-                    diagvar[y][0] = (margin.sumXSqAll[y]/margin.nkAll[y])-(means[y][0]*means[y][0]);
-                    //diagvar[y][0] /= margin.nkAll[y];
+                    //diagvar[y][0] = (margin.sumXSqAll[y]/margin.nkAll[y])-(means[y][0]*means[y][0]);
+                    diagvar[y][0] /= margin.nkAll[y];
                     if (diagvar[y][0] < minvar) 
                         diagvar[y][0]=minvar;
                     
@@ -600,8 +599,8 @@ public class GMMDiag extends GMM {
 
         //when already running in multithreads
         if(iter%1000==0){
-            //do this computations only in the last gmm iteration
-            if(CURRENTGMMTRITER==nitersTraining-1){
+            //do this computations only in the last gmm iteration of the last computation of R in the SGD iteration
+            if(CURRENTGMMTRITER==nitersTraining-1&&margin.lastRperSCDIter){
                 margin.previousMuPart=computePartitionMu( margin,  gmm0, z,nex);
                 System.arraycopy( margin.sumXSqPart, 0,margin.previousSumXPart1 , 0, margin.sumXSqPart.length );
                 
@@ -852,7 +851,7 @@ public class GMMDiag extends GMM {
             //double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(diagvar[y][l]);
             //co/=2.0;
 
-        /*
+        ///*
         System.out.println("train1gauss");
         printMean();
         printVariace(); 
