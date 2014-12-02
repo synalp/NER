@@ -128,4 +128,5 @@ package tools;
     //autotest oracle
     public static String AUTOTESTORACLE="autotest_oracle";
     public static String AUTOTESTPNORACLE="autotest_pnoracle";
+    public static String TABLE_IN_UNLABCORPUS="table_in_unlabcorpus";
 }

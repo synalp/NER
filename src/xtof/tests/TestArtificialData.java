@@ -7,6 +7,7 @@ import java.util.Random;
 import tools.CNConstants;
 import xtof.Corpus;
 import xtof.LinearModel;
+import xtof.LinearModel.TestResult;
 import xtof.Parms;
 import xtof.RiskMachine;
 import xtof.Coresets.GMMDiag;
@@ -21,9 +22,9 @@ public class TestArtificialData {
 		
 		// check that training of linear model gives 100% acc on this simple data
 		LinearModel mod=LinearModel.train(c.columnDataClassifier, c.trainData);
-		float acc = mod.test(c.testData);
+		TestResult acc = mod.test(c.testData);
 		System.out.println("trained acc "+acc);
-		if (acc<1) throw new Error("trained acc not 100% "+acc);
+		if (acc.getAcc()<1) throw new Error("trained acc not 100% "+acc);
 
 		float riskTrain=-1;
 		{
@@ -39,7 +40,7 @@ public class TestArtificialData {
 		mod.randomizeWeights();
 		acc = mod.test(c.testData);
 		System.out.println("random acc "+acc);
-		if (acc==1||acc==0) throw new Error("random acc weird "+acc);
+		if (acc.getAcc()==1||acc.getAcc()==0) throw new Error("random acc weird "+acc);
 		
 		// check that the risk with random weights is higher than the risk with optimal weights
 		float riskRand=-1;
@@ -82,7 +83,7 @@ public class TestArtificialData {
 		if (risk3>=risk2) throw new Error("optim risk does not make risk decrease "+risk2+" "+risk3);
 		acc = mod.test(c.testData);
 		System.out.println("final acc "+acc);
-		if (acc>0.1&&acc<0.9) throw new Error("Acc after risk optim too bad");
+		if (acc.getAcc()>0.1&&acc.getAcc()<0.9) throw new Error("Acc after risk optim too bad");
 	}
 
 	void genArtificialDataLC(String outfile, int nex, float priorPN) {
