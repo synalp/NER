@@ -1,13 +1,14 @@
 package xtof;
 
-import gmm.LogMath;
-
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
+
+import conll03.CoNLL03Ner;
+
+import tools.CNConstants;
+import tools.Histoplot;
 
 /**
  * contains only the features from the gigaword
@@ -16,164 +17,65 @@ import java.util.Random;
  *
  */
 public class UnlabCorpus {
-	int featureSpaceSize;
-	int[][] feats;
-	Random rand = new Random();
-	
-	final float delta=0.1f, epsilon=0.1f; 
-	final int beta = 20;
+	final static int nmax = 1000000;
 
+	public int featureSpaceSize;
+	public int[][] feats;
+	public int[][] feat2obs;
+	public int[] feat2obsLengths;
+
+	/**
+	 * This is where the real job is done:
+	 * - train a Stanford linear classifier on 20 training utts
+	 * - load the features from the gigaword, create a linear model with these features
+	 * - project the Stanford LC weights to initizalize this "big" LC, check that the accuracy is preserved
+	 * - Compute the scores, train an initial GMM with classical EM
+	 * - Build the mapping feature -> instances in the gigaword corpus
+	 * - Optimize the risk in "fast mode", without knowing the scores
+	 * 
+	 * @param args
+	 */
 	public static void main(String args[]) {
+		// first train the classifier to get good initial weights
+		CoNLL03Ner conll = new CoNLL03Ner();
+		// warning: its impossible to change 20 to another number of sentences
+		// because the features loaded next in loadFeatureFile() have been computed
+		// with a "train" pre-corpus of only 20 sentences.
+		// So, the feature indexes will differ...
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
+		Corpus ctrain = new Corpus("conll.pn.tab.LC.train", null, null, null);
+		LinearModel mod=LinearModel.train(ctrain.columnDataClassifier, ctrain.trainData);
+		float acc = mod.test(ctrain.trainData);
+		System.out.println("acc LC train "+acc+" "+mod.getWeights().length);
+		
 		UnlabCorpus m = loadFeatureFile();
 		LinearModelNoStanford c = new LinearModelNoStanford(m);
-		float[] sc = c.computeAllScores();
-		m.buildcoreset(sc,100);
+		// project training weights onto these weigths
+		// the feats index are the same, because both train and unlab have been created in the same order
+		for (int i=0;i<mod.getWeights().length;i++) {
+			c.w[i]=(float)mod.getWeights()[i][0];
+		}
+		float acc2 = c.test(ctrain.trainData);
+		System.out.println("acc2 LC train "+acc2+" "+c.w.length);
+		
+		// Optimize the risk using the assumption that the posterior stays constant
+		m.buildFeat2ExampleIndex();
+		c.optimizeRisk();
+		
+		// TODO: reparse the train + test to add the predicted class, then train the CRF and evaluate it
+		
+//		Coresets cs = new Coresets();
+//		cs.buildcoreset(sc,100);
 	}
 
-	public int closestidx;
-	// s must be sorted
-	private float getDist(float x, float[] s) {
-		int i=Arrays.binarySearch(s, x);
-		if (i>=0) {
-			closestidx=i;
-			return 0;
-		}
-		int idx=-i-1;
-		if (idx==0) { // idx = first element greater than x = where x would be inserted
-			closestidx=0;
-			return s[0]-x;
-		} else if (idx==s.length) {
-			closestidx=s.length-1;
-			return x-s[s.length-1];
-		} else {
-			float d1=s[idx]-x;
-			float d2=x-s[idx-1];
-			if (d1<d2) {
-				closestidx=idx; return d1;
-			} else {
-				closestidx=idx-1; return d2;
-			}
-		}
-	}
-
-	// delta gives the probability that the result is outside the bounds
-	public float[][] buildcoreset(float[] d, int nsets) {
-		LogMath logMath = new LogMath();
-		int sizeDprim=d.length, sizeB=0;
-		final float lnd = logMath.linearToLog(1/delta);
-		System.out.println("lnd "+lnd);
-		float[] m = new float[d.length];
-
-		{
-			float[] b = new float[d.length/5]; // b is smaller than d; but how much ?
-			float[] s = new float[beta];
-			while (sizeDprim>s.length) {
-				int nEx2remove = sizeDprim/2 - s.length;
-System.out.println("nex to remove "+nEx2remove+" "+s.length);
-				// sample S
-				for (int i=0;i<s.length;i++) {
-					int j=rand.nextInt(sizeDprim);
-					s[i]=d[j]; // D' is actually contained in D
-					// immediately removes this point from D'
-					// actually just swap it, because we need the full D again later on
-					float dtmp=d[j]; d[j]=d[--sizeDprim]; d[sizeDprim]=dtmp;
-				}
-				if (sizeDprim>0) {
-					// remove closest points
-					Arrays.sort(s);
-					float[] dist = new float[sizeDprim];
-					int[] distidx = new int[dist.length];
-					for (int i=0;i<dist.length;i++) distidx[i]=i;
-					for (int i=0;i<sizeDprim;i++) {
-						dist[i]=getDist(d[i],s);
-					}
-					QuickSort qs = new QuickSort();
-					qs.sort(dist, distidx);
-					for (int i=0;i<nEx2remove;i++) {
-						float dtmp=d[distidx[i]]; d[distidx[i]]=d[--sizeDprim]; d[sizeDprim]=dtmp;
-					}
-				}
-				// add S in B
-				for (int i=0;i<s.length;i++) b[sizeB++]=s[i];
-			}
-			// add D' in B
-			for (int i=0;i<sizeDprim;i++) b[sizeB++]=d[i];
-			
-			b=Arrays.copyOf(b, sizeB);
-			System.gc();
-			Arrays.sort(b);
-			System.out.println("size B "+sizeB+" D' "+sizeDprim);
-
-			// Db contains the points that are represented by b
-			// Let z = sum_{x \in D} dist(x,B)^2
-			// TODO: we might not need to store the closestB of all data points... ?
-			int[] closestB = new int[d.length];
-			float z=0;
-			for (int i=0;i<d.length;i++) {
-				float dist = getDist(d[i], b);
-				closestB[i]=closestidx;
-				z+=dist*dist;
-			}
-			System.out.println("z "+z);
-
-			// compute size of Db
-			int[] sizeDb = new int[sizeB];
-			Arrays.fill(sizeDb, 0);
-			for (int i=0;i<d.length;i++) sizeDb[closestB[i]]++;
-			System.out.println("Db size "+sizeDb[0]+" "+sizeDb[1]+" ...");
-
-			// now we can compute the "importance weights" m of every point in D
-			for (int i=0;i<d.length;i++) {
-				float dist = Math.abs(b[closestB[i]]-d[i]);
-				m[i]=5/sizeDb[closestB[i]]+dist*dist/z;
-			}
-
-			float zz = 0;
-			for (float x : m) zz+=x;
-			for (int i=0;i<m.length;i++) m[i]/=zz;
-			System.out.println("Importance weights "+m[0]+" "+m[1]+" ...");
-
-			// we can now sample from this multinomial
-			//		int npts = (int)(20*(double)(sizeB*sizeB)*lnd/(epsilon*epsilon));
-			int npts = nsets;
-			System.out.println("npts to sample "+npts+" "+d.length+" "+sizeB);
-			if (npts>d.length/10) {
-				System.out.println("ERROR: coresets too large");
-				return null;
-			}
-
-			float[][] res = new float[nsets][2];
-			for (int ii=0;ii<npts;ii++) {
-				int i=sample_Mult(m);
-				res[ii][0]=d[i];
-				float gamma = zz/(float)npts/m[i];
-				res[ii][1]=gamma;
-			}
-			return res;
-		}
-	}
-
-	private int sample_Mult(float[] th) {
-		float s = 0;
-		for (int i = 0; i < th.length; i++)
-			s += th[i];
-		s *= rand.nextFloat();
-		for (int i = 0; i < th.length; i++) {
-			s -= th[i];
-			if (s < 0)
-				return i;
-		}
-		return 0;
-	}
-	
 	public static UnlabCorpus loadFeatureFile() {
 		System.out.println("loading gigaword features...");
 		UnlabCorpus c = new UnlabCorpus();
 		int nread = 0;
 		c.featureSpaceSize=0;
 		try {
+			// this file has been saved in TestGigaword
 			DataInputStream g = new DataInputStream(new FileInputStream("unlabfeats.dat"));
-			final int nmax = 60000;
 			c.feats = new int[nmax][];
 			for (int i=0;i<nmax;i++) {
 				int nf = g.readInt();
@@ -193,5 +95,20 @@ System.out.println("nex to remove "+nEx2remove+" "+s.length);
 		}
 		System.out.println("loading done "+nread);
 		return c;
+	}
+	
+	public void buildFeat2ExampleIndex() {
+		feat2obsLengths = new int[featureSpaceSize];
+		Arrays.fill(feat2obsLengths, 0);
+		feat2obs = new int[featureSpaceSize][100];
+		for (int ex=0;ex<feats.length;ex++) {
+			for (int f : feats[ex]) {
+				int n=feat2obsLengths[f];
+				if (n>=feat2obs[f].length) feat2obs[f] = Arrays.copyOf(feat2obs[f], feat2obs[f].length+100);
+				feat2obs[f][n]=ex;
+				feat2obsLengths[f]++;
+			}
+		}
+		System.out.println("feat2obs index built");
 	}
 }

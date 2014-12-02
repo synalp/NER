@@ -9,6 +9,7 @@ import xtof.Corpus;
 import xtof.LinearModel;
 import xtof.Parms;
 import xtof.RiskMachine;
+import xtof.Coresets.GMMDiag;
 
 public class TestArtificialData {
 
@@ -31,7 +32,7 @@ public class TestArtificialData {
 			for (int i=0;i<sc.length;i++) sc[i]=mod.getSCore(feats[i]);
 			double[] priors = {0.2,0.8};
 			RiskMachine rr = new RiskMachine(priors);
-			riskTrain=rr.computeRisk(sc);
+			riskTrain=rr.computeRisk(sc, new RiskMachine.GMMDiag());
 		}
 		
 		// check that random weights give less than 100% of acc
@@ -48,7 +49,7 @@ public class TestArtificialData {
 			for (int i=0;i<sc.length;i++) sc[i]=mod.getSCore(feats[i]);
 			double[] priors = {0.2,0.8};
 			RiskMachine rr = new RiskMachine(priors);
-			riskRand=rr.computeRisk(sc);
+			riskRand=rr.computeRisk(sc, new RiskMachine.GMMDiag());
 		}
 		System.out.println("train-rand risks "+riskTrain+" "+riskRand);
 		if (riskTrain>=riskRand) throw new Error("error risks");
@@ -59,10 +60,10 @@ public class TestArtificialData {
 		for (int i=0;i<sc.length;i++) sc[i]=mod.getSCore(feats[i]);
 		double[] priors = {0.2,0.8};
 		RiskMachine rr = new RiskMachine(priors);
-		float risk1=rr.computeRisk(sc);
+		float risk1=rr.computeRisk(sc, new RiskMachine.GMMDiag());
 		priors[0]=0.8; priors[1]=0.2;
 		RiskMachine rr2 = new RiskMachine(priors);
-		float risk2=rr2.computeRisk(sc);
+		float risk2=rr2.computeRisk(sc, new RiskMachine.GMMDiag());
 		System.out.println("RISK "+risk1+" "+risk2);
 		if (risk1!=risk2) throw new Error("risk sensible to priors order "+risk1+" "+risk2);
 		
@@ -77,7 +78,7 @@ public class TestArtificialData {
 		mod.optimizeRisk(c.trainData);
 		RiskMachine rr3 = new RiskMachine(priors);
 		for (int i=0;i<sc.length;i++) sc[i]=mod.getSCore(feats[i]);
-		float risk3=rr3.computeRisk(sc);
+		float risk3=rr3.computeRisk(sc, new RiskMachine.GMMDiag());
 		if (risk3>=risk2) throw new Error("optim risk does not make risk decrease "+risk2+" "+risk3);
 		acc = mod.test(c.testData);
 		System.out.println("final acc "+acc);

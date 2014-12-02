@@ -13,26 +13,36 @@ import gmm.LogMath;
  *
  */
 public class RiskMachine {
-	GMMDiag gmm;
-	double[] post, priors;
+	// marginal posteriors and priors per class:
+	double[] priors;
 	
 	public RiskMachine(double[] priors) {
 		this.priors=priors;
 	}
 	
-	public float[] getMeans() {
-		float[] mm = {gmm.mean0,gmm.mean1};
-		return mm;
-	}
-	public double[] getPosteriors() {return post;}
-	
-	public float computeRisk(float[] scores) {
+	/**
+	 * retrains the GMM
+	 * 
+	 * @param scores
+	 * @param gmm
+	 * @return
+	 */
+	public float computeRisk(float[] scores, GMMDiag gmm) {
 		// first, I find the 2 modes of the scores, without using any prior, just by looking at the data:
-		gmm = new GMMDiag();
-	  	post=gmm.train(scores);
+	  	gmm.train(scores);
+	  	return computeRisk(gmm);
+	}
+	/**
+	 * Assumes that the GMM has already been trained
+	 * 
+	 * @param scores
+	 * @param gmm
+	 * @return
+	 */
+	public float computeRisk(GMMDiag gmm) {
 	  	// then I switch priors if they are in reverse order than post
-	  	if ((priors[0]>priors[1] && post[1]>post[0])||
-	  			(priors[0]<priors[1] && post[1]<post[0])) {
+	  	if ((priors[0]>priors[1] && gmm.post[1]>gmm.post[0])||
+	  			(priors[0]<priors[1] && gmm.post[1]<gmm.post[0])) {
 	  		System.out.println("reverting priors");
 	  		double d=priors[0];
 	  		priors[0]=priors[1];
@@ -57,22 +67,48 @@ public class RiskMachine {
 	  	return t1+t2+t3+t4;
 	}
 	
+	// TODO: move this method elsewhere
+	public static void updateGMMAfterRiskGradientStep(GMMDiag gmm, int nex, int[] exImpacted, float gradStep) {
+		float postsum0=0;
+		for (int ex : exImpacted) postsum0+=gmm.postPerEx[ex];
+		float oldMean0 = gmm.mean0;
+		gmm.mean0 += postsum0 * gradStep / gmm.post[0];
+		float postsum1=0;
+		for (int ex : exImpacted) postsum1+=1f-gmm.postPerEx[ex];
+		float oldMean1 = gmm.mean1;
+		gmm.mean1 += postsum1 * gradStep / gmm.post[1];
+		
+		gmm.var0 += (gmm.mean0-oldMean0)*(gmm.mean0-oldMean0) +
+				gradStep*(gradStep-2f*gmm.mean0) + 2f*gradStep*oldMean0*(float)exImpacted.length/(float)nex;
+		if (gmm.var0<Parms.minvarGMM) gmm.var0=Parms.minvarGMM;
+		gmm.var1 += (gmm.mean1-oldMean1)*(gmm.mean1-oldMean1) +
+				gradStep*(gradStep-2f*gmm.mean1) + 2f*gradStep*oldMean1*(float)exImpacted.length/(float)nex;
+		if (gmm.var1<Parms.minvarGMM) gmm.var1=Parms.minvarGMM;
+		
+		gmm.gconst0=gmm.calcGconst(gmm.var0);
+		gmm.gconst1=gmm.calcGconst(gmm.var1);
+	}
+	
 	/**
 	 * This class does a full EM training of a 2-class GMM, without taking into account priors !
 	 * 
 	 * @author xtof
 	 *
 	 */
-	private class GMMDiag {
+	public static class GMMDiag {
 		// mean0 always represents the mode with the highest score
 		public float mean0, var0, gconst0, logw0;
 		public float mean1, var1, gconst1, logw1;
-		private LogMath logMath = new LogMath();
+		// contribution of each instance to the posterior:
+		float[] postPerEx;
+		double[] post = {0,0};
+		protected LogMath logMath = new LogMath();
 		
 		public double[] train(float[] x) {
 			train1gauss(x);
 			split();
 			System.out.println("1gauss "+mean0+" "+mean1);
+			postPerEx = new float[x.length];
 			return trainEM(x);
 		}
 		public void train1gauss(float[] xs) {
@@ -99,11 +135,13 @@ public class RiskMachine {
 				Arrays.fill(post, 0);
 				float sumx0=0, sumxx0=0;
 				float sumx1=0, sumxx1=0;
-				for (float x : xs) {
+				for (int t=0;t<xs.length;t++) {
+					float x = xs[t];
 					float l0=logw0+getLoglike(mean0,var0,gconst0,x);
 					float l1=logw1+getLoglike(mean1,var1,gconst1,x);
 					float normConst = logMath.addAsLinear(l0, l1);
 					double post0=logMath.logToLinear(l0-normConst);
+					postPerEx[t]=(float)post0;
 					double post1=1-post0;
 					post[0]+=post0;
 					post[1]+=post1;
@@ -121,15 +159,27 @@ public class RiskMachine {
 				gconst1=calcGconst(var1);
 				logw1=logMath.linearToLog(post[1]);
 			}
+			this.post[0]=post[0];
+			this.post[1]=post[1];
 			return post;
 		}
-		private float getLoglike(float m, float v, float g, float x) {
+		public float getLoglike(float[] sc) {
+			float l=0;
+			for (int i=0;i<sc.length;i++) {
+				float ll = logw0+getLoglike(mean0, var0, gconst0, sc[i]);
+				l=logMath.addAsLinear(l, ll);
+				ll = logw1+getLoglike(mean1, var1, gconst1, sc[i]);
+				l=logMath.addAsLinear(l, ll);
+			}
+			return l;
+		}
+		protected float getLoglike(float m, float v, float g, float x) {
 			double inexp=((x-m)*(x-m))/v;
 	        inexp/=2.0;
 	        double loglikeYt = - g - inexp;
 	        return (float)loglikeYt;
 		}
-		private float calcGconst(float var) {
+		protected float calcGconst(float var) {
 			double co=logMath.linearToLog(2.0*Math.PI) + logMath.linearToLog(var);
 			co/=2.0;            
 			return (float)co;
