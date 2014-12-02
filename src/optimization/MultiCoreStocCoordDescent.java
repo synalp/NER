@@ -21,6 +21,7 @@ import java.util.Random;
 import linearclassifier.AnalyzeLClassifier;
 import linearclassifier.Margin;
 import linearclassifier.NumericalIntegration;
+import org.apache.commons.math3.distribution.UniformRealDistribution;
 import test.AutoTests;
 import tools.CNConstants;
 import tools.Histoplot;
@@ -162,6 +163,7 @@ public class MultiCoreStocCoordDescent  {
   private class CoordinateGradThreadProcessor implements ThreadsafeProcessor<Pair<Integer,Margin>,Pair<Integer,Double>> {
 
       private Random rnd = new Random();
+      private UniformRealDistribution uDist = new UniformRealDistribution(-1,1);
       private boolean isCloseForm=true;
       private boolean isMonteCarloNI=false;
       private int niters=100;
@@ -306,7 +308,10 @@ public class MultiCoreStocCoordDescent  {
             }            
             List<Integer> testFeatsInSubSet = new ArrayList<>();
             for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
-                
+                double[] sc = new double[margin.getNlabs()];
+                sc[0]=uDist.sample();
+                sc[1]=-sc[0];
+                margin.setWeight(index,sc);
                 if(margin.isIndexInSubset(index))
                     testFeatsInSubSet.add(index);
                     
