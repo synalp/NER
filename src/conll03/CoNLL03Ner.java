@@ -124,7 +124,6 @@ public class CoNLL03Ner {
                     break;
                 case "test":
                     inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTest)); 
-                    
                     if(isCRF)
                         outfilename = TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");                      
                     else
@@ -276,6 +275,7 @@ public class CoNLL03Ner {
                 	  } else if(wSupModelFile.equals(CNConstants.TABLE_IN_UNLABCORPUS)){
                 		  String line =lines.get(i);
                           String label = line.substring(0,line.indexOf("\t"));
+                          System.out.println("debugline "+i+" "+line);
                 		  String weaksupClass = "WS"+UnlabCorpus.LCrec[i];
                 		  String newLine = line.substring(line.indexOf("\t")+1,line.lastIndexOf("\t")) +"\t"+weaksupClass+"\t"+label+"\n";
                 		  outFile.append(newLine);                            
