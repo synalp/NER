@@ -583,23 +583,7 @@ public class AnalyzeLClassifier {
      */
     public void getValues(String fileName, LinearClassifier model, List<List<Integer>> featsperInst,List<Integer> labelperInst){
         
-        //Load everything for previously serialized features per instances
-        if(featperInstance.isEmpty()){
-            try{
-            if(fileName.contains("train"))
-                deserializingFeatsPerInstance(true);
-            else
-                deserializingFeatsPerInstance(false);
-            }catch(Exception ex){
-                featperInstance=new ArrayList<>();
-            }
-        }
-        
-        if(!featperInstance.isEmpty()){
-            featsperInst.addAll(featperInstance);
-            labelperInst.addAll(lblperInstance);
-            return;
-        }
+
         BufferedReader inFile = null;
         try {
             inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), CNConstants.UTF8_ENCODING));
@@ -668,8 +652,8 @@ public class AnalyzeLClassifier {
             
            this.featperInstance=featsperInst;
            this.lblperInstance=labelperInst;
-           boolean istrain=(fileName.contains("train"))?true:false;
-           serializingFeatsPerInstance(istrain);           
+          
+              
            inFile.close();
            
         } catch (Exception ex) {

@@ -344,6 +344,7 @@ public class MultiCoreStocCoordDescent  {
             System.out.println("****** deltaWMC="+deltaW);
             weightsForFeat.set(featIdx, deltaW);
             margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
+            margin.lastRperSCDIter=false;
             float estimr = (isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
 
             gradw[0] = (estimr-estimr0)/(deltaW-w0);
@@ -378,6 +379,7 @@ public class MultiCoreStocCoordDescent  {
                 } 
             }  
             counter++;
+            margin.lastRperSCDIter=true;
             estimr0 =(isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
             System.out.println("*******************************"); 
             System.out.println("RMCSC["+iter+"] = "+estimr0+" "+Thread.currentThread().getId());   
