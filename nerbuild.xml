@@ -117,10 +117,10 @@
     </target>
 
     <target name="dettest" depends="compile" description="xtof manual tests" >
-	<java classname="xtof.tests.ConllXP"
+	<java classname="xtof.tests.TestGMMs"
 	   fork="true"
            failonerror="true"
-           maxmemory="13g">
+           maxmemory="1g">
            <arg value="500m"/>
 	   <classpath refid="run.classpath" />
        </java>
