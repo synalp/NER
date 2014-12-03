@@ -286,7 +286,22 @@ public class MultiCoreStocCoordDescent  {
         //copy the orginal weights before applying coordinate gradient
         margin.copyOrWeightsBeforGradient();
         
-           
+        List<Integer> trainFeatsInSubSet = new ArrayList<>();
+        for(int index=0; index<margin.getTrainFeatureSize();index++){
+
+            if(margin.isIndexInSubset(index))
+                trainFeatsInSubSet.add(index);
+
+
+        }    
+        
+        List<Integer> testFeatsInSubSet = new ArrayList<>();
+        for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
+
+            if(margin.isIndexInSubset(index))
+                testFeatsInSubSet.add(index);
+        }   
+        
         
         HashSet<String> emptyfeats = new HashSet<>();
         for (int iter=0;iter<niters;iter++) {
@@ -306,13 +321,13 @@ public class MultiCoreStocCoordDescent  {
             final double[] gradw = new double[weightsForFeat.size()];
             double rndVal = rnd.nextDouble();   
             int featIdx=rnd.nextInt(weightsForFeat.size());
-            if(rndVal<0.9 && !margin.getTestFeatsInSSet().isEmpty()){
-                int selfeatIdx=rnd.nextInt(margin.getTestFeatsInSSet().size());
-                featIdx=margin.getTestFeatsInSSet().get(selfeatIdx)-margin.getSubSetStartIndex();
+            if(rndVal<0.9 && !testFeatsInSubSet.isEmpty()){
+                int selfeatIdx=rnd.nextInt(testFeatsInSubSet.size());
+                featIdx=testFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
       
-            }else if(rndVal<0.1 && !margin.getTrainFeatsInSSet().isEmpty()){
-                int selfeatIdx=rnd.nextInt(margin.getTrainFeatsInSSet().size());
-                featIdx=margin.getTrainFeatsInSSet().get(selfeatIdx)-margin.getSubSetStartIndex();
+            }else if(rndVal<0.1 && !trainFeatsInSubSet.isEmpty()){
+                int selfeatIdx=rnd.nextInt(trainFeatsInSubSet.size());
+                featIdx=trainFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
       
             }
             
