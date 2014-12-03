@@ -19,7 +19,7 @@ import xtof.LinearModel.TestResult;
  *
  */
 public class UnlabCorpus {
-	final static int nmax = 100000;
+	public static int nmax = 100000;
 	public static int[] LCrec;
 
 	public int featureSpaceSize;
