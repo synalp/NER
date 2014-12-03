@@ -7,7 +7,7 @@ import xtof.LinearModel.TestResult;
 import edu.stanford.nlp.classify.GeneralDataset;
 
 public class LinearModelNoStanford {
-	float[] w;
+	public float[] w;
 	UnlabCorpus corp;
 	
 	public void setRandomWeights() {
@@ -61,9 +61,24 @@ public class LinearModelNoStanford {
 		return rec;
 	}
 	
-	public void optimizeRisk() {
+	/**
+	 * compute risk from scratch: retrain a GMM with EM
+	 * 
+	 * @return
+	 */
+	public float computeRisk() {
 		double[] priors = {0.2,0.8};
+		RiskMachine risk = new RiskMachine(priors);
+		float[] sc = computeAllScores();
+		RiskMachine.GMMDiag gmm = new RiskMachine.GMMDiag();
+		double[] post = gmm.train(sc);
+		float r0 = risk.computeRisk(gmm);
+		return r0;
+	}
+	
+	public void optimizeRisk() {
 		Random rand = new Random();
+		double[] priors = {0.2,0.8};
 		RiskMachine risk = new RiskMachine(priors);
 		float[] sc = computeAllScores();
 		RiskMachine.GMMDiag gmm = new RiskMachine.GMMDiag();

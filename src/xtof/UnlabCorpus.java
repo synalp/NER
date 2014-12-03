@@ -36,6 +36,9 @@ public class UnlabCorpus {
 	 * - Build the mapping feature -> instances in the gigaword corpus
 	 * - Optimize the risk in "fast mode", without knowing the scores
 	 * 
+	 * TODO: train LC on 500 sentences;
+	 * add LC classes then train CRF on 20 sentences: is F1 improved ? risk ? 
+	 * 
 	 * @param args
 	 */
 	public static void main(String args[]) {
