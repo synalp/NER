@@ -1759,7 +1759,7 @@ public class AnalyzeLClassifier {
     */ 
   public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters, boolean isModelInMemory, boolean computeF1,boolean useSerializedFeatInst) {
        CURRENTSETCLASSIFIER=sclass;
-        UniformRealDistribution uDist = new UniformRealDistribution(-1,1);
+        UniformRealDistribution uDist = new UniformRealDistribution(-0.025,0.025);
         boolean isMC=false;
         int numIntIters=100;
         if(GeneralConfig.nthreads==CNConstants.INT_NULL){
@@ -1823,6 +1823,22 @@ public class AnalyzeLClassifier {
         MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
         
+        for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
+                double[] sc = new double[margin.getNlabs()];
+                sc[0]=uDist.sample();
+                sc[1]=-sc[0];
+                margin.setWeight(index,sc);
+                
+        }   
+        //Is the random score assignment of test weights deg rading the f-measure?
+        System.out.println(" After assign random weights to the features of the test-set ");
+        if(computeF1){
+            ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
+            columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", sclass));
+            CURENTPARENTF10=ColumnDataClassifier.macrof1;
+            if(!sclass.equals(CNConstants.ALL))
+                CURENTPARENTF10=columnDataClass.fs.get(sclass);   
+        }           
         for(int i=0; i<margin.getNfeats(); i++)
             Arrays.fill(allfeats[i], 0.0);
         for(int i=0; i<numberOfThreads; i++){
@@ -1842,26 +1858,7 @@ public class AnalyzeLClassifier {
             marginThr.setInstancesPerFeatures(instPerFeatures);
             //marginThr.setSamples(margin.getSamples());
             
-            //copy the weights
-            List<Integer> trainFeatsInSubSet = new ArrayList<>();
-            for(int index=0; index<margin.getTrainFeatureSize();index++){
 
-                if(margin.isIndexInSubset(index))
-                    trainFeatsInSubSet.add(index);
-
-
-            }    
-            margin.setTrainFeatsInSSet(trainFeatsInSubSet);
-            List<Integer> testFeatsInSubSet = new ArrayList<>();
-            for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
-                double[] sc = new double[margin.getNlabs()];
-                sc[0]=uDist.sample();
-                sc[1]=-sc[0];
-                margin.setWeight(index,sc);
-                if(margin.isIndexInSubset(index))
-                    testFeatsInSubSet.add(index);
-            }   
-            margin.setTestFeatsInSSet(testFeatsInSubSet);
             int initPart=i*partSize;
             marginThr.setSubListOfFeats(0,initPart, initPart+partSize);
             parallelGrad.put(i,marginThr);
@@ -3589,7 +3586,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         allweightsKeepingOnlyTrain(CNConstants.PRNOUN,20, true,false,false);
         //analyzing.wkSupParallelCoordD(CNConstants.PRNOUN, true);
         //analyzing.wkSupParallelFSCoordD(CNConstants.PRNOUN, true,50);
-        wkSupParallelStocCoordD(CNConstants.PRNOUN, true,100,true,true,false);        
+        wkSupParallelStocCoordD(CNConstants.PRNOUN, true,1000,true,true,false);        
     }
     
    public static void main(String args[]) {

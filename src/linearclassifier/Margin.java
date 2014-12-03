@@ -52,8 +52,7 @@ public class Margin {
     private int endIndex=0;
     
     private List<List<Double>> subListOfFeatures= new ArrayList<>();
-    private List<Integer> trainFeatsInSubSet= new ArrayList<>();
-    private List<Integer> testFeatsInSubSet = new ArrayList<>();
+
     //private HashMap<Integer,Integer> shuffleAndOrFeatIdxMap = new HashMap<>();
     //private HashMap<Integer,Integer> orAndShuffleFeatIdxMap = new HashMap<>();
     double[][] orWeightsCopy ;
@@ -583,12 +582,7 @@ public class Margin {
     public Integer getTrainFeatureSize(){
         return this.trainFeatSize;
     }
-    public void setTrainFeatsInSSet(List<Integer> trainFeats){
-        this.trainFeatsInSubSet=trainFeats;
-    }
-    public List<Integer> getTrainFeatsInSSet(){
-        return this.trainFeatsInSubSet;
-    }
+
     
      public void setTestFeatureSize(Integer fIdx){
         this.testFeatSize=fIdx;
@@ -597,12 +591,7 @@ public class Margin {
         return this.testFeatSize;
     }  
     
-    public void setTestFeatsInSSet(List<Integer> trainFeats){
-        this.testFeatsInSubSet=trainFeats;
-    }
-    public List<Integer> getTestFeatsInSSet(){
-        return this.testFeatsInSubSet;
-    }    
+  
 
     public int[] sampling(double percentage){
         numInstances= getNumberOfInstances();
