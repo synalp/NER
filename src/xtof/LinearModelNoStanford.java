@@ -75,8 +75,14 @@ public class LinearModelNoStanford {
 		float r0 = risk.computeRisk(gmm);
 		return r0;
 	}
+	public void trainGMMnoinit(RiskMachine.GMMDiag gmm) {
+		double[] priors = {0.2,0.8};
+		RiskMachine risk = new RiskMachine(priors);
+		float[] sc = computeAllScores();
+		gmm.trainEM(sc);
+	}
 	
-	public void optimizeRisk() {
+	public RiskMachine.GMMDiag optimizeRisk() {
 		Random rand = new Random();
 		double[] priors = {0.2,0.8};
 		RiskMachine risk = new RiskMachine(priors);
@@ -103,5 +109,6 @@ public class LinearModelNoStanford {
 			r0=risk.computeRisk(gmm);
 			System.out.println("riskiter "+i+" "+r0);
 		}
+		return gmm;
 	}
 }
