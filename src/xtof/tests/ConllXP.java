@@ -20,8 +20,8 @@ public class ConllXP {
 	LinearModelNoStanford lcbig;
 	
 	public static void main(String[] args) {
-		Parms.nuttsLCtraining=100;
-		Parms.nuttsCRFtraining=100;
+		Parms.nuttsLCtraining=50000;
+		Parms.nuttsCRFtraining=50000;
 		new ConllXP().xpCRF();
 	}
 	
