@@ -1,5 +1,6 @@
 package xtof;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -131,6 +132,11 @@ public class LinearModelNoStanford {
 		return gmm;
 	}
 	
+	public interface ExecutedAtEachOptimIter {
+		public void execute(LinearModelNoStanford mod);
+	}
+	public ArrayList<ExecutedAtEachOptimIter> executors = new ArrayList<LinearModelNoStanford.ExecutedAtEachOptimIter>();
+	
 	public RiskMachine.GMMDiag optimizeRiskWithApprox() {
 		RiskMachine.GMMDiag gmm = initializeGMM();
 		long initTime = System.currentTimeMillis();
@@ -142,6 +148,7 @@ public class LinearModelNoStanford {
 			System.out.println("riskiter "+i+" "+curTime+" "+lastRiskValue);
 			optimizeRiskApproxLoop(Parms.nitersRiskOptimApprox*i,gmm);
 			trainGMMnoinit(gmm);
+			for (ExecutedAtEachOptimIter ex : executors) ex.execute(this);
 		}
 		return gmm;
 	}

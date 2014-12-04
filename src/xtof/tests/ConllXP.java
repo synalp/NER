@@ -3,8 +3,6 @@ package xtof.tests;
 import java.util.Arrays;
 
 import tools.CNConstants;
-import tools.Histoplot;
-import utils.Wait;
 import xtof.Corpus;
 import xtof.LinearModel;
 import xtof.LinearModelNoStanford;
@@ -17,27 +15,38 @@ import conll03.CoNLL03Ner;
 import edu.stanford.nlp.classify.GeneralDataset;
 
 public class ConllXP {
-	static final int nuttsLCtraining = 20;
-	static final int nuttsCRFtraining = 20;
+	
+	Corpus fullCorpus;
 	
 	public static void main(String[] args) {
 //		xpfull();
-		xpLConly();
+		new ConllXP().xpLConly();
 	}
 	
-	public static void xpLConly() {
+	public void xpLConly() {
 		// starting from weights trained on 20 utts, study the decrease of the risk using optimization on the train+test
 		CoNLL03Ner conll = new CoNLL03Ner();
 		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
         String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
-		Corpus ctrain = new Corpus(trainfile, null, null, testfile);
-		LinearModel lcmod=LinearModel.train(ctrain.columnDataClassifier, ctrain.trainData);
-		LinearModelNoStanford lcbig = new LinearModelNoStanford(ctrain);
+		fullCorpus = new Corpus(trainfile, null, null, testfile);
+		LinearModel lcmod=LinearModel.train(fullCorpus.columnDataClassifier, fullCorpus.trainData);
+		LinearModelNoStanford lcbig = new LinearModelNoStanford(fullCorpus);
 		lcbig.projectTrainingWeights(lcmod);
 		Parms.nitersRiskOptimApprox=1000;
+		Parms.nitersRiskOptimGlobal=100000;
+		lcbig.executors.add(new LCaccComputer());
 		lcbig.optimizeRiskWithApprox();
 //		lcbig.optimizeRiskWithoutApprox();
 	}
+	
+	class LCaccComputer implements LinearModelNoStanford.ExecutedAtEachOptimIter {
+		@Override
+		public void execute(LinearModelNoStanford mod) {
+			TestResult acc = mod.test(fullCorpus.testData);
+			System.out.println("LCF1 "+acc.getF1());
+		}
+	}
+	
 	public static void curveSupervisedRisk() {
 		// curve of the risk as a function of nb of training utts
 		CoNLL03Ner conll = new CoNLL03Ner();
@@ -80,7 +89,7 @@ public class ConllXP {
 		// because the features loaded next in loadFeatureFile() have been computed
 		// with a "train" pre-corpus of only 20 sentences.
 		// So, the feature indexes will differ...
-        String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, nuttsLCtraining, CNConstants.CHAR_NULL);
+        String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
         String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
 		Corpus ctrain = new Corpus(trainfile, null, null, testfile);
 		System.out.println("corpus loaded "+trainfile+" "+testfile);
@@ -91,7 +100,7 @@ public class ConllXP {
 		LinearModelNoStanford c = new LinearModelNoStanford(m);
 		
 		// reparse the train + test to add the predicted class, then train the CRF and evaluate it
-        conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, nuttsCRFtraining, CNConstants.CHAR_NULL);
+        conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, Parms.nuttsCRFtraining, CNConstants.CHAR_NULL);
         conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
     	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false,false);
     	System.out.println("baselineCRF "+f1);
@@ -158,7 +167,7 @@ public class ConllXP {
 			UnlabCorpus.LCrec = rec;
 	        String enhancedTestfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true, Integer.MAX_VALUE, CNConstants.TABLE_IN_UNLABCORPUS);
 			UnlabCorpus.LCrec = predsontrain;
-	        String enhancedTrainfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, nuttsCRFtraining, CNConstants.TABLE_IN_UNLABCORPUS);
+	        String enhancedTrainfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, Parms.nuttsCRFtraining, CNConstants.TABLE_IN_UNLABCORPUS);
 	        System.out.println("enhanced corpus for CRF "+enhancedTrainfile+" "+enhancedTestfile);
 	        
 	        // retrain the CRF
