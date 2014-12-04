@@ -117,7 +117,7 @@
     </target>
 
     <target name="dettest" depends="compile" description="xtof manual tests" >
-	<java classname="xtof.UnlabCorpus"
+	<java classname="xtof.tests.ConllXP"
 	   fork="true"
            failonerror="true"
            maxmemory="13g">

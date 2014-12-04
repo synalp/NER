@@ -37,7 +37,7 @@ public class TestArtificialData {
 		}
 		
 		// check that random weights give less than 100% of acc
-		mod.randomizeWeights();
+		mod.randomizeWeights(0);
 		acc = mod.test(c.testData);
 		System.out.println("random acc "+acc);
 		if (acc.getAcc()==1||acc.getAcc()==0) throw new Error("random acc weird "+acc);

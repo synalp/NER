@@ -19,7 +19,7 @@ import xtof.LinearModel.TestResult;
  *
  */
 public class UnlabCorpus {
-	final static int nmax = 100000;
+	public static int nmax = 100000;
 	public static int[] LCrec;
 
 	public int featureSpaceSize;
@@ -35,6 +35,9 @@ public class UnlabCorpus {
 	 * - Compute the scores, train an initial GMM with classical EM
 	 * - Build the mapping feature -> instances in the gigaword corpus
 	 * - Optimize the risk in "fast mode", without knowing the scores
+	 * 
+	 * TODO: train LC on 500 sentences;
+	 * add LC classes then train CRF on 20 sentences: is F1 improved ? risk ? 
 	 * 
 	 * @param args
 	 */
@@ -88,7 +91,7 @@ public class UnlabCorpus {
 				if (!acc.isSimilar(acc2)) throw new Error("ERROR: projecting weights give difference acc");
 				
 				// Optimize the risk using the assumption that the posterior stays constant
-				c.optimizeRisk();
+				c.optimizeRiskWithApprox();
 				
 				// infer the predicted class on the dev
 				int[] rec = c.predict(xvaldev);

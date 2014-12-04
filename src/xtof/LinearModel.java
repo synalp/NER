@@ -49,12 +49,12 @@ public class LinearModel {
 		return (float)sc;
 	}
 	
-	public void randomizeWeights() {
+	public void randomizeWeights(float weightPreviousValues) {
 		double[][] w = model.weights();
 		Random r = new Random();
 		for (int i=0;i<w.length;i++)
 			for (int j=0;j<w[i].length;j++)
-				w[i][j]=r.nextDouble();
+				w[i][j]=weightPreviousValues*w[i][j]+(1-weightPreviousValues)*(r.nextDouble()-0.5);
 	}
 	
 	public TestResult test(GeneralDataset data) {
@@ -116,7 +116,12 @@ public class LinearModel {
 		}
 	}
 	
-	public void optimizeRisk(GeneralDataset data) {
+	/**
+	 * 
+	 * @param data
+	 * @return the gain obtained in the risk
+	 */
+	public float optimizeRisk(GeneralDataset data) {
 		Random r = new Random();
 		final int[][] feats = data.getDataArray();
 		double[] priors = {0.2,0.8};
@@ -128,6 +133,7 @@ public class LinearModel {
 			RiskMachine rr = new RiskMachine(priors);
 			prevRisk=rr.computeRisk(sc,new RiskMachine.GMMDiag());
 		}
+		float riskdeb=prevRisk, riskfin=prevRisk;
 		TestResult acc = test(data);
 		System.out.println("SCD iter -1 "+prevRisk+" acc "+acc);
 		for (int i=0;i<Parms.nitersRiskOptim;i++) {
@@ -148,10 +154,12 @@ public class LinearModel {
 					for (int ii=0;ii<sc.length;ii++) sc[ii]=getSCore(feats[ii]);
 					RiskMachine rr = new RiskMachine(priors);
 					prevRisk=rr.computeRisk(sc,new RiskMachine.GMMDiag());
+					riskfin=prevRisk;
 				}
 				acc = test(data);
 				System.out.println("SCD iter "+i+" "+prevRisk+" acc "+acc);
 			}
 		}
+		return riskfin-riskdeb;
 	}
 }

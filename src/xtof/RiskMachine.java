@@ -57,8 +57,6 @@ public class RiskMachine {
 	  	final float var10 = gmm.var1;
 	  	final float mean00  = gmm.mean0;
 	  	final float mean10  = gmm.mean1;
-	  	
-	  	System.out.println("compR "+mean00+" "+mean10+" "+var00+" "+var10);
 	      
 	  	float t1 = (float)priors[0]*(1f-2f*mean00)/(4f*sigma00*sqrtpi) * (1f+(float)AnalyzeLClassifier.erf( (0.5-mean00)/sigma00 ));
 	  	float t2 = (float)priors[0]/(2f*pi) * (float)Math.exp( -(0.5f-mean00)*(0.5f-mean00)/var00 );
@@ -77,16 +75,16 @@ public class RiskMachine {
 		for (int ex : exImpacted) postsum1+=1f-gmm.postPerEx[ex];
 		float oldMean1 = gmm.mean1;
 		gmm.mean1 += postsum1 * gradStep / gmm.post[1];
-		
-		gmm.var0 += (gmm.mean0-oldMean0)*(gmm.mean0-oldMean0) +
-				gradStep*(gradStep-2f*gmm.mean0) + 2f*gradStep*oldMean0*(float)exImpacted.length/(float)nex;
-		if (gmm.var0<Parms.minvarGMM) gmm.var0=Parms.minvarGMM;
-		gmm.var1 += (gmm.mean1-oldMean1)*(gmm.mean1-oldMean1) +
-				gradStep*(gradStep-2f*gmm.mean1) + 2f*gradStep*oldMean1*(float)exImpacted.length/(float)nex;
-		if (gmm.var1<Parms.minvarGMM) gmm.var1=Parms.minvarGMM;
-		
-		gmm.gconst0=gmm.calcGconst(gmm.var0);
-		gmm.gconst1=gmm.calcGconst(gmm.var1);
+
+		// bug ? I have very strange values for the var...
+//		gmm.var0 += (gmm.mean0-oldMean0)*(gmm.mean0-oldMean0) +
+//				gradStep*(gradStep-2f*gmm.mean0) + 2f*gradStep*oldMean0*(float)exImpacted.length/(float)nex;
+//		if (gmm.var0<Parms.minvarGMM) gmm.var0=Parms.minvarGMM;
+//		gmm.var1 += (gmm.mean1-oldMean1)*(gmm.mean1-oldMean1) +
+//				gradStep*(gradStep-2f*gmm.mean1) + 2f*gradStep*oldMean1*(float)exImpacted.length/(float)nex;
+//		if (gmm.var1<Parms.minvarGMM) gmm.var1=Parms.minvarGMM;
+//		gmm.gconst0=gmm.calcGconst(gmm.var0);
+//		gmm.gconst1=gmm.calcGconst(gmm.var1);
 	}
 	
 	/**
