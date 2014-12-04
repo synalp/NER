@@ -20,11 +20,12 @@ public class ConllXP {
 	LinearModelNoStanford lcbig;
 	
 	public static void main(String[] args) {
-//		xpfull();
-//		new ConllXP().optimLConConll();
 		new ConllXP().xpCRF();
 	}
 	
+	/**
+	 * This method is used to optimize the weights of the linear classifier on train + test
+	 */
 	public void optimLConConll() {
 		// starting from weights trained on 20 utts, study the decrease of the risk using optimization on the train+test
 		CoNLL03Ner conll = new CoNLL03Ner();
@@ -41,6 +42,10 @@ public class ConllXP {
 		lcbig.save("finalweights.dat");
 	}
 	
+	/**
+	 * This method is used to train a CRF with an additional feature, which comes from a
+	 * linear classifier trained when calling optimLConConll()
+	 */
 	public void xpCRF() {
 		CoNLL03Ner conll = new CoNLL03Ner();
 		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
