@@ -9,6 +9,7 @@ import xtof.Corpus;
 import xtof.LinearModel;
 import xtof.LinearModelNoStanford;
 import xtof.Parms;
+import xtof.RiskMachine;
 import xtof.RiskMachine.GMMDiag;
 import xtof.UnlabCorpus;
 import xtof.LinearModel.TestResult;
@@ -20,7 +21,29 @@ public class ConllXP {
 	static final int nuttsCRFtraining = 20;
 	
 	public static void main(String[] args) {
-		xpfull();
+//		xpfull();
+		xpLConly();
+	}
+	
+	public static void xpLConly() {
+		// curve of the risk as a function of nb of training utts
+		CoNLL03Ner conll = new CoNLL03Ner();
+		double[] priors = {0.2,0.8};
+		RiskMachine r = new RiskMachine(priors);
+		final int[] nutts = {20,50,100,250,500,1000,2000,5000};
+		for (int i=0;i<nutts.length;i++) {
+	        String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, nutts[i], CNConstants.CHAR_NULL);
+	        String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
+			Corpus ctrain = new Corpus(trainfile, null, null, testfile);
+			LinearModel lcmod=LinearModel.train(ctrain.columnDataClassifier, ctrain.trainData);
+			float[] scores = new float[ctrain.testData.size()];
+			for (int ii=0;ii<scores.length;ii++) {
+				int[] fs = ctrain.getTestFeats()[ii];
+				scores[ii]=lcmod.getSCore(fs);
+			}
+			float risk = r.computeRisk(scores,new RiskMachine.GMMDiag());
+			System.out.println("trainriskcurve "+nutts[i]+" "+risk);
+		}
 	}
 	
 	/**

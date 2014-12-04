@@ -30,6 +30,9 @@ public class TestGMMs {
 		double[] priors = {0.2,0.8};
 		RiskMachine r = new RiskMachine(priors);
 	
+		// First, train the LC on the train and computes its risk: this is our objective,
+		// we want that after optimization the final risk gets close to this one
+		// No ! because robj is computed on the train, while the optimized risk is computed on the unlab
 		Corpus c = new Corpus("conll.pn.tab.LC.train", null, null, null);
 		LinearModel mod0=LinearModel.train(c.columnDataClassifier, c.trainData);
 		float robj;
@@ -45,7 +48,6 @@ public class TestGMMs {
 		int nfeats = mod0.getWeights().length;
 		System.out.println("nfeats "+nfeats);
 		
-
 		UnlabCorpus.nmax=500;
 		UnlabCorpus m = UnlabCorpus.loadFeatureFile();
 		m.buildFeat2ExampleIndex();
