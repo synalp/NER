@@ -24,6 +24,16 @@ public class LinearModelNoStanford {
 		setRandomWeights();
 	}
 
+	public LinearModelNoStanford(Corpus c) {
+		corp = new UnlabCorpus();
+		corp.featureSpaceSize=0;
+		if (c.trainData!=null) addInUnlabCorpus(c.getTrainFeats());
+		if (c.testData!=null) addInUnlabCorpus(c.getTestFeats());
+		if (c.unlabData!=null) addInUnlabCorpus(c.getUnlabFeats());
+		if (c.devData!=null) addInUnlabCorpus(c.getDevFeats());
+		corp.buildFeat2ExampleIndex();
+		w=new float[corp.featureSpaceSize];
+	}
 	private void addInUnlabCorpus(int[][] fts) {
 		int off=0;
 		if (corp.feats!=null) {
@@ -36,16 +46,6 @@ public class LinearModelNoStanford {
 				if (fts[i][j]>=corp.featureSpaceSize) corp.featureSpaceSize=fts[i][j]+1;
 			}
 		}
-	}
-	public LinearModelNoStanford(Corpus c) {
-		corp = new UnlabCorpus();
-		corp.featureSpaceSize=0;
-		if (c.trainData!=null) addInUnlabCorpus(c.getTrainFeats());
-		if (c.testData!=null) addInUnlabCorpus(c.getTestFeats());
-		if (c.unlabData!=null) addInUnlabCorpus(c.getUnlabFeats());
-		if (c.devData!=null) addInUnlabCorpus(c.getDevFeats());
-		corp.buildFeat2ExampleIndex();
-		w=new float[corp.featureSpaceSize];
 	}
 
 	/**

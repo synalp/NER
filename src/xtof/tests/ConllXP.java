@@ -46,11 +46,17 @@ public class ConllXP {
 		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
         String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
 		fullCorpus = new Corpus(trainfile, null, null, testfile);
-		int[] trainFeats = getOracleFeatures(fullCorpus.trainData);
-		int[] testFeats = getOracleFeatures(fullCorpus.testData);
+		optimLConConll();
+//		int[] trainFeats = getOracleFeatures(fullCorpus.trainData);
+//		int[] testFeats = getOracleFeatures(fullCorpus.testData);
+		int[] trainFeats = getPredictedFeatures(fullCorpus.trainData);
+		int[] testFeats = getPredictedFeatures(fullCorpus.testData);
 		trainAndTestCRFWithAdditionalFeatures(trainFeats, testFeats);
 	}
 	
+	public int[] getPredictedFeatures(GeneralDataset ds) {
+		return lcbig.predict(ds);
+	}
 	public int[] getOracleFeatures(GeneralDataset ds) {
 		return ds.getLabelsArray();
 	}
