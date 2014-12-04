@@ -143,8 +143,9 @@ public class AnalyzeLClassifier {
         Index<String> lblIndex = margin.getLabelIndex();
         float[] priors = new float [priorsMap.size()];
         
-        for(String lbl:lblIndex){
+        for(String lbl:lblIndex){                
             priors[lblIndex.indexOf(lbl)]=priorsMap.get(lbl).floatValue();
+            
         }
         return priors;
     }
@@ -1276,7 +1277,7 @@ public class AnalyzeLClassifier {
         GMMDiag gmm = new GMMDiag(priors.length, priors,true);
         // what is in marginMAP ? It maps a Margin, which contains the corpus for train, or test, or both ? and it is mapped to what ?
         gmm.train(marginMAP.get(sclassifier));
-        //gmm.train(marginMAP.get(sclassifier));
+        //gmm.trainEstimatedGaussians(marginMAP.get(sclassifier));
         System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
         +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
         System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
@@ -1759,7 +1760,7 @@ public class AnalyzeLClassifier {
     */ 
   public void wkSupParallelStocCoordD(String sclass, boolean closedForm, int niters, boolean isModelInMemory, boolean computeF1,boolean useSerializedFeatInst) {
        CURRENTSETCLASSIFIER=sclass;
-        UniformRealDistribution uDist = new UniformRealDistribution(-0.025,0.025);
+        UniformRealDistribution uDist = new UniformRealDistribution(-0.1,0.1);
         boolean isMC=false;
         int numIntIters=100;
         if(GeneralConfig.nthreads==CNConstants.INT_NULL){
@@ -1786,7 +1787,7 @@ public class AnalyzeLClassifier {
         margin.setLabelPerInstance(lblperInstance);  
         margin.setInstancesPerFeatures(instPerFeatures);
         margin.setNumberOfInstances(numInstances);
-                
+           
         
         //checks whether or not the classifier is multiclass, if that is the case it uses numerical integration by default
         if(margin.getNlabs()>2){
@@ -1798,7 +1799,7 @@ public class AnalyzeLClassifier {
         //Histoplot.showit(scorest,featsperInst.size());
         
         System.out.println("Working with classifier "+sclass);
-        //margin.sampling(0.1);
+        
         
         CURRENTPARENTESTIMR0=(closedForm)?computeROfTheta():computeROfThetaNumInt(isMC,numIntIters);
         AutoTests.initR = CURRENTPARENTESTIMR0;
@@ -1823,13 +1824,16 @@ public class AnalyzeLClassifier {
         MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
         
+        ///*
+        //set the weights of the test set to a random value
         for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
                 double[] sc = new double[margin.getNlabs()];
                 sc[0]=uDist.sample();
                 sc[1]=-sc[0];
                 margin.setWeight(index,sc);
                 
-        }   
+        } 
+        //*/  
         //Is the random score assignment of test weights deg rading the f-measure?
         System.out.println(" After assign random weights to the features of the test-set ");
         if(computeF1){
@@ -1856,6 +1860,7 @@ public class AnalyzeLClassifier {
             marginThr.setWeights(margin.getWeights());
             marginThr.copySharedyInfoParallelGrad(margin);
             marginThr.setInstancesPerFeatures(instPerFeatures);
+             
             //marginThr.setSamples(margin.getSamples());
             
 

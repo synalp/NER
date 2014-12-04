@@ -133,7 +133,7 @@ e88298 Priors on dev
 ====================================================================================================================
 f502f239e   CoNLL03Ner.conll.experimentsCRFPlusWkSupGWord(500, 50,false);
 	 CoNLL03Ner.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel);
- Approximated gmm training
+ Approximated gmm training, test weights setted to a number btw [-1,+1]
 init R 0.040031306 
 Final R : 0.010983627
 ====================================================================================================================
@@ -166,4 +166,30 @@ bae2bc56b  GOLD TEST retrained
      [java]              MISC: precision:  86.03%; recall:  82.60%; FB1:  84.28  673
      [java]               ORG: precision:  88.80%; recall:  88.10%; FB1:  88.45  1634
      [java]               PER: precision:  95.06%; recall:  96.13%; FB1:  95.59  1620
+
+====================================================================================================================
+bae2bc56b   CoNLL03Ner.conll.experimentsCRFPlusWkSupGWord(500, 50,false);
+	 CoNLL03Ner.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel);
+ Approximated gmm training, test weights setted to a number btw [-0.1,+0.1]
+init R:  0.040031306
+Final R :  0.01808392
+====================================================================================================================
+     [java] ./scripts/evalconll.sh analysis/CRF/test.all.log
+     [java] processed 46435 tokens with 5616 phrases; found: 5567 phrases; correct: 4924.
+     [java] accuracy:  97.57%; precision:  88.45%; recall:  87.68%; FB1:  88.06
+     [java]               LOC: precision:  90.34%; recall:  90.94%; FB1:  90.64  1677
+     [java]              MISC: precision:  79.68%; recall:  77.75%; FB1:  78.70  684
+     [java]               ORG: precision:  85.07%; recall:  82.33%; FB1:  83.68  1594
+     [java]               PER: precision:  93.55%; recall:  94.13%; FB1:  93.84  1612
+     [java] ok
+========================================================================================
+After a deterministic gaussian estimation
+sorting scores
+========================================================================================
+     [java] accuracy:  97.56%; precision:  88.41%; recall:  87.61%; FB1:  88.01
+     [java]               LOC: precision:  90.27%; recall:  90.82%; FB1:  90.54  1676
+     [java]              MISC: precision:  79.68%; recall:  77.75%; FB1:  78.70  684
+     [java]               ORG: precision:  84.97%; recall:  82.39%; FB1:  83.66  1597
+     [java]               PER: precision:  93.59%; recall:  93.95%; FB1:  93.77  1608
+
 

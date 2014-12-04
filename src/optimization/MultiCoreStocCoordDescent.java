@@ -45,10 +45,13 @@ public class MultiCoreStocCoordDescent  {
   	// get scores
   	GMMDiag gmm = new GMMDiag(priors.length, priors,true);
   	gmm.nitersTraining=1000;
-  	gmm.toleranceTraining=0;
+  	
   	double[] post=gmm.trainApproximation(margin);
         //double[] post=gmm.train(margin);
-  	System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
+        //double[] post = gmm.trainStoc(margin);
+        //gmm.trainEstimatedGaussians(margin);
+  	/*
+        System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   	
   	{
   		// depending on the weights, it may happen that the posteriors and priors are inverted.
@@ -64,6 +67,7 @@ public class MultiCoreStocCoordDescent  {
   			m=means[0][1];
   			means[0][1]=means[1][1];
   			means[1][1]=m;
+                        //post = gmm.trainStocWithoutInit(margin);
   			post=gmm.trainApproxWithoutInit(margin);
                         //post=gmm.trainWithoutInit(margin);
   			System.out.println("just after inversion train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
@@ -91,7 +95,7 @@ public class MultiCoreStocCoordDescent  {
       System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
       +gmm.getVar(1, 0, 0)+" , "+gmm.getVar(1, 1, 1));
       System.out.println("GMM trained");
-      */
+      //*/
       //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
       
       float r= computeR(gmm, priors,true); //xtof
@@ -254,7 +258,7 @@ public class MultiCoreStocCoordDescent  {
         final float eps = 0.1f;  
         Integer thrId = classInfoPerThread.first();
         PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
-        PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
+        //PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
         Margin margin = classInfoPerThread.second();
         String currentClassifier=AnalyzeLClassifier.CURRENTSETCLASSIFIER;
         int nLabels = margin.getNlabs();
@@ -282,7 +286,7 @@ public class MultiCoreStocCoordDescent  {
 
             f1trainOr=AnalyzeLClassifier.CURENTPARENTF10;
         }
-        plotF1.addPoint(counter,f1);   
+        //plotF1.addPoint(counter,f1);   
         //copy the orginal weights before applying coordinate gradient
         margin.copyOrWeightsBeforGradient();
         
@@ -401,10 +405,10 @@ public class MultiCoreStocCoordDescent  {
                 f1=ColumnDataClassifier.macrof1;
                 if(!currentClassifier.equals(CNConstants.ALL))            
                     f1=columnDataClass.fs.get(currentClassifier);
-                plotF1.addPoint(counter, f1);
+                //plotF1.addPoint(counter, f1);
                 System.out.println("*******************************"); 
             }
-            Histoplot.showit(margin.getScoreForAllInstancesLabel0( featsperInst, scores), featsperInst.size());
+            //Histoplot.showit(margin.getScoreForAllInstancesLabel0( featsperInst, scores), featsperInst.size());
             //save the model regularly
             if(iter%30==0){
                 File mfile = new File(margin.getBinaryFile());
