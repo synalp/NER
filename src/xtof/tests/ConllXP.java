@@ -34,7 +34,7 @@ public class ConllXP {
 		LinearModel lcmod=LinearModel.train(ctrain.columnDataClassifier, ctrain.trainData);
 		LinearModelNoStanford lcbig = new LinearModelNoStanford(ctrain);
 		lcbig.projectTrainingWeights(lcmod);
-		Parms.nitersRiskOptimApprox=1;
+		Parms.nitersRiskOptimApprox=1000;
 		lcbig.optimizeRiskWithApprox();
 //		lcbig.optimizeRiskWithoutApprox();
 	}
