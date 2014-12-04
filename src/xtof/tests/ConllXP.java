@@ -36,7 +36,6 @@ public class ConllXP {
 		Parms.nitersRiskOptimGlobal=100000;
 		lcbig.executors.add(new LCaccComputer());
 		lcbig.optimizeRiskWithApprox();
-//		lcbig.optimizeRiskWithoutApprox();
 	}
 	
 	class LCaccComputer implements LinearModelNoStanford.ExecutedAtEachOptimIter {
