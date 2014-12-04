@@ -21,7 +21,7 @@ public class Parms {
 	public static int nitersRiskOptimGlobal = 1000;
 
 	// size of the copora used for training
-	public static final int nuttsLCtraining = 20;
-	public static final int nuttsCRFtraining = 20;
+	public static int nuttsLCtraining = 20;
+	public static int nuttsCRFtraining = 20;
 
 }
