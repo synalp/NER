@@ -34,7 +34,9 @@ public class ConllXP {
 		LinearModel lcmod=LinearModel.train(ctrain.columnDataClassifier, ctrain.trainData);
 		LinearModelNoStanford lcbig = new LinearModelNoStanford(ctrain);
 		lcbig.projectTrainingWeights(lcmod);
-		lcbig.optimizeRisk();
+		Parms.nitersRiskOptimApprox=1;
+		lcbig.optimizeRiskWithApprox();
+//		lcbig.optimizeRiskWithoutApprox();
 	}
 	public static void curveSupervisedRisk() {
 		// curve of the risk as a function of nb of training utts
@@ -122,7 +124,7 @@ public class ConllXP {
 				
 				// repeat this approximate optim to recompute a full EM 100 times
 				Parms.nitersRiskOptim=10000;
-				GMMDiag gmm = c.optimizeRisk();
+				GMMDiag gmm = c.optimizeRiskWithApprox();
 				for (int j=0;j<100;j++) {
 					// Optimize the risk using the assumption that the posterior stays constant
 					c.trainGMMnoinit(gmm);

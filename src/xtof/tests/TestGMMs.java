@@ -61,7 +61,7 @@ public class TestGMMs {
 		System.out.println("risk "+r0);
 		
 		Parms.nitersRiskOptim=100000;
-		mod1.optimizeRisk();
+		mod1.optimizeRiskWithApprox();
 		sc = mod1.computeAllScores();
 		float r1 = r.computeRisk(sc,new RiskMachine.GMMDiag());
 		

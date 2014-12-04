@@ -91,7 +91,7 @@ public class UnlabCorpus {
 				if (!acc.isSimilar(acc2)) throw new Error("ERROR: projecting weights give difference acc");
 				
 				// Optimize the risk using the assumption that the posterior stays constant
-				c.optimizeRisk();
+				c.optimizeRiskWithApprox();
 				
 				// infer the predicted class on the dev
 				int[] rec = c.predict(xvaldev);

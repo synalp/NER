@@ -12,6 +12,7 @@ public class LinearModelNoStanford {
 	public float[] w;
 	UnlabCorpus corp;
 	Random rand = new Random();
+	float lastRiskValue;
 	
 	public LinearModelNoStanford(UnlabCorpus c) {
 		corp=c;
@@ -130,17 +131,40 @@ public class LinearModelNoStanford {
 		return gmm;
 	}
 	
-	public RiskMachine.GMMDiag optimizeRisk() {
+	public RiskMachine.GMMDiag optimizeRiskWithApprox() {
 		RiskMachine.GMMDiag gmm = initializeGMM();
+		long initTime = System.currentTimeMillis();
 		for (int i=0;i<Parms.nitersRiskOptimGlobal;i++) {
+			// this is always the true risk, not the approximate one; so we can print it
+			lastRiskValue = getRiskFromGMM(gmm);
+			long curTime = System.currentTimeMillis();
+			curTime-=initTime;
+			System.out.println("riskiter "+i+" "+curTime+" "+lastRiskValue);
 			optimizeRiskApproxLoop(Parms.nitersRiskOptimApprox*i,gmm);
 			trainGMMnoinit(gmm);
 		}
 		return gmm;
 	}
+	public RiskMachine.GMMDiag optimizeRiskWithoutApprox() {
+		RiskMachine.GMMDiag gmm = initializeGMM();
+		long initTime = System.currentTimeMillis();
+		for (int i=0;i<Parms.nitersRiskOptim;i++) {
+			lastRiskValue = getRiskFromGMM(gmm);
+			long curTime = System.currentTimeMillis();
+			curTime-=initTime;
+			System.out.println("riskiter "+i+" "+curTime+" "+lastRiskValue);
+			int feat = rand.nextInt(corp.featureSpaceSize);
+			w[feat] += Parms.finiteDiffDelta;
+			trainGMMnoinit(gmm);
+			float r1=getRiskFromGMM(gmm);
+			float grad = (r1-lastRiskValue)/Parms.finiteDiffDelta;
+			float delta = -grad*Parms.gradientStep;
+			w[feat] += delta-Parms.finiteDiffDelta;
+			trainGMMnoinit(gmm);
+		}
+		return gmm;
+	}
 	public RiskMachine.GMMDiag optimizeRiskApproxLoop(int iteroffset, RiskMachine.GMMDiag gmm) {
-		float r0 = getRiskFromGMM(gmm);
-		System.out.println("riskiter "+iteroffset+" "+r0);
 		for (int i=0;i<Parms.nitersRiskOptimApprox;i++) {
 			int feat = rand.nextInt(corp.featureSpaceSize);
 			w[feat] += Parms.finiteDiffDelta;
@@ -148,12 +172,12 @@ public class LinearModelNoStanford {
 			RiskMachine.updateGMMAfterRiskGradientStep(gmm, corp.feats.length, corp.feat2obs[feat], Parms.finiteDiffDelta);
 			float r1=getRiskFromGMM(gmm);
 			gmm.mean0=m0; gmm.mean1=m1; gmm.var0=v0; gmm.var1=v1; gmm.gconst0=g0; gmm.gconst1=g1;
-			float grad = (r1-r0)/Parms.finiteDiffDelta;
+			float grad = (r1-lastRiskValue)/Parms.finiteDiffDelta;
 			float delta = -grad*Parms.gradientStep;
 			w[feat] += delta-Parms.finiteDiffDelta;
 			RiskMachine.updateGMMAfterRiskGradientStep(gmm, corp.feats.length, corp.feat2obs[feat], delta);
-			r0=getRiskFromGMM(gmm);
-			System.out.println("riskiter "+(iteroffset+i+1)+" "+r0);
+			// warning: this risk comes from an approximated value, so its best not to print it
+			lastRiskValue=getRiskFromGMM(gmm);
 		}
 		return gmm;
 	}
