@@ -53,6 +53,12 @@ public class Corpus {
 	public int[][] getTestFeats() {
 		return testData.getDataArray();
 	}
+	public int[][] getUnlabFeats() {
+		return unlabData.getDataArray();
+	}
+	public int[][] getDevFeats() {
+		return devData.getDataArray();
+	}
 	
 	private String mergeAllFiles(String train, String unlab, String dev, String test) {
 		final String resFile = "all.dat";

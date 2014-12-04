@@ -26,6 +26,17 @@ public class ConllXP {
 	}
 	
 	public static void xpLConly() {
+		// starting from weights trained on 20 utts, study the decrease of the risk using optimization on the train+test
+		CoNLL03Ner conll = new CoNLL03Ner();
+		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
+        String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
+		Corpus ctrain = new Corpus(trainfile, null, null, testfile);
+		LinearModel lcmod=LinearModel.train(ctrain.columnDataClassifier, ctrain.trainData);
+		LinearModelNoStanford lcbig = new LinearModelNoStanford(ctrain);
+		lcbig.projectTrainingWeights(lcmod);
+		lcbig.optimizeRisk();
+	}
+	public static void curveSupervisedRisk() {
 		// curve of the risk as a function of nb of training utts
 		CoNLL03Ner conll = new CoNLL03Ner();
 		double[] priors = {0.2,0.8};
@@ -115,7 +126,7 @@ public class ConllXP {
 				for (int j=0;j<100;j++) {
 					// Optimize the risk using the assumption that the posterior stays constant
 					c.trainGMMnoinit(gmm);
-					c.optimizeRisk(gmm);
+					c.optimizeRiskApproxLoop(0,gmm);
 				}
 				System.out.println("risk xval "+xval+" "+c.computeRisk());
 				
