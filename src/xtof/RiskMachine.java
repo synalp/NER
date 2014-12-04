@@ -57,8 +57,6 @@ public class RiskMachine {
 	  	final float var10 = gmm.var1;
 	  	final float mean00  = gmm.mean0;
 	  	final float mean10  = gmm.mean1;
-	  	
-	  	System.out.println("compR "+mean00+" "+mean10+" "+var00+" "+var10);
 	      
 	  	float t1 = (float)priors[0]*(1f-2f*mean00)/(4f*sigma00*sqrtpi) * (1f+(float)AnalyzeLClassifier.erf( (0.5-mean00)/sigma00 ));
 	  	float t2 = (float)priors[0]/(2f*pi) * (float)Math.exp( -(0.5f-mean00)*(0.5f-mean00)/var00 );

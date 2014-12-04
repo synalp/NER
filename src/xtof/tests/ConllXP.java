@@ -17,25 +17,60 @@ import edu.stanford.nlp.classify.GeneralDataset;
 public class ConllXP {
 	
 	Corpus fullCorpus;
+	LinearModelNoStanford lcbig;
 	
 	public static void main(String[] args) {
 //		xpfull();
-		new ConllXP().xpLConly();
+//		new ConllXP().optimLConConll();
+		new ConllXP().xpCRF();
 	}
 	
-	public void xpLConly() {
+	public void optimLConConll() {
 		// starting from weights trained on 20 utts, study the decrease of the risk using optimization on the train+test
 		CoNLL03Ner conll = new CoNLL03Ner();
-		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
+		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
         String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
 		fullCorpus = new Corpus(trainfile, null, null, testfile);
 		LinearModel lcmod=LinearModel.train(fullCorpus.columnDataClassifier, fullCorpus.trainData);
-		LinearModelNoStanford lcbig = new LinearModelNoStanford(fullCorpus);
+		lcbig = new LinearModelNoStanford(fullCorpus);
 		lcbig.projectTrainingWeights(lcmod);
 		Parms.nitersRiskOptimApprox=1000;
-		Parms.nitersRiskOptimGlobal=100000;
+		Parms.nitersRiskOptimGlobal=10000;
 		lcbig.executors.add(new LCaccComputer());
 		lcbig.optimizeRiskWithApprox();
+		lcbig.save("finalweights.dat");
+	}
+	
+	public void xpCRF() {
+		CoNLL03Ner conll = new CoNLL03Ner();
+		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
+        String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
+		fullCorpus = new Corpus(trainfile, null, null, testfile);
+		int[] trainFeats = getOracleFeatures(fullCorpus.trainData);
+		int[] testFeats = getOracleFeatures(fullCorpus.testData);
+		trainAndTestCRFWithAdditionalFeatures(trainFeats, testFeats);
+	}
+	
+	public int[] getOracleFeatures(GeneralDataset ds) {
+		return ds.getLabelsArray();
+	}
+	
+	public void trainAndTestBaselineCRF() {
+		CoNLL03Ner conll = new CoNLL03Ner();
+		conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, Parms.nuttsCRFtraining, CNConstants.CHAR_NULL);
+        conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
+    	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false,false);
+    	System.out.println("baseline CRF "+f1);
+	}
+	
+	public void trainAndTestCRFWithAdditionalFeatures(int[] featstrain, int[] featstest) {
+		CoNLL03Ner conll = new CoNLL03Ner();
+		UnlabCorpus.LCrec = featstest;
+        String enhancedTestfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true, Integer.MAX_VALUE, CNConstants.TABLE_IN_UNLABCORPUS);
+		UnlabCorpus.LCrec = featstrain;
+        String enhancedTrainfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, Parms.nuttsCRFtraining, CNConstants.TABLE_IN_UNLABCORPUS);
+    	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, true,false);
+    	System.out.println("enhancedCRF "+f1);
 	}
 	
 	class LCaccComputer implements LinearModelNoStanford.ExecutedAtEachOptimIter {

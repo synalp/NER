@@ -1,5 +1,8 @@
 package xtof;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -187,5 +190,14 @@ public class LinearModelNoStanford {
 			lastRiskValue=getRiskFromGMM(gmm);
 		}
 		return gmm;
+	}
+	public void save(String f) {
+		try {
+			ObjectOutputStream fo = new ObjectOutputStream(new FileOutputStream(f));
+			fo.writeObject(w);
+			fo.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }
