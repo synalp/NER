@@ -60,11 +60,13 @@ public class AnalyzeCRFClassifier {
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
     public static int TRAINSIZE=Integer.MAX_VALUE;
-    
+    public static String TKPREDTRAIN="scripts/ner.modeltk.pt.train";
+    public static String TKPREDTEST="scripts/ner.modeltk.pt.test";
+   
     public static String OUTFILE="analysis/CRF/test.%S.log";
     public static boolean POSFILTER=true;
     
-    
+        
     private HashMap<String, CRFClassifier> modelMap = new HashMap<>();
     private HashMap<String,MarginCRF> marginMAP = new HashMap<>();
     private int numInstances=0;
@@ -72,6 +74,7 @@ public class AnalyzeCRFClassifier {
     private HashMap<String, List<List<Integer>>> featInstMap = new HashMap<>();
     
     private HashMap<String, List<Integer>> lblInstMap = new HashMap<>();
+    
     
     public AnalyzeCRFClassifier(){
         GeneralConfig.loadProperties();
@@ -215,14 +218,19 @@ public class AnalyzeCRFClassifier {
                 if(prop.getProperty("useFeat")!=null)
                     prop.remove("useFeat");
             }
-                
+            if(mapping.contains("feattk"))
+                prop.setProperty("useTkFeat", "true");
+            else{
+                if(prop.getProperty("useTkFeat")!=null)
+                    prop.remove("useTkFeat");
+            }                
             
             prop.store(new FileOutputStream(PROPERTIES_FILE),""); // FileOutputStream 
         } catch (Exception ex) {
             ex.printStackTrace();
         }
    }          
-   public  void saveGroups(String entity,boolean bltrain, boolean isLower){
+   public  void saveGroups(String entity,boolean bltrain, boolean isLower, boolean useTkFeat){
        //only one proper noun classifier
         String[] classStr={ONLYONEPNOUNCLASS};
         if(entity.equals(AnalyzeLClassifier.ONLYONEMULTICLASS)){
@@ -232,12 +240,36 @@ public class AnalyzeCRFClassifier {
            classStr=groupsOfNE;
        
        for(String str:classStr)
-           saveFilesForLClassifier(str,bltrain,isLower);
+           saveFilesForLClassifier(str,bltrain,isLower, useTkFeat);
 
     }
         
-    public void saveFilesForLClassifier(String en, boolean bltrain, boolean isLower) {
+    public void saveFilesForLClassifier(String en, boolean bltrain, boolean isLower, boolean useTkFeat) {
             try {
+                
+                HashMap<Integer,String> predictedClass = new HashMap<>();
+                BufferedReader predictionFile = null;
+                if(useTkFeat){
+                    if(bltrain)
+                        predictionFile=new BufferedReader(new FileReader(TKPREDTRAIN));
+                    else
+                        predictionFile=new BufferedReader(new FileReader(TKPREDTEST));
+                    int testLine=0;
+                    while(true){
+                       String line = predictionFile.readLine();
+                       if(line  == null )
+                           break;
+                       line=line.trim();
+                       double value = Double.parseDouble(line);
+                       String classVal = CNConstants.NOCLASS;
+                       if(value > 0)
+                           classVal = CNConstants.PRNOUN;
+                       
+                       predictedClass.put(testLine, classVal );
+                        
+                    }
+                }
+                
                 GraphIO gio = new GraphIO(null);
                 OutputStreamWriter outFile =null;
                 String xmllist=LISTTRAINFILES;
@@ -249,17 +281,17 @@ public class AnalyzeCRFClassifier {
                 }
                 BufferedReader inFile = new BufferedReader(new FileReader(xmllist));
                 int uttCounter=0;
+                int wordCounter=0;
                 for (;;) {
                     String s = inFile.readLine();
                     if (s==null) break;
                     List<DetGraph> gs = gio.loadAllGraphs(s);
                     for (int i=0;i<gs.size();i++) {
                             DetGraph group = gs.get(i);
-                            int nexinutt=0;
+                            
                             //outFile.append("NO\tBS\tBS\n");
                             for (int j=0;j<group.getNbMots();j++) {
-                                    nexinutt++;
-
+                                    
                                     // calcul du label
                                     String lab = "NO";
                                     int[] groups = group.getGroups(j);
@@ -321,16 +353,27 @@ public class AnalyzeCRFClassifier {
                                     } 
                                      */                                  
                                     if(POSFILTER && !isStopWord(group.getMot(j).getPOS())){
-                                        if(isLower)
-                                            outFile.append(group.getMot(j).getForme().toLowerCase()+"\t"+group.getMot(j).getPOS()+"\t"+"NOCL\t"+lab+"\n");
-                                        else
-                                            outFile.append(group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+"NOCL\t"+lab+"\n");
+                                        if(useTkFeat){
+                                            if(isLower)
+                                                outFile.append(group.getMot(j).getForme().toLowerCase()+"\t"+group.getMot(j).getPOS()+"\t"+predictedClass.get(wordCounter)+"\t"+lab+"\n");
+                                            else
+                                                outFile.append(group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+predictedClass.get(wordCounter)+"\t"+lab+"\n");                                           
+                                        }else{
+                                            if(isLower)
+                                                outFile.append(group.getMot(j).getForme().toLowerCase()+"\t"+group.getMot(j).getPOS()+"\t"+lab+"\n");
+                                            else
+                                                outFile.append(group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+lab+"\n");
+                                        }
+                                        
+                                        
                                     }else if(!POSFILTER){
                                         if(isLower)
-                                            outFile.append(group.getMot(j).getForme().toLowerCase()+"\t"+group.getMot(j).getPOS()+"\t"+"NOCL\t"+lab+"\n");
+                                            outFile.append(group.getMot(j).getForme().toLowerCase()+"\t"+group.getMot(j).getPOS()+"\t"+lab+"\n");
                                         else
-                                            outFile.append(group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+"NOCL\t"+lab+"\n");                                       
-                                    }    
+                                            outFile.append(group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+lab+"\n");                                       
+                                    } 
+                                    
+                                     wordCounter++;
                                         
                             }
                             
@@ -413,13 +456,13 @@ public class AnalyzeCRFClassifier {
      * @param labeled
      * @return 
      */    
-    public void trainAllCRFClassifier(String entity,boolean blsavegroups, boolean isLower) {
+    public void trainAllCRFClassifier(String entity,boolean blsavegroups, boolean isLower, boolean useTkFeat) {
         //TreeMap<String,Double> lcfeatsDict = new TreeMap<>();
         //TreeMap<String,Double> featsDict = new TreeMap<>();
         //save the trainset
         
         if(blsavegroups)
-            saveGroups(entity,true,isLower);
+            saveGroups(entity,true,isLower, useTkFeat);
         //only one proper noun classifier
         String[] classStr={ONLYONEPNOUNCLASS};
         if(entity.equals(AnalyzeLClassifier.ONLYONEMULTICLASS)){
@@ -525,11 +568,11 @@ public class AnalyzeCRFClassifier {
     /**
      * Test the classifier
      */
-    public void testingAllClassifier(String entity,boolean isSavingGroups, boolean isLower, String classClassPath){
+    public void testingAllClassifier(String entity,boolean isSavingGroups, boolean isLower, boolean useFeat){
 
            
            if(isSavingGroups)
-                saveGroups(entity,false, isLower);
+                saveGroups(entity,false, isLower, useFeat);
 
             //only one proper noun classifier
         String[] classStr={ONLYONEPNOUNCLASS};
@@ -554,7 +597,7 @@ public class AnalyzeCRFClassifier {
                     //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
                     //Process process = Runtime.getRuntime().exec(call);
                     //stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier
-                    String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
+                    String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+CNConstants.SNERJAR+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
                     Process process = Runtime.getRuntime().exec(cmd);
                     InputStream stdout = process.getInputStream();
 
@@ -593,11 +636,11 @@ public class AnalyzeCRFClassifier {
        
  
     }
-    public void testingClassifier(String smodel,boolean isSavingGroups, boolean isLower, String classClassPath){
+    public void testingClassifier(String smodel,boolean isSavingGroups, boolean isLower, boolean useFeat){
 
            
            if(isSavingGroups)
-                saveFilesForLClassifier(smodel,false,isLower);
+                saveFilesForLClassifier(smodel,false,isLower, useFeat);
 
             //only one proper noun classifier
             
@@ -615,7 +658,7 @@ public class AnalyzeCRFClassifier {
                 //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
                 //Process process = Runtime.getRuntime().exec(call);
                 //stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier
-                String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
+                String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+CNConstants.SNERJAR+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE.replace("%S", smodel)+" -testFile "+TESTFILE.replace("%S", smodel);
                 Process process = Runtime.getRuntime().exec(cmd);
                 InputStream stdout = process.getInputStream();
 
@@ -654,7 +697,7 @@ public class AnalyzeCRFClassifier {
        
  
     }   
-    public void testingClassifier(String smodel, String classClassPath){
+    public void testingClassifier(String smodel){
 
       
             //only one proper noun classifier
@@ -673,7 +716,7 @@ public class AnalyzeCRFClassifier {
                 //String[] call={"java","-Xmx1g","-cp","\"../stanfordNLP/stanford-classifier-2014-01-04/stanford-classifier-3.3.1.jar\"","edu.stanford.nlp.classify.ColumnDataClassifier", "-prop","slinearclassifier.props", "-testFile", TESTFILE.replace("%S", smodel),"> out.txt"};
                 //Process process = Runtime.getRuntime().exec(call);
                 //stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier
-                String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+classClassPath+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE+" -testFile "+TESTFILE;
+                String cmd="java -Xmx"+GeneralConfig.XmxStanford+" -cp "+CNConstants.SNERJAR+ "  edu.stanford.nlp.ie.crf.CRFClassifier -loadClassifier "+MODELFILE+" -testFile "+TESTFILE;
                 Process process = Runtime.getRuntime().exec(cmd);
                 InputStream stdout = process.getInputStream();
 
@@ -758,7 +801,7 @@ public class AnalyzeCRFClassifier {
 
     public void drawingPNScores(){
         String sclass = CNConstants.PRNOUN;
-        trainAllCRFClassifier(sclass,true,false);
+        trainAllCRFClassifier(sclass,true,false,false);
         //Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
         //analyzing.testingClassifier(true,true, "");
         
@@ -923,8 +966,8 @@ public class AnalyzeCRFClassifier {
             POSFILTER=false;
         if(isGaz)
             PROPERTIES_FILE="scrfGaz.props";
-        trainAllCRFClassifier(CNConstants.PRNOUN,true,false);
-        testingClassifier(CNConstants.PRNOUN,true,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
+        trainAllCRFClassifier(CNConstants.PRNOUN,true,false,false);
+        testingClassifier(CNConstants.PRNOUN,true,false,false);
         
 
         
@@ -933,15 +976,38 @@ public class AnalyzeCRFClassifier {
         else
             evaluationBIOCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);
     }
+  
+  public void properNounDetectionOnEsterTk(boolean isGaz, String typeOfclasses){
+        File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
+        mfile.delete(); 
+        this.typeofClass=typeOfclasses;
+        if(typeOfclasses.startsWith(CNConstants.BIO.substring(0,2)))
+            POSFILTER=false;
+        if(isGaz)
+            PROPERTIES_FILE="scrfGaz.props";
+        
+        updatingMappingBkGPropFile(CNConstants.PRNOUN,"O","word=0,tag=1,feattk=2,answer=3");         
+
+        
+        trainAllCRFClassifier(CNConstants.PRNOUN,true,false,true);
+        testingClassifier(CNConstants.PRNOUN,true,false,true);
+        
+
+        
+        if(!typeOfclasses.startsWith(CNConstants.BIO.substring(0,2)))
+            AnalyzeLClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);
+        else
+            evaluationBIOCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);    
+  }
     
-  public void detectingNEOnEster(boolean isGaz, String typeOfclasses){
+  public void detectingNEOnEster(boolean isGaz, String typeOfclasses, boolean usePNClassFeat){
 
     for(String str:groupsOfNE) 
-         detectingOneEntityOnEster(str,isGaz, typeOfclasses);
+         detectingOneEntityOnEster(str,isGaz, typeOfclasses,usePNClassFeat);
 
 
     }  
-   public void detectingOneEntityOnEster(String str,boolean isGaz, String typeOfclasses){
+   public void detectingOneEntityOnEster(String str,boolean isGaz, String typeOfclasses, boolean usePNClassFeat){
         this.typeofClass=typeOfclasses;
         if(typeOfclasses.startsWith(CNConstants.BIO.substring(0,2)))
             POSFILTER=false;
@@ -949,9 +1015,9 @@ public class AnalyzeCRFClassifier {
             PROPERTIES_FILE="scrfGaz.props";      
         File mfile = new File(MODELFILE.replace("%S", str));
         mfile.delete(); 
-        saveFilesForLClassifier(str,true,false);
+        saveFilesForLClassifier(str,true,false,usePNClassFeat);
         trainOneClassifier(str);
-        testingClassifier(str,true,false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
+        testingClassifier(str,true,false, usePNClassFeat);
  
         if(!typeofClass.startsWith(CNConstants.BIO.substring(0,2)))
             AnalyzeLClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,OUTFILE.replace("%S", str));
@@ -981,21 +1047,38 @@ public class AnalyzeCRFClassifier {
             
         }
         //*/
-        //trainLinearclassifier(ispn,blsavegroups,islower)
-        //analyzing.trainAllCRFClassifier(false,true,false);
+
         //Histoplot.showit(margin.getScoreForAllInstancesLabel0(featsperInst,scores), featsperInst.size());
-        //analyzing.testingClassifier(true,false, "",false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
-        //analyzing.testingClassifier(true,true, "",false,"/home/rojasbar/development/contnomina/stanfordNLP/stanford-ner-2014-01-04/stanford-ner-2014-01-04.jar");
         //analyzing.drawingPNScores();
-        //analyzing.detectingNEOnEster(false,CNConstants.BIO);
-        //analyzing.properNounDetectionOnEster(false,CNConstants.BIO);
+        //
+        //
         //analyzing.detectingOneEntityOnEster(CNConstants.PERS,false,CNConstants.BIO);
         //analyzing.detectingOneEntityOnEster(CNConstants.ORG,false,CNConstants.BIO);
-        analyzing.detectingOneEntityOnEster(CNConstants.PROD,false,CNConstants.BIO);
+        //analyzing.detectingOneEntityOnEster(CNConstants.PROD,false,CNConstants.BIO);
         //analyzing.detectingOneEntityOnEster(CNConstants.LOC,false,CNConstants.BIO);
         //analyzing.evaluationBIOCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);
         //AnalyzeClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);
 
+        switch(args[0]){
+            
+            case "trmulticlass":
+                //trainLinearclassifier(ispn,blsavegroups,islower)
+                analyzing.trainAllCRFClassifier(CNConstants.ALL,true,false,false);
+                break;
+            case "testmulticlass":
+                analyzing.testingAllClassifier(CNConstants.ALL,true,false,false);
+                break;   
+            case "esterNER":
+                analyzing.detectingNEOnEster(false,CNConstants.BIO,false);
+                break;
+            case "esterPN":
+                analyzing.properNounDetectionOnEster(false,CNConstants.IO);
+                break;
+            case "esterTKPN":
+                analyzing.properNounDetectionOnEsterTk(false, CNConstants.IO);
+                    
+        }
+        
     }
   
 }

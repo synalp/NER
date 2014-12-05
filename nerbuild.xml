@@ -125,6 +125,16 @@
 	   <classpath refid="run.classpath" />
        </java>
     </target>
+    <target name="ester" depends="compile" description="xtof manual tests" >
+	<java classname="CRFClassifier.AnalyzeCRFClassifier"
+	   fork="true"
+           failonerror="true"
+           maxmemory="13g">
+           <arg value="esterPN"/>
+	   <classpath refid="run.classpath" />
+       </java>
+    </target>
+
     <target name="detsav" depends="compile" description="xtof manual tests" >
 	<java classname="xtof.tests.TestGigaword"
 	   fork="true"

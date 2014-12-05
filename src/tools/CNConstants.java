@@ -96,6 +96,7 @@ package tools;
     public static String NOCLASS="NO";
     public static String OUTCLASS="O";
     public static String ALL="all"; 
+    public static String IO="IO";
     public static String BIO="BIO";
     public static String BILOU="BILOU";
     
