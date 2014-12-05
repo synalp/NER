@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import linearclassifier.Margin;
+import optimization.MultiCoreStocCoordDescent;
 import tools.CNConstants;
 import tools.Histoplot;
 import utils.ErrorsReporting;
@@ -34,13 +35,13 @@ import utils.ErrorsReporting;
  * 
  * taken from the GMM class implemented by Christophe Cerisara.
  * 
- * Changed trainViterbi, to compute the parameters based on the posterior probability
+ * Changed trainEM, to compute the parameters based on the posterior probability
  * 
  * @author xtof
  * <!--
  * Modifications History
  * Date             Author   	Description
- * Sept, 2014       rojasbar  	Changed trainViterbi, to compute the parameters based on the posterior probability.
+ * Sept, 2014       rojasbar  	Changed trainEM, to compute the parameters based on the posterior probability.
  * Feb 11, 2014     rojasbar    Changing the class Corpus by AnalyzeClassifier.
  * -->
  */
@@ -334,7 +335,7 @@ public class GMMDiag extends GMM {
      * @param margin
      * @return the array of marginal posteriors per class
      */
-    public double[] trainViterbi(Margin margin) {
+    public double[] trainEM(Margin margin) {
         final float[] z = new float[nlabs];
         margin.sumXSqAll= new double[nlabs];
         final GMMDiag gmm0 = this.clone();
@@ -582,13 +583,13 @@ public class GMMDiag extends GMM {
         return muPart1;
     }
     
-    public double[] trainApproximatedEM(Margin margin) {
+    public double[] trainNaiveApproximatedEM(Margin margin) {
         
         int iter = margin.getThreadIteration();
          
         //before splitting in threads
         if(iter==CNConstants.INT_NULL)
-            return trainViterbi(margin);
+            return trainEM(margin);
         
         final float[] z = new float[nlabs];
 
@@ -602,7 +603,7 @@ public class GMMDiag extends GMM {
 
         //SCD iteration
         if(iter%40==0)
-            return trainViterbi(margin);
+            return trainEM(margin);
         
         
          
@@ -700,7 +701,7 @@ public class GMMDiag extends GMM {
         System.out.println("********trainApproximatedEM*********end debugging*******");  
         //*/
          //System.out.println("priors: "+ Arrays.toString(logWeights));
-        //System.out.println("trainApproximatedEM");
+        //System.out.println("trainNaiveApproximatedEM");
         //printMean();
         //printVariace();  
         for (int i=0;i<nlabs;i++) 
@@ -715,7 +716,99 @@ public class GMMDiag extends GMM {
             logWeights[y]=logMath.linearToLog(margin.nkAll[y]/nex[y]);
         
         return margin.nkAll;
-    }    
+    }  
+    
+    public  void updatingGMMAfterRiskGradientStep(Margin margin, float gradStep){
+        final float[] z = new float[nlabs];
+        double[][] muPart1= new double[means.length][means[0].length];
+        double[] nkPart = new double[nlabs];
+        
+        final GMMDiag gmm0 = this.clone();
+        
+        margin.sumXSqPart=new double[z.length];
+        
+        List<Integer> instances = margin.getInstancesCurrThrFeat();
+            
+         for (int i=0;i<instances.size();i++) {
+            List<Integer> featuresByInstance = new ArrayList<>();
+            int inst= instances.get(i);
+            if(!Margin.GENERATEDDATA)            
+                featuresByInstance = margin.getFeaturesPerInstance(inst);
+            if(isBinaryConstrained){
+                if(Margin.GENERATEDDATA)
+                    z[0] = margin.getGenScore(inst, 0);
+                else
+                    z[0] = margin.getScore(featuresByInstance,0);
+                
+                z[1]=-z[0];
+                //double tmpval = margin.getScore(featuresByInstance,1);
+                //System.out.println(" tmp vs z[1]: "+ tmpval + " - " + z[1]);
+                
+                
+            }
+            Arrays.fill(tmp, 0);
+
+
+            //logWeights has already the priors which is the extra pattern pi
+            float normConst = logMath.linearToLog(0);
+            for (int y=0;y<nlabs;y++){ 
+                tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
+                if(y==0)
+                    normConst=(float)tmp[y];
+                else
+                    normConst=  logMath.addAsLinear(normConst,(float)tmp[y]);
+
+            }
+
+            for (int y=0;y<nlabs;y++){ 
+                
+                //ex2lab[inst]=y;
+                double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                //double posterior = margin.post[y];
+                nkPart[y]+=posterior;
+                margin.sumXSqPart[y]+=posterior*(z[y]*z[y]);
+                
+                for (int l=0;l<nlabs;l++){ 
+                    muPart1[y][l]+=posterior*z[y];  
+                    if(this.isBinaryConstrained)
+                        break;
+                        
+                }
+
+            }
+            
+            
+            
+        } 
+        
+       muPart1[0][1]=-muPart1[0][0];
+       muPart1[1][1]=-muPart1[1][0];           
+           
+       for (int y=0;y<nlabs;y++)
+        for (int l=0;l<nlabs;l++){
+            means[y][l]+= muPart1[y][l] * gradStep / margin.nkAll[y];
+        } 
+       
+        margin.previousMean = new double[means.length][means[0].length];
+        for(int i=0; i<means.length;i++)
+            System.arraycopy(means[i], 0, margin.previousMean[i], 0, means[i].length);  
+        
+        System.out.println("In updatingGMMAfterRiskGradientStep");
+        //printMean();
+        //printVariace();
+        
+//        for (int i=0;i<instances.size();i++){
+//                postsum0+=gmm.postPerEx[ex];
+//        }        
+//            float oldMean0 = gmm.mean0;
+//            gmm.mean0 += postsum0 * MultiCoreStocCoordDescent.delta / gmm.post[0];
+//            float postsum1=0;
+//            for (int ex : exImpacted) postsum1+=1f-gmm.postPerEx[ex];
+//            float oldMean1 = gmm.mean1;
+//            gmm.mean1 += postsum1 * MultiCoreStocCoordDescent.delta / gmm.post[1];
+
+
+	}    
     
     /**
      * Assuming all mixtures are initially equal, moves away in opposite directions every mixture
@@ -787,7 +880,7 @@ public class GMMDiag extends GMM {
         //*/
     }
     /**
-     * after splitting by trainViterbi
+     * after splitting by trainEM
      * means00 = mean of scores computed with model 0 = mu00 = mu-y=0-NO (mu_kk)
      * means01 = mean of scores computed with model 1 = mu01 = mu-y=0-YES (mu_kl)
      * means10 = mean of scores computed with model 0 = mu10 = mu-y=1-NO (mu_kl)
@@ -896,7 +989,7 @@ public class GMMDiag extends GMM {
      * @param margin
      * @return 
      */
-    public double[] trainStocViterbi(Margin margin) {
+    public double[] trainStocEM(Margin margin) {
         final float[] z = new float[nlabs];
         final GMMDiag gmm0 = this.clone();
         for (int i=0;i<nlabs;i++) {
@@ -1172,11 +1265,16 @@ public class GMMDiag extends GMM {
         double[] postPerClass=null;
         nIterDone=0;
         for (int iter=0;iter<nitersTraining;iter++,nIterDone++) {
-            postPerClass=trainViterbi(margin);
+            postPerClass=trainEM(margin);
             loglike = getLoglike(margin);
             if(Math.abs(loglike-previousLogLike)<toleranceTraining) break;
             previousLogLike=loglike;
         }
+        System.out.println("***end full gmm training******");
+        printMean();
+        printVariace();    
+        System.out.println("nkAll" + Arrays.toString(margin.nkAll));
+        System.out.println("******************************");
         return postPerClass;
     }
     public double[] trainApproxWithoutInit(Margin margin) {
@@ -1188,7 +1286,7 @@ public class GMMDiag extends GMM {
         
         for (int iter=0;iter<nitersTraining;iter++,nIterDone++) {
             CURRENTGMMTRITER=iter;
-            postPerClass=trainApproximatedEM(margin);
+            postPerClass=trainNaiveApproximatedEM(margin);
             loglike = getLoglike(margin);
             if(Math.abs(loglike-previousLogLike)<toleranceTraining) break;
             previousLogLike=loglike;
@@ -1215,7 +1313,7 @@ public class GMMDiag extends GMM {
         for(int s=0; s< 100 ;s++){
             
             for (int iter=0;iter<nitersTraining;iter++,nIterDone++) {
-                postPerClass=trainStocViterbi(margin);
+                postPerClass=trainStocEM(margin);
                 loglike = getLoglike(margin);
                 if(Math.abs(loglike-previousLogLike)<toleranceTraining) break;
                 previousLogLike=loglike;

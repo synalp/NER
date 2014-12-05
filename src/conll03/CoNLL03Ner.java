@@ -764,7 +764,7 @@ public class CoNLL03Ner {
      */
     public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize, boolean useExistingWSModel, boolean useSerializedFeats){
         
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,4001, useExistingWSModel,useSerializedFeats);
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel,useSerializedFeats);
         //runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,trainSize,testSize,10000, useExistingWSModel);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }  
