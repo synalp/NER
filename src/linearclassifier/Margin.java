@@ -43,6 +43,7 @@ public class Margin {
     private List<List<Integer>> featsperInst = new ArrayList<>();
     private List<Integer> labelperInst = new ArrayList<>(); 
     private HashMap<Integer,List<Integer>> instPerFeatures= new HashMap<>();
+    //private HashMap<Integer,Double> priorsMap = new HashMap<>();
        
     //paralell coordinate gradient
     
@@ -632,4 +633,11 @@ public class Margin {
         return new ArrayList<>(instPerFeatures.get(threadFeatIdx));
     }
     
+//    public void setPriorMap(HashMap<Integer,Double> pMap){
+//        this.priorsMap=pMap;
+//    }
+//    
+//    public HashMap<Integer,Double> getPriorMap(){
+//        return this.priorsMap;
+//    }
 }

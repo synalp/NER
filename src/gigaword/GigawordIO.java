@@ -4,11 +4,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +22,7 @@ import jsafran.DetGraph;
 import jsafran.GraphIO;
 import jsafran.JSafran;
 import jsafran.Mot;
+import tools.CNConstants;
 
 
 public class GigawordIO {
@@ -173,116 +177,40 @@ public class GigawordIO {
 	}
         
         public void savingFiles(List<DetGraph> gs){
-            
-//            for (int i=0;i<gs.size();i++) {
-//                    DetGraph group = gs.get(i);
-//                    int nexinutt=0;
-//                    //outFile.append("NO\tBS\tBS\n");
-//                    for (int j=0;j<group.getNbMots();j++) {
-//                            nexinutt++;
-//
-//                            // calcul du label
-//                            String lab = CNConstants.NOCLASS;
-//                            int[] groups = group.getGroups(j);
-//                            if (groups!=null)
-//                                for (int gr : groups) {
-//
-//                                    if(entity.equals(ONLYONEPNOUNCLASS)){
-//                                        //all the groups are proper nouns pn
-//                                        for(String str:groupsOfNE){
-//                                            if (group.groupnoms.get(gr).startsWith(str)) {
-//                                                if(typeofClass.equals(CNConstants.BIO)){
-//                                                    int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-//                                                    if (debdugroupe==j) lab = entity+"B";    
-//                                                    else lab = entity+"I";                                                            
-//                                                }else if(typeofClass.equals(CNConstants.BILOU)){
-//                                                    int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-//                                                    int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;   
-//                                                            if(debdugroupe==endgroupe){ 
-//                                                                lab=entity+"U";
-//                                                            }else{
-//                                                                if (debdugroupe==j) lab = entity+"B";
-//                                                                else if(endgroupe==j) lab=entity+"L";
-//                                                                else lab = entity+"I";
-//                                                            }                                                            
-//                                                }else
-//                                                    lab=entity;
-//                                                break;
-//                                            }
-//                                        }
-//                                    }else{
-//                                        if (group.groupnoms.get(gr).startsWith(entity)) {
-//                                            if(typeofClass.equals(CNConstants.BIO)){
-//                                                int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-//                                                if (debdugroupe==j) lab = entity+"B";    
-//                                                else lab = entity+"I";
-//                                            }else if(typeofClass.equals(CNConstants.BILOU)){
-//                                                    int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-//                                                    int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;   
-//                                                            if(debdugroupe==endgroupe){ 
-//                                                                lab=entity+"U";
-//                                                            }else{
-//                                                                if (debdugroupe==j) lab = entity+"B";
-//                                                                else if(endgroupe==j) lab=entity+"L";
-//                                                                else lab = entity+"I";
-//                                                            }                                                            
-//                                            }else
-//                                                lab=entity;
-//                                            break;
-//                                        }else{
-//                                            if (entity.equals(ONLYONEMULTICLASS)) {
-//                                                String groupName=group.groupnoms.get(gr);
-//                                                groupName=groupName.substring(0, groupName.indexOf("."));
-//                                                if(!Arrays.asList(groupsOfNE).toString().contains(groupName))
-//                                                    continue;
-//
-//                                                if(typeofClass.equals(CNConstants.BIO)){
-//                                                    int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-//                                                    if (debdugroupe==j) lab = entity+"B";    
-//                                                    else lab = entity+"I";
-//                                                }else if(typeofClass.equals(CNConstants.BILOU)){
-//                                                    int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-//                                                    int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
-//                                                    if (debdugroupe==endgroupe) lab = groupName+"U"; //Unit
-//                                                    else if (debdugroupe==j) lab = groupName+"B"; //Begin
-//                                                    else if (endgroupe==j) lab = groupName+"L"; //Last
-//                                                    else lab = groupName+"I";//Inside
-//                                                }else
-//                                                    lab=groupName;
-//                                                break;
-//                                            }                                                    
-//                                        }
-//                                    }
-//                                }
-//                            ///*        
-//                            if(iswiki){
-//                                if(!isStopWord(group.getMot(j).getPOS())){
-//                                    String inWiki ="F";
-//                                    if(!group.getMot(j).getPOS().startsWith("PRO") && !group.getMot(j).getPOS().startsWith("ADJ")&&
-//                                            !group.getMot(j).getPOS().startsWith("VER") && !group.getMot(j).getPOS().startsWith("ADV"))
-//                                        inWiki =(WikipediaAPI.processPage(group.getMot(j).getForme()).equals(CNConstants.CHAR_NULL))?"F":"T";
-//                                    outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\t"+ inWiki +"\n");
-//                                    wordcount++;
-//                                    System.out.println("processed word number " + wordcount);
-//                                } 
-//                            }else if(!isStopWord(group.getMot(j).getPOS())){
-//                                if(isLower)
-//                                    outFile.append(lab+"\t"+group.getMot(j).getForme().toLowerCase()+"\t"+group.getMot(j).getPOS()+"\n");
-//                                else
-//                                    outFile.append(lab+"\t"+group.getMot(j).getForme()+"\t"+group.getMot(j).getPOS()+"\n");
-//                            }
-//                    }
-//
-//
-//
-//            }            
+        OutputStreamWriter outFile = null;
+        try {
+            outFile = new OutputStreamWriter(new FileOutputStream("../clustering/posinduction/src/bin/fgw.in",true),CNConstants.UTF8_ENCODING);
+            for (int i=0;i<gs.size();i++) {
+                    DetGraph group = gs.get(i);
+                    int nexinutt=0;
+                    //outFile.append("NO\tBS\tBS\n");
+                    for (int j=0;j<group.getNbMots();j++) {
+                            nexinutt++;
+                            outFile.append(group.getMot(j).getForme()+"\n");
+                            outFile.flush();
+                    }
+            }
+            outFile.flush();
+            outFile.close();            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                outFile.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
         }
 	
 	public static void main(String args[]) {
 		GigawordIO m = new GigawordIO();
-		int i = Integer.parseInt(args[0]);
-		List<DetGraph> gs = m.getChunk(i);
-		GraphIO gio = new GraphIO(null);
-		gio.save(gs, "c"+i+".xml");
+                for(int i=0; i< m.chunkPaths.size(); i++){
+		//int i = Integer.parseInt(args[0]);
+                    List<DetGraph> gs = m.getChunk(i);
+                    //GraphIO gio = new GraphIO(null);
+                    //gio.save(gs, "c"+i+".xml");
+                    m.savingFiles(gs);
+                }    
 	}
 }
