@@ -21,12 +21,11 @@ import java.util.Random;
 import linearclassifier.AnalyzeLClassifier;
 import linearclassifier.Margin;
 import linearclassifier.NumericalIntegration;
-import org.apache.commons.math3.distribution.UniformRealDistribution;
 import test.AutoTests;
 import tools.CNConstants;
 import tools.Histoplot;
 import tools.PlotAPI;
-import utils.Wait;
+
 
 
 /**
@@ -38,19 +37,29 @@ public class MultiCoreStocCoordDescent  {
   private MulticoreWrapper<Pair<Integer, Margin>, Pair<Integer, Double>> wrapper;
   private ThreadsafeProcessor<Pair<Integer,Margin>,Pair<Integer,Double>> coordGradThr;
   private int nThreads;
+  public float delta = 0.01f;
+  final static float[] priors = AnalyzeLClassifier.getPriors();
+  public static GMMDiag gmm = null;
   
-  public static float computeROfTheta(Margin margin) {
-  	//final float[] priors = computePriors(sclassifier,model);
-  	final float[] priors = AnalyzeLClassifier.getPriors();
-  	// get scores
-  	GMMDiag gmm = new GMMDiag(priors.length, priors,true);
-  	gmm.nitersTraining=1000;
+  public static float computeROfTheta(Margin margin, float gradStep) {
+  
+      gmm.updatingGMMAfterRiskGradientStep(margin, gradStep);
+      float r= computeR(gmm, priors,true); //xtof
+      margin.previousGmm = gmm;        
+      return r;
+      
+  }
+  
+    public static  float computeROfTheta(Margin margin) {
+        
+        
+        // get scores
+        GMMDiag gmm = new GMMDiag(priors.length, priors,true);
+        // what is in marginMAP ? It maps a Margin, which contains the corpus for train, or test, or both ? and it is mapped to what ?
+        double[] post=gmm.train(margin);
+        //gmm.trainEstimatedGaussians(marginMAP.get(sclassifier));
+        
   	
-  	double[] post=gmm.trainApproximation(margin);
-        //double[] post=gmm.train(margin);
-        //double[] post = gmm.trainStoc(margin);
-        //gmm.trainEstimatedGaussians(margin);
-  	/*
         System.out.println("just after gmm train priors "+Arrays.toString(priors)+" "+Arrays.toString(post)+" "+gmm.nIterDone+" "+Thread.currentThread().getId());
   	
   	{
@@ -76,33 +85,22 @@ public class MultiCoreStocCoordDescent  {
   	}
   	
   	AutoTests.checkPosteriors(post,priors);
-  		// for debugging:
-//  		int numInstances = margin.getNumberOfInstances();
-//  		float[] z = new float[numInstances];
-//  		for (int ex=0;ex<numInstances;ex++) {
-//  			List<Integer> featuresByInstance = new ArrayList<>();
-//  			if(!Margin.GENERATEDDATA) featuresByInstance = margin.getFeaturesPerInstance(ex);
-//  			if(Margin.GENERATEDDATA)
-//  				z[ex] = margin.getGenScore(ex, 0);
-//  			else                
-//  				z[ex] = margin.getScore(featuresByInstance,0);
-//  		}
-//  		Histoplot.showit(z);
-//  		Wait.waitUser();
-      /*
-      System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
-      +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
-      System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
-      +gmm.getVar(1, 0, 0)+" , "+gmm.getVar(1, 1, 1));
-      System.out.println("GMM trained");
-      //*/
-      //return computeR(gmm, priors,marginMAP.get(sclassifier).getNlabs() );
-      
-      float r= computeR(gmm, priors,true); //xtof
-      margin.previousGmm = gmm;        
-      return r;
-      
-  }
+        
+        
+        System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
+        +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
+        System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
+        +gmm.getVar(1, 0, 0)+" , "+gmm.getVar(1, 1, 1));
+        System.out.println("GMM trained");
+        
+        //return computeR(gmm, priorsMap,marginMAP.get(sclassifier).getNlabs() );
+        
+        float r= computeR(gmm, priors,true); //xtof
+        
+       
+        return r;
+        
+    }  
 
   /**
    * Le GMM modélise les scores de la class 0, i.e: (mu_0,0 ; sigma_0,0) et (mu_1,0 ; sigma_1,0)
@@ -304,113 +302,109 @@ public class MultiCoreStocCoordDescent  {
 
             if(margin.isIndexInSubset(index))
                 testFeatsInSubSet.add(index);
-        }   
-        
-        
-        HashSet<String> emptyfeats = new HashSet<>();
-        for (int iter=0;iter<niters;iter++) {
-            int dimIdx=0;
-            if(nLabels>2){
-                for(int d=1; d<nLabels; d++)
-                    margin.setSubListOfFeats(d);
-                dimIdx = rnd.nextInt(nLabels);
-            }
-            List<Double> weightsForFeat= margin.getSubListOfFeats(dimIdx);
-            //int selectedFeats[] = margin.getTopWeights(0.3,50);
-            //List<Integer> trainFeats = margin.getTrainFeatureIndexes();
-            //List<Integer> testFeats = margin.getTestFeatureIndexes();
-          
+        }  
+        gmm=new GMMDiag(priors.length, priors,true);
+        gmm.train(margin);
+        for (int opt=0;opt<1000;opt++) {
+            //scd iterations
+            for (int iter=0;iter<niters;iter++) {
+                int dimIdx=0;
+                if(nLabels>2){
+                    for(int d=1; d<nLabels; d++)
+                        margin.setSubListOfFeats(d);
+                    dimIdx = rnd.nextInt(nLabels);
+                }
+                List<Double> weightsForFeat= margin.getSubListOfFeats(dimIdx);
 
-            
-            final double[] gradw = new double[weightsForFeat.size()];
-            double rndVal = rnd.nextDouble();   
-            int featIdx=rnd.nextInt(weightsForFeat.size());
-            if(rndVal<0.9 && !testFeatsInSubSet.isEmpty()){
-                int selfeatIdx=rnd.nextInt(testFeatsInSubSet.size());
-                featIdx=testFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
-      
-            }else if(rndVal<0.1 && !trainFeatsInSubSet.isEmpty()){
-                int selfeatIdx=rnd.nextInt(trainFeatsInSubSet.size());
-                featIdx=trainFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
-      
-            }
-            
-            int orIdx=margin.getOrWeightIndex(featIdx);
-            System.out.println("************ Changing feature :"+orIdx);
-            //takes one feature randomly
+                final double[] gradw = new double[weightsForFeat.size()];
+                 //takes one feature randomly
+                double rndVal = rnd.nextDouble();   
+                int featIdx=rnd.nextInt(weightsForFeat.size());
+                if(rndVal<0.9 && !testFeatsInSubSet.isEmpty()){
+                    int selfeatIdx=rnd.nextInt(testFeatsInSubSet.size());
+                    featIdx=testFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
 
-            double w0 =weightsForFeat.get(featIdx);
-            System.out.println("****** w0="+w0);
-            
-            if (emptyfeats.contains("["+featIdx+","+0+"]")) 
-                continue;
-            
-            // 50% of w0 ? That's a lot !!!
-            float delta = 0.5f;
+                }else if(rndVal<0.1 && !trainFeatsInSubSet.isEmpty()){
+                    int selfeatIdx=rnd.nextInt(trainFeatsInSubSet.size());
+                    featIdx=trainFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
 
-            double deltaW=w0 + w0*delta;
-            // when w0=0, we still want to be able to change it...
-            if (w0==0) deltaW=0.05f;
-            
-            System.out.println("****** deltaWMC="+deltaW);
-            weightsForFeat.set(featIdx, deltaW);
-            margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
-            margin.lastRperSCDIter=false;
-            float estimr = (isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
+                }
 
-            gradw[0] = (estimr-estimr0)/(deltaW-w0);
-            System.out.println("grad "+gradw[0]);
-            System.out.println("****** w0="+w0);
-            weightsForFeat.set(featIdx, w0); 
-            margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
-            
-            	// why preventing future modifications of these weights ? They may induce risk change at the next iterations !
-            	// for instance, their impact may be quasi-nul in some regions, but larger elsewhere...
-                    // emptyfeats.add("["+featIdx+","+0+"]");
-            if (gradw[0]!=0) {
-                weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- gradw[0] * eps);                    
+                //int orIdx=margin.getOrWeightIndex(featIdx);
+                //System.out.println("************ Changing feature :"+orIdx);
+               
+                double w0 =weightsForFeat.get(featIdx);
+                //System.out.println("****** w0="+w0);
+                double deltaW=w0 + delta;
+                // when w0=0, we still want to be able to change it...
+                //if (w0==0) deltaW=0.05f;
+
+                //System.out.println("****** deltaWMC="+deltaW);
+                weightsForFeat.set(featIdx, deltaW);
                 margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
-                System.out.println("Iteration["+iter+"] Updated feature "+ margin.getOrWeightIndex(featIdx));
-                if(computeF1){
-                    columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", currentClassifier));
-                    double f1train=ColumnDataClassifier.macrof1;
-                        if(!currentClassifier.equals(CNConstants.ALL))
-                            f1train=columnDataClass.fs.get(currentClassifier);
-                        /*
-                         * I'm not sure it's good to have such a hard decision there, because the "target" weights = the ones obtained when training
-                         * on a very large training corpus, are likely to get a lower F1 on the "small initial" train set than the initial weights
-                         * trained on this small corpus, simply because of overfitting / because there is less variability in the small corpus than in
-                         * the very large one. So it's probably better to rather combine this "F1-train" term with the risk into a new objective function. 
-                         */
-                    if(f1train<f1trainOr){
-                        System.out.println("Iteration["+iter+"] Not accepted previous step of gradient "+f1train+" "+f1trainOr);   
-                        weightsForFeat.set(featIdx,w0); 
-                        margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
-                    }    
-                } 
-            }  
-            counter++;
-            margin.lastRperSCDIter=true;
-            estimr0 =(isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
-            System.out.println("*******************************"); 
-            System.out.println("RMCSC["+iter+"] = "+estimr0+" "+Thread.currentThread().getId());   
-            lastRisk=(double)estimr0;
-            plotR.addPoint(counter, estimr0);
-            System.out.println("*******************************");
-    
-            model.setWeights(margin.getWeights());
-            
-            if(computeF1){
-                columnDataClass.testClassifier(model, AnalyzeLClassifier.TESTFILE.replace("%S", currentClassifier));
-                f1=ColumnDataClassifier.macrof1;
-                if(!currentClassifier.equals(CNConstants.ALL))            
-                    f1=columnDataClass.fs.get(currentClassifier);
-                //plotF1.addPoint(counter, f1);
+                margin.lastRperSCDIter=false;
+                float estimr = (isCloseForm)?computeROfTheta(margin,delta):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
+
+                gradw[0] = (estimr-estimr0)/delta;
+                //System.out.println("grad "+gradw[0]);
+                //System.out.println("****** w0="+w0);
+                weightsForFeat.set(featIdx, w0); 
+                margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
+
+                if (gradw[0]!=0) {
+                    weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- gradw[0] * eps);                    
+                    margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
+                    System.out.println("Iteration["+iter+"] Updated feature "+ margin.getOrWeightIndex(featIdx));
+                    if(computeF1){
+                        columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", currentClassifier));
+                        double f1train=ColumnDataClassifier.macrof1;
+                            if(!currentClassifier.equals(CNConstants.ALL))
+                                f1train=columnDataClass.fs.get(currentClassifier);
+                            /*
+                             * I'm not sure it's good to have such a hard decision there, because the "target" weights = the ones obtained when training
+                             * on a very large training corpus, are likely to get a lower F1 on the "small initial" train set than the initial weights
+                             * trained on this small corpus, simply because of overfitting / because there is less variability in the small corpus than in
+                             * the very large one. So it's probably better to rather combine this "F1-train" term with the risk into a new objective function. 
+                             */
+                        if(f1train<f1trainOr){
+                            System.out.println("Iteration["+iter+"] Not accepted previous step of gradient "+f1train+" "+f1trainOr);   
+                            weightsForFeat.set(featIdx,w0); 
+                            margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
+                        }    
+                    } 
+                }  
+                counter++;
+                margin.lastRperSCDIter=true;
+                double gwDelta = -gradw[0]*delta;
+                estimr0 =(isCloseForm)?computeROfTheta(margin, (float) gwDelta):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
+                /*
                 System.out.println("*******************************"); 
+                System.out.println("RMCSC["+iter+"] = "+estimr0+" "+Thread.currentThread().getId());   
+                //plotR.addPoint(counter, lastRisk);
+                System.out.println("*******************************");
+                */
+                lastRisk=(double)estimr0;
+                model.setWeights(margin.getWeights());
+
+                if(computeF1){
+                    columnDataClass.testClassifier(model, AnalyzeLClassifier.TESTFILE.replace("%S", currentClassifier));
+                    f1=ColumnDataClassifier.macrof1;
+                    if(!currentClassifier.equals(CNConstants.ALL))            
+                        f1=columnDataClass.fs.get(currentClassifier);
+                    //plotF1.addPoint(counter, f1);
+                    System.out.println("*******************************"); 
+                }
+                //Histoplot.showit(margin.getScoreForAllInstancesLabel0( featsperInst, scores), featsperInst.size());
+
+               //margin.sampling(0.1);
             }
-            //Histoplot.showit(margin.getScoreForAllInstancesLabel0( featsperInst, scores), featsperInst.size());
+            gmm.trainWithoutInit(margin);
+            System.out.println("*******************************"); 
+            System.out.println("R["+opt+"] = "+lastRisk+" "+Thread.currentThread().getId()); 
+            plotR.addPoint(counter, lastRisk);
+            System.out.println("*******************************");
             //save the model regularly
-            if(iter%30==0){
+            if(opt%30==0){
                 File mfile = new File(margin.getBinaryFile());
 //                for(int i=0; i<weightsForFeat.size();i++){
 //                    AnalyzeLClassifier.CURRENTPARENTMARGIN.setWeight(orIdx, margin.getPartialShuffledWeight(i));
@@ -421,12 +415,9 @@ public class MultiCoreStocCoordDescent  {
                 } catch (IOException ex) {
 
                 }
-           } 
-           //margin.sampling(0.1);
-        }
-        for(String emptyW:emptyfeats){
-            System.out.println(emptyW);
-        }
+           }             
+        }    
+ 
         return new Pair(thrId,lastRisk);
     }
 

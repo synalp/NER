@@ -1269,7 +1269,7 @@ public class AnalyzeLClassifier {
      * 
      * @return 
      */
-    public float computeROfTheta() {
+    public  float computeROfTheta() {
         String sclassifier=CURRENTSETCLASSIFIER;
         //final float[] priors = computePriors(sclassifier,model);
         float[] priors = getPriors();
@@ -1824,7 +1824,7 @@ public class AnalyzeLClassifier {
         MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
         
-        ///*
+        /*
         //set the weights of the test set to a random value
         for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
                 double[] sc = new double[margin.getNlabs()];

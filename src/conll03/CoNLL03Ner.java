@@ -529,10 +529,10 @@ public class CoNLL03Ner {
     		File mfile = new File(AnalyzeCRFClassifier.MODELFILE);
     		mfile.delete();
     		AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
-    		crfclass.trainAllCRFClassifier(entity, false, false);
+    		crfclass.trainAllCRFClassifier(entity, false, false,false);
 
     		AnalyzeCRFClassifier.TESTFILE=DEVFILE.replace("%S", entity).replace("%CLASS", "CRF");
-    		crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+    		crfclass.testingClassifier(entity);
     		AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
     		evaluatingCRFResults(entity);
     		basef1 = conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
@@ -613,9 +613,9 @@ public class CoNLL03Ner {
         }
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
 
-        crfclass.trainAllCRFClassifier(entity, false, false);
+        crfclass.trainAllCRFClassifier(entity, false, false, false);
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
-        crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+        crfclass.testingClassifier(entity);
         AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
         evaluatingCRFResults(entity);
         return conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
@@ -685,7 +685,7 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
         AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
-        crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+        crfclass.testingClassifier(entity);
         AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
         evaluatingCRFResults(entity);
         
@@ -764,7 +764,7 @@ public class CoNLL03Ner {
      */
     public void experimentsCRFPlusWkSupGWord(int trainSize, int testSize, boolean useExistingWSModel, boolean useSerializedFeats){
         
-        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,4001, useExistingWSModel,useSerializedFeats);
+        runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,trainSize,testSize,1000, useExistingWSModel,useSerializedFeats);
         //runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,trainSize,testSize,10000, useExistingWSModel);
         trainStanfordCRF(CNConstants.ALL, true, true,false);
     }  
@@ -793,9 +793,9 @@ public class CoNLL03Ner {
         }
         
 
-        crfclass.trainAllCRFClassifier(entity, false, false);
+        crfclass.trainAllCRFClassifier(entity, false, false,false);
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
-        crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+        crfclass.testingClassifier(entity);
         AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
         evaluatingCRFResults(entity);
         conllEvaluation(AnalyzeCRFClassifier.OUTFILE);        
