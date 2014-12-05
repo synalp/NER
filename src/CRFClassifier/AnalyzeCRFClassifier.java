@@ -266,7 +266,7 @@ public class AnalyzeCRFClassifier {
                            classVal = CNConstants.PRNOUN;
                        
                        predictedClass.put(testLine, classVal );
-                        
+                       testLine++;
                     }
                 }
                 
@@ -957,7 +957,7 @@ public class AnalyzeCRFClassifier {
     * @param isGaz
     * @param typeOfclasses 
     */ 
-  public void properNounDetectionOnEster(boolean isGaz, String typeOfclasses){
+  public void properNounDetectionOnEster(boolean isSavingFiles,boolean isGaz, String typeOfclasses){
         
         File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
         mfile.delete(); 
@@ -966,18 +966,18 @@ public class AnalyzeCRFClassifier {
             POSFILTER=false;
         if(isGaz)
             PROPERTIES_FILE="scrfGaz.props";
-        trainAllCRFClassifier(CNConstants.PRNOUN,true,false,false);
-        testingClassifier(CNConstants.PRNOUN,true,false,false);
         
-
+        updatingMappingBkGPropFile(CNConstants.PRNOUN,"O","word=0,tag=1,answer=2"); 
+        trainAllCRFClassifier(CNConstants.PRNOUN,isSavingFiles,false,false);
+        testingClassifier(CNConstants.PRNOUN,isSavingFiles,false,false);     
         
         if(!typeOfclasses.startsWith(CNConstants.BIO.substring(0,2)))
-            AnalyzeLClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);
+            AnalyzeLClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,OUTFILE.replace("%S", CNConstants.PRNOUN));
         else
-            evaluationBIOCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);
+            evaluationBIOCLASSRESULTS(CNConstants.PRNOUN,OUTFILE.replace("%S", CNConstants.PRNOUN));
     }
   
-  public void properNounDetectionOnEsterTk(boolean isGaz, String typeOfclasses){
+  public void properNounDetectionOnEsterTk(boolean isSavingFiles,boolean isGaz, String typeOfclasses){
         File mfile = new File(MODELFILE.replace("%S", CNConstants.PRNOUN));
         mfile.delete(); 
         this.typeofClass=typeOfclasses;
@@ -995,9 +995,9 @@ public class AnalyzeCRFClassifier {
 
         
         if(!typeOfclasses.startsWith(CNConstants.BIO.substring(0,2)))
-            AnalyzeLClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);
+            AnalyzeLClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,OUTFILE.replace("%S", CNConstants.PRNOUN));
         else
-            evaluationBIOCLASSRESULTS(CNConstants.PRNOUN,OUTFILE);    
+            evaluationBIOCLASSRESULTS(CNConstants.PRNOUN,OUTFILE.replace("%S", CNConstants.PRNOUN));    
   }
     
   public void detectingNEOnEster(boolean isGaz, String typeOfclasses, boolean usePNClassFeat){
@@ -1072,10 +1072,11 @@ public class AnalyzeCRFClassifier {
                 analyzing.detectingNEOnEster(false,CNConstants.BIO,false);
                 break;
             case "esterPN":
-                analyzing.properNounDetectionOnEster(false,CNConstants.IO);
+                //analyzing.properNounDetectionOnEster(isSavingFiles,isGaz,typeOfClasses (e.g., IO, BIO, BILOU);
+                analyzing.properNounDetectionOnEster(false,false,CNConstants.IO);
                 break;
             case "esterTKPN":
-                analyzing.properNounDetectionOnEsterTk(false, CNConstants.IO);
+                analyzing.properNounDetectionOnEsterTk(true,false, CNConstants.IO);
                     
         }
         

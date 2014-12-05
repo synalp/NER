@@ -130,7 +130,7 @@
 	   fork="true"
            failonerror="true"
            maxmemory="13g">
-           <arg value="esterPN"/>
+           <arg value="esterTKPN"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>
