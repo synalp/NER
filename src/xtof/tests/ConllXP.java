@@ -3,6 +3,7 @@ package xtof.tests;
 import java.util.Arrays;
 
 import tools.CNConstants;
+import tools.GeneralConfig;
 import xtof.Corpus;
 import xtof.LinearModel;
 import xtof.LinearModelNoStanford;
@@ -34,14 +35,18 @@ public class ConllXP {
 		CoNLL03Ner conll = new CoNLL03Ner();
 		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
         String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
+        GeneralConfig.corpusGigaDir="res/";
+        GeneralConfig.corpusGigaTrain="giga1000.conll03";
+        String unlabfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
+
         // TODO: the risk does not improve when the CRF is trained on the full train; add in the gigaword to give room for the risk to improve ?
-		fullCorpus = new Corpus(trainfile, null, null, testfile);
+		fullCorpus = new Corpus(trainfile, unlabfile, null, testfile);
 		LinearModel lcmod=LinearModel.train(fullCorpus.columnDataClassifier, fullCorpus.trainData);
 		lcbig = new LinearModelNoStanford(fullCorpus);
 		lcbig.projectTrainingWeights(lcmod);
 		Parms.nitersRiskOptimApprox=1000;
 		Parms.nitersRiskOptimGlobal=10000;
-		lcbig.executors.add(new LCaccComputer()); // just used to track the perfs of the LC
+		lcbig.executors.add(new triggerCRFFromTimeToTime());
 		// optimization is done on the full unlab corpus, which is created before as the union of all corpora in fullCorpus
 		lcbig.optimizeRiskWithApprox();
 		lcbig.save("finalweights.dat");
@@ -111,7 +116,7 @@ public class ConllXP {
 		@Override
 		public void execute(LinearModelNoStanford mod) {
 			super.execute(mod);
-			if (nitersDone%1000==0) { // test CRF every 1000 iterations
+			if (nitersDone%100==0) { // test CRF every 100 iterations
 				mod.save("tmpweights.dat"); // and also save the weights just in case...
 				testCRFWithLC();
 			}
