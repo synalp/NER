@@ -57,6 +57,9 @@ public class ConllXP {
         String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
 		fullCorpus = new Corpus(trainfile, null, null, testfile);
 		optimLConConll();
+		testCRFWithLC();
+	}
+	private void testCRFWithLC() {
 //		int[] trainFeats = getOracleFeatures(fullCorpus.trainData);
 //		int[] testFeats = getOracleFeatures(fullCorpus.testData);
 		int[] trainFeats = getPredictedFeatures(fullCorpus.trainData);
@@ -72,6 +75,11 @@ public class ConllXP {
 		return ds.getLabelsArray();
 	}
 	
+	/**
+	 * Calcule avec commit 31389:
+	 * sur 20 phrases: baseline=41, oracle=55, predicted=48
+	 * sur tout: baseline=88.46, oracle=(trop long), predicted=84.67
+	 */
 	public void trainAndTestBaselineCRF() {
 		CoNLL03Ner conll = new CoNLL03Ner();
 		conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, Parms.nuttsCRFtraining, CNConstants.CHAR_NULL);
@@ -95,6 +103,19 @@ public class ConllXP {
 		public void execute(LinearModelNoStanford mod) {
 			TestResult acc = mod.test(fullCorpus.testData);
 			System.out.println("LCF1 "+acc.getF1());
+		}
+	}
+	
+	class triggerCRFFromTimeToTime extends LCaccComputer {
+		int nitersDone=0;
+		@Override
+		public void execute(LinearModelNoStanford mod) {
+			super.execute(mod);
+			if (nitersDone%1000==0) { // test CRF every 1000 iterations
+				mod.save("tmpweights.dat"); // and also save the weights just in case...
+				testCRFWithLC();
+			}
+			nitersDone++;
 		}
 	}
 	
