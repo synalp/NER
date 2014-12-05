@@ -22,6 +22,7 @@ public class ConllXP {
 	public static void main(String[] args) {
 		Parms.nuttsLCtraining=50000;
 		Parms.nuttsCRFtraining=50000;
+//		new ConllXP().trainAndTestBaselineCRF();
 		new ConllXP().xpCRF();
 	}
 	
@@ -33,13 +34,15 @@ public class ConllXP {
 		CoNLL03Ner conll = new CoNLL03Ner();
 		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
         String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
+        // TODO: the risk does not improve when the CRF is trained on the full train; add in the gigaword to give room for the risk to improve ?
 		fullCorpus = new Corpus(trainfile, null, null, testfile);
 		LinearModel lcmod=LinearModel.train(fullCorpus.columnDataClassifier, fullCorpus.trainData);
 		lcbig = new LinearModelNoStanford(fullCorpus);
 		lcbig.projectTrainingWeights(lcmod);
 		Parms.nitersRiskOptimApprox=1000;
 		Parms.nitersRiskOptimGlobal=10000;
-		lcbig.executors.add(new LCaccComputer());
+		lcbig.executors.add(new LCaccComputer()); // just used to track the perfs of the LC
+		// optimization is done on the full unlab corpus, which is created before as the union of all corpora in fullCorpus
 		lcbig.optimizeRiskWithApprox();
 		lcbig.save("finalweights.dat");
 	}
@@ -58,6 +61,7 @@ public class ConllXP {
 //		int[] testFeats = getOracleFeatures(fullCorpus.testData);
 		int[] trainFeats = getPredictedFeatures(fullCorpus.trainData);
 		int[] testFeats = getPredictedFeatures(fullCorpus.testData);
+		// TODO: shouldn't we use here xval, to train the CRF with labels predicted on a different corpus than the one used to train the LC ?
 		trainAndTestCRFWithAdditionalFeatures(trainFeats, testFeats);
 	}
 	

@@ -120,6 +120,7 @@ public class LinearModelNoStanford {
 		gmm.trainEM(sc);
 	}
 	
+	// TODO: add in 2 terms to the risk: accuracy of the LC on the dev; distance(posteriors,priors)
 	public float getRiskFromGMM(GMMDiag gmm) {
 		double[] priors = {0.2,0.8};
 		RiskMachine risk = new RiskMachine(priors);
@@ -176,6 +177,7 @@ public class LinearModelNoStanford {
 	}
 	public RiskMachine.GMMDiag optimizeRiskApproxLoop(int iteroffset, RiskMachine.GMMDiag gmm) {
 		for (int i=0;i<Parms.nitersRiskOptimApprox;i++) {
+			// TODO: prefer sampling features that appear in the test and not in the train ?
 			int feat = rand.nextInt(corp.featureSpaceSize);
 			w[feat] += Parms.finiteDiffDelta;
 			float m0=gmm.mean0,m1=gmm.mean1,v0=gmm.var0,v1=gmm.var1,g0=gmm.gconst0,g1=gmm.gconst1;
