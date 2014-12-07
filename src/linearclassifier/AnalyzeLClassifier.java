@@ -286,8 +286,8 @@ public class AnalyzeLClassifier {
                                                         
                                                         if(typeofClass.equals(CNConstants.BIO)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                            if (debdugroupe==j) lab = entity+"B";    
-                                                            else lab = entity+"I";
+                                                            if (debdugroupe==j) lab = groupName+"B";    
+                                                            else lab = groupName+"I";
                                                         }else if(typeofClass.equals(CNConstants.BILOU)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
                                                             int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
