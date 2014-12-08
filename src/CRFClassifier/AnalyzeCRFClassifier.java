@@ -4,6 +4,7 @@
  */
 package CRFClassifier;
 
+import conll03.CoNLL03Ner;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.ie.NERFeatureFactory;
@@ -1076,14 +1077,13 @@ public class AnalyzeCRFClassifier {
             POSFILTER=false;
         if(isGaz)
             PROPERTIES_FILE="scrfGaz.props";      
-        ///*
-        File mfile = new File(MODELFILE.replace("%S", str));
-        mfile.delete(); 
-        //*/
+        
         if(savingFiles){
+            File mfile = new File(MODELFILE.replace("%S", str));
+            mfile.delete();       
             saveFilesForLClassifier(str,true,false,useTKFeat,useWSupFeat);
-            saveFilesForLClassifier(str,false,false,useTKFeat,useWSupFeat);
-        }
+        }    
+        
         if(useTKFeat && useWSupFeat)
             updatingMappingBkGPropFile(CNConstants.PRNOUN,CNConstants.NOCLASS,"word=0,tag=1,feattk=2,feat=3,answer=4");
         else if(useTKFeat && !useWSupFeat)
@@ -1104,9 +1104,10 @@ public class AnalyzeCRFClassifier {
             else{
                 CRFClassifier crf=this.modelMap.get(str);
                 for(Object label:crf.labels()){
-                    evaluationBIOCLASSRESULTS((String)label,OUTFILE.replace("%S", str));   
+                    evaluationCONLLBIOCLASSRESULTS((String)label,OUTFILE.replace("%S", str));   
                 }
             }
+            CoNLL03Ner.conllEvaluation(OUTFILE.replace("%S", str));
         }    
          
     }   
@@ -1166,7 +1167,7 @@ public class AnalyzeCRFClassifier {
                 analyzing.properNounDetectionOnEsterTk(true,false, CNConstants.IO);
                 
             case "esterMClass":
-                analyzing.detectingOneEntityOnEster(CNConstants.ALL, true, false, CNConstants.BIO, false,false);
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, false,false);
                 break;
                 
             case "esterTKMClass":

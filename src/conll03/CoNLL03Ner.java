@@ -636,7 +636,7 @@ public class CoNLL03Ner {
         
     }
   
-    public float conllEvaluation(String results){
+    public static float conllEvaluation(String results){
     	float f1=0;
         try {
             //command
