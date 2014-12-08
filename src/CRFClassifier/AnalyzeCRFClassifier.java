@@ -277,6 +277,7 @@ public class AnalyzeCRFClassifier {
                 LinearClassifier wsupModel = null;
                 ColumnDataClassifier columnDataClass = null;
                 if(useWSupFeat){
+                    AnalyzeLClassifier.PROPERTIES_FILE="etc/slinearclassifierORIG.props";
                     wsupModel = AnalyzeLClassifier.loadModelFromFile(WSUPMODEL);
                     columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
                 }    
@@ -314,17 +315,17 @@ public class AnalyzeCRFClassifier {
                                                     if (group.groupnoms.get(gr).startsWith(str)) {
                                                         if(typeofClass.equals(CNConstants.BIO)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                            if (debdugroupe==j) lab = en+"B";    
-                                                            else lab = en+"I";                                                            
+                                                            if (debdugroupe==j) lab = "B-"+en;    
+                                                            else lab = "I-"+en;                                                            
                                                         }else if(typeofClass.equals(CNConstants.BILOU)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
                                                             int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;   
                                                                     if(debdugroupe==endgroupe){ 
-                                                                        lab=en+"U";
+                                                                        lab="U-"+en;
                                                                     }else{
-                                                                        if (debdugroupe==j) lab = en+"B";
-                                                                        else if(endgroupe==j) lab=en+"L";
-                                                                        else lab = en+"I";
+                                                                        if (debdugroupe==j) lab = "B-"+en;
+                                                                        else if(endgroupe==j) lab="L-"+en;
+                                                                        else lab = "I-"+en;
                                                                     }                                                            
                                                         }else
                                                             lab=en;
@@ -335,17 +336,17 @@ public class AnalyzeCRFClassifier {
                                                 if (group.groupnoms.get(gr).startsWith(en)) {
                                                     if(typeofClass.equals(CNConstants.BIO)){
                                                         int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                        if (debdugroupe==j) lab = en+"B";    
-                                                        else lab = en+"I";
+                                                        if (debdugroupe==j) lab = "B-"+en;    
+                                                        else lab = "I-"+en;
                                                     }else if(typeofClass.equals(CNConstants.BILOU)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
                                                             int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;   
                                                                     if(debdugroupe==endgroupe){ 
-                                                                        lab=en+"U";
+                                                                        lab="U-"+en;
                                                                     }else{
-                                                                        if (debdugroupe==j) lab = en+"B";
-                                                                        else if(endgroupe==j) lab=en+"L";
-                                                                        else lab = en+"I";
+                                                                        if (debdugroupe==j) lab = "B-"+en;
+                                                                        else if(endgroupe==j) lab="L-"+en;
+                                                                        else lab = "I-"+en;
                                                                     }                                                            
                                                     }else
                                                         lab=en;
@@ -372,15 +373,15 @@ public class AnalyzeCRFClassifier {
                                                         
                                                         if(typeofClass.equals(CNConstants.BIO)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                            if (debdugroupe==j) lab = groupName+"B";    
-                                                            else lab = groupName+"I";
+                                                            if (debdugroupe==j) lab = "B-"+groupName;    
+                                                            else lab = "I-"+groupName;
                                                         }else if(typeofClass.equals(CNConstants.BILOU)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
                                                             int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
-                                                            if (debdugroupe==endgroupe) lab = groupName+"U"; //Unit
-                                                            else if (debdugroupe==j) lab = groupName+"B"; //Begin
-                                                            else if (endgroupe==j) lab = groupName+"L"; //Last
-                                                            else lab = groupName+"I";//Inside
+                                                            if (debdugroupe==endgroupe) lab = "U-"+groupName; //Unit
+                                                            else if (debdugroupe==j) lab = "B-"+groupName; //Begin
+                                                            else if (endgroupe==j) lab = "L-"+groupName; //Last
+                                                            else lab = "I-"+groupName;//Inside
                                                         }else
                                                             lab=groupName;
                                                         break;
@@ -419,16 +420,32 @@ public class AnalyzeCRFClassifier {
                                             String outClass = "";
                                             if(wsupModel!=null)
                                                 outClass=(String) wsupModel.classOf(datum);  
-                                            outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+outClass+"\t"+outClass+"\t"+lab+"\n");
-
-                                            outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+predictedClass.get(wordCounter)+"\t"+lab+"\n");
+                                            outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+outClass+"\t"+lab+"\n");                                           
                                         }else
                                             outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+lab+"\n");
                                         
                                         
                                         
                                     }else if(!POSFILTER){
-                                        outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+lab+"\n");                                       
+                                      if(useWSupFeat && useTkFeat){
+                                            String line = lab+"\t"+wordForm+"\t"+group.getMot(j).getPOS()+"\n";
+                                            Datum<String, String> datum = columnDataClass.makeDatumFromLine(line+"\n", 0);
+                                            String outClass = "";
+                                            if(wsupModel!=null)
+                                                outClass=(String) wsupModel.classOf(datum);  
+                                            outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+outClass+"\t"+predictedClass.get(wordCounter)+"\t"+lab+"\n");
+                                        }
+                                        else if(!useWSupFeat && useTkFeat)
+                                            outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+predictedClass.get(wordCounter)+"\t"+lab+"\n");
+                                        else if(useWSupFeat && !useTkFeat){
+                                            String line = lab+"\t"+wordForm+"\t"+group.getMot(j).getPOS()+"\n";
+                                            Datum<String, String> datum = columnDataClass.makeDatumFromLine(line+"\n", 0);
+                                            String outClass = "";
+                                            if(wsupModel!=null)
+                                                outClass=(String) wsupModel.classOf(datum);  
+                                            outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+outClass+"\t"+lab+"\n");
+                                        }else
+                                            outFile.append(wordForm+"\t"+group.getMot(j).getPOS()+"\t"+lab+"\n");                                       
                                     } 
                                     
                                      wordCounter++;
@@ -1171,8 +1188,16 @@ public class AnalyzeCRFClassifier {
                 break;
                 
             case "esterTKMClass":
-                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, true,false);
-                break;                
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, true, false, CNConstants.BIO, true,false);
+                break;    
+                
+            case "esterWsupMClass":
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, true, false, CNConstants.BIO, false,true);
+                break; 
+                
+            case "esterWsupTKMClass":
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, false,true);
+                break;                  
                     
         }
         
