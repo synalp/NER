@@ -98,6 +98,9 @@ public class CoNLL03Ner {
    // I need a bit more flexibility and control over the size of the datasets that are produced
    // so I'ved added this method but still keeping the default behavior the same with the previous method
    public String generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, int limitsize, String wSupModelFile){
+       LinearClassifier wsupModel = null;
+       if(!wSupModelFile.equals(CNConstants.CHAR_NULL))
+           wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
         BufferedReader inFile = null;
         OutputStreamWriter outFile =null;
         HashMap<String,String> wordclasses = new HashMap<>();
@@ -281,7 +284,7 @@ public class CoNLL03Ner {
                 	  }else if(!wSupModelFile.equals(CNConstants.CHAR_NULL)){
                 		  AnalyzeLClassifier.MODELFILE=wSupModelFile;
                             // you load the model for every line i ??!!
-                            LinearClassifier wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
+                            
                             ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
                             String line =lines.get(i);
                             Datum<String, String> datum = columnDataClass.makeDatumFromLine(line+"\t"+context+"\n", 0);
@@ -529,10 +532,10 @@ public class CoNLL03Ner {
     		File mfile = new File(AnalyzeCRFClassifier.MODELFILE);
     		mfile.delete();
     		AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
-    		crfclass.trainAllCRFClassifier(entity, false, false);
+    		crfclass.trainAllCRFClassifier(entity, false, false,false,false);
 
     		AnalyzeCRFClassifier.TESTFILE=DEVFILE.replace("%S", entity).replace("%CLASS", "CRF");
-    		crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+    		crfclass.testingClassifier(entity);
     		AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
     		evaluatingCRFResults(entity);
     		basef1 = conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
@@ -613,9 +616,9 @@ public class CoNLL03Ner {
         }
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
 
-        crfclass.trainAllCRFClassifier(entity, false, false);
+        crfclass.trainAllCRFClassifier(entity, false, false, false,false);
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
-        crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+        crfclass.testingClassifier(entity);
         AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
         evaluatingCRFResults(entity);
         return conllEvaluation(AnalyzeCRFClassifier.OUTFILE);
@@ -685,7 +688,7 @@ public class CoNLL03Ner {
         AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier();
         AnalyzeCRFClassifier.MODELFILE=MODELFILE.replace("%S", entity).replace("%CLASS", "CRF");
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
-        crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+        crfclass.testingClassifier(entity);
         AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
         evaluatingCRFResults(entity);
         
@@ -793,9 +796,9 @@ public class CoNLL03Ner {
         }
         
 
-        crfclass.trainAllCRFClassifier(entity, false, false);
+        crfclass.trainAllCRFClassifier(entity, false, false,false,false);
         AnalyzeCRFClassifier.TESTFILE=TESTFILE.replace("%S", entity).replace("%CLASS", "CRF");
-        crfclass.testingClassifier(entity, CNConstants.SNERJAR);
+        crfclass.testingClassifier(entity);
         AnalyzeCRFClassifier.OUTFILE=AnalyzeCRFClassifier.OUTFILE.replace("%S", entity);
         evaluatingCRFResults(entity);
         conllEvaluation(AnalyzeCRFClassifier.OUTFILE);        
