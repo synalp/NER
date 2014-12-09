@@ -35,12 +35,12 @@ public class ConllXP {
 		CoNLL03Ner conll = new CoNLL03Ner();
 		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
         String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
-        GeneralConfig.corpusGigaDir="res/";
-        GeneralConfig.corpusGigaTrain="giga1000.conll03";
+//        GeneralConfig.corpusGigaDir="res/";
+//        GeneralConfig.corpusGigaTrain="giga1000.conll03";
         String unlabfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
 
         // TODO: the risk does not improve when the CRF is trained on the full train; add in the gigaword to give room for the risk to improve ?
-		fullCorpus = new Corpus(trainfile, unlabfile, null, testfile);
+        fullCorpus = new Corpus(trainfile, unlabfile, null, testfile);
 		LinearModel lcmod=LinearModel.train(fullCorpus.columnDataClassifier, fullCorpus.trainData);
 		lcbig = new LinearModelNoStanford(fullCorpus);
 		lcbig.projectTrainingWeights(lcmod);
@@ -57,10 +57,6 @@ public class ConllXP {
 	 * linear classifier trained when calling optimLConConll()
 	 */
 	public void xpCRF() {
-		CoNLL03Ner conll = new CoNLL03Ner();
-		String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, Parms.nuttsLCtraining, CNConstants.CHAR_NULL);
-        String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
-		fullCorpus = new Corpus(trainfile, null, null, testfile);
 		optimLConConll();
 		testCRFWithLC();
 	}
@@ -112,7 +108,7 @@ public class ConllXP {
 	}
 	
 	class triggerCRFFromTimeToTime extends LCaccComputer {
-		int nitersDone=0;
+		int nitersDone=1;
 		@Override
 		public void execute(LinearModelNoStanford mod) {
 			super.execute(mod);
