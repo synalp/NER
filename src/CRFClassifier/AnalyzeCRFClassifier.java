@@ -1182,9 +1182,15 @@ public class AnalyzeCRFClassifier {
                 break;
             case "esterTKPN":
                 analyzing.properNounDetectionOnEsterTk(true,false, CNConstants.IO);
-                
+                break;
+            case "esterWsupPN":
+                analyzing.detectingOneEntityOnEster(CNConstants.PRNOUN, true, false, CNConstants.IO, false,true);
+                break;  
+            case "esterWsupTKPN":
+                analyzing.detectingOneEntityOnEster(CNConstants.PRNOUN, true, false, CNConstants.IO, true,true);
+                break;                 
             case "esterMClass":
-                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, false,false);
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, true, false, CNConstants.BIO, false,false);
                 break;
                 
             case "esterTKMClass":
@@ -1196,7 +1202,7 @@ public class AnalyzeCRFClassifier {
                 break; 
                 
             case "esterWsupTKMClass":
-                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, false,true);
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, true,true);
                 break;                  
                     
         }
