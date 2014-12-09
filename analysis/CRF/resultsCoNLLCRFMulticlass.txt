@@ -191,5 +191,15 @@ sorting scores
      [java]              MISC: precision:  79.68%; recall:  77.75%; FB1:  78.70  684
      [java]               ORG: precision:  84.97%; recall:  82.39%; FB1:  83.66  1597
      [java]               PER: precision:  93.59%; recall:  93.95%; FB1:  93.77  1608
-
+========================================================================================
+32aed98f After GMM gradient update
+========================================================================================
+     [java] ./scripts/evalconll.sh analysis/CRF/test.all.log
+     [java] processed 46435 tokens with 5616 phrases; found: 5567 phrases; correct: 4922.
+     [java] accuracy:  97.57%; precision:  88.41%; recall:  87.64%; FB1:  88.03
+     [java]               LOC: precision:  90.39%; recall:  90.88%; FB1:  90.63  1675
+     [java]              MISC: precision:  79.56%; recall:  77.75%; FB1:  78.64  685
+     [java]               ORG: precision:  85.02%; recall:  82.33%; FB1:  83.65  1595
+     [java]               PER: precision:  93.49%; recall:  94.07%; FB1:  93.78  1612
+     [java] ok
 

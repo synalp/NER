@@ -6,6 +6,7 @@ package linearclassifier;
 
 
 import conll03.CoNLL03Ner;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -286,8 +287,8 @@ public class AnalyzeLClassifier {
                                                         
                                                         if(typeofClass.equals(CNConstants.BIO)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
-                                                            if (debdugroupe==j) lab = entity+"B";    
-                                                            else lab = entity+"I";
+                                                            if (debdugroupe==j) lab = groupName+"B";    
+                                                            else lab = groupName+"I";
                                                         }else if(typeofClass.equals(CNConstants.BILOU)){
                                                             int debdugroupe = group.groups.get(gr).get(0).getIndexInUtt()-1;
                                                             int endgroupe = group.groups.get(gr).get(group.groups.get(gr).size()-1).getIndexInUtt()-1;
@@ -3594,6 +3595,41 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         wkSupParallelStocCoordD(CNConstants.PRNOUN, true,1000,true,true,false);        
     }
     
+    public void transformingDistSimInput(){
+        try {
+            //
+            //
+            BufferedReader ester2File = new BufferedReader(new FileReader("/home/rojasbar/development/contnomina/clustering/posinduction/src/bin/ester2"));
+            OutputStreamWriter outE2File = new OutputStreamWriter(new FileOutputStream("/home/rojasbar/development/contnomina/clustering/posinduction/src/bin/ester2Upper"),CNConstants.UTF8_ENCODING);
+            BufferedReader fgwFile = new BufferedReader(new FileReader("/home/rojasbar/development/contnomina/clustering/posinduction/src/bin/fgw.in"));
+            OutputStreamWriter outFGWFile = new OutputStreamWriter(new FileOutputStream("/home/rojasbar/development/contnomina/clustering/posinduction/src/bin/fgw.in.upper"),CNConstants.UTF8_ENCODING);
+            
+            while(true){
+                String line = ester2File.readLine();
+                if(line == null)
+                    break;
+                
+                outE2File.append(line.toUpperCase()+"\n");
+                outE2File.flush();
+            }
+            outE2File.close();
+            while(true){
+                String line = fgwFile.readLine();
+                if(line == null)
+                    break;
+                
+                outFGWFile.append(line.toUpperCase()+"\n");
+                outFGWFile.flush();
+            }            
+            outFGWFile.close();
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
+        
+    }
+    
    public static void main(String args[]) {
         AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
         
@@ -3732,7 +3768,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         //testing new weights
         //CoNLL03Ner conll = new CoNLL03Ner();
         //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 50,500,false);
-        analyzing.testingWSupOnEster();
+        //analyzing.testingWSupOnEster();
+        analyzing.transformingDistSimInput();
     }
   
 }

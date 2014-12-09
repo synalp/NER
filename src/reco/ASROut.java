@@ -496,17 +496,17 @@ public class ASROut {
         processingASROutputToCRF(sclass, true, false);
         processingASROutputToCRF(sclass, false, false);
         //*/
-        crfclass.trainAllCRFClassifier(CNConstants.PRNOUN,true,false,false);
+        crfclass.trainAllCRFClassifier(CNConstants.PRNOUN,true,false,false,false);
         
         AnalyzeCRFClassifier.TESTFILE=DEVFILE;
         if(sclass.equals(CNConstants.PRNOUN)){
-            crfclass.testingClassifier(CNConstants.PRNOUN,false,false,false);
+            crfclass.testingClassifier(CNConstants.PRNOUN,false,false,false,false);
             AnalyzeCRFClassifier.TESTFILE=TESTFILE;  
-            crfclass.testingClassifier(CNConstants.PRNOUN,false,false, false);             
+            crfclass.testingClassifier(CNConstants.PRNOUN,false,false, false,false);             
         }else{
-            crfclass.testingClassifier(CNConstants.PRNOUN,false,false, false);
+            crfclass.testingClassifier(CNConstants.PRNOUN,false,false, false, false);
             AnalyzeCRFClassifier.TESTFILE=TESTFILE;  
-            crfclass.testingClassifier(CNConstants.PRNOUN,false,false, false);             
+            crfclass.testingClassifier(CNConstants.PRNOUN,false,false, false, false);             
         }    
        
             

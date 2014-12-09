@@ -129,8 +129,9 @@
 	<java classname="CRFClassifier.AnalyzeCRFClassifier"
 	   fork="true"
            failonerror="true"
-           maxmemory="13g">
-           <arg value="esterPN"/>
+           maxmemory="20g">
+           <!--arg value="esterTKPN"/-->
+           <arg value="esterMClass"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>
