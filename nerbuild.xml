@@ -101,7 +101,7 @@
 	   fork="true"
            failonerror="true"
            maxmemory="7g">
-           <arg value="expGWord"/>
+           <arg value="basecrf"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>
@@ -130,9 +130,11 @@
 	   fork="true"
            failonerror="true"
            maxmemory="20g">
-           <!--arg value="esterTKPN"/-->
            <!--arg value="esterMClass"/-->
-           <arg value="esterPN"/>
+           <!--arg value="esterPN"/-->
+           <!--arg value="esterTKPN"/-->
+	   <!--arg value="esterWsupPN"/-->
+	   <arg value="esterWsupTKPN"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>
@@ -142,7 +144,8 @@
            failonerror="true"
            maxmemory="7g">
            <!--arg value="lc"/-->
-           <arg value="basecrf"/>
+           <!--arg value="basecrf"/-->
+           <arg value="crftk"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>

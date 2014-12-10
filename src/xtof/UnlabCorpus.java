@@ -48,8 +48,8 @@ public class UnlabCorpus {
 		// because the features loaded next in loadFeatureFile() have been computed
 		// with a "train" pre-corpus of only 20 sentences.
 		// So, the feature indexes will differ...
-        String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
-        String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
+        String trainfile = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL,false);
+        String testfile  = conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false, Integer.MAX_VALUE, CNConstants.CHAR_NULL,false);
 		Corpus ctrain = new Corpus(trainfile, null, null, testfile);
 		System.out.println("corpus loaded "+trainfile+" "+testfile);
 		// load unlab gigaword corpus
@@ -59,9 +59,9 @@ public class UnlabCorpus {
 		LinearModelNoStanford c = new LinearModelNoStanford(m);
 		
 		// reparse the train + test to add the predicted class, then train the CRF and evaluate it
-        conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, 20, CNConstants.CHAR_NULL);
-        conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true, Integer.MAX_VALUE, CNConstants.CHAR_NULL);
-    	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false,false);
+        conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, 20, CNConstants.CHAR_NULL,false);
+        conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true, Integer.MAX_VALUE, CNConstants.CHAR_NULL,false);
+    	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false, false,false);
     	System.out.println("baselineCRF "+f1);
     	
 		int[] predsontrain = new int[ctrain.trainData.size()];
@@ -116,11 +116,11 @@ public class UnlabCorpus {
 			// complete train + test corpus for the CRF with weaksup classes
 			int[] rec = c.predict(ctrain.testData);
 			UnlabCorpus.LCrec = rec;
-	        String enhancedTestfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true, Integer.MAX_VALUE, CNConstants.TABLE_IN_UNLABCORPUS);
+	        String enhancedTestfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true, Integer.MAX_VALUE, CNConstants.TABLE_IN_UNLABCORPUS,false);
 			UnlabCorpus.LCrec = predsontrain;
-	        String enhancedTrainfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, 20,CNConstants.TABLE_IN_UNLABCORPUS);
+	        String enhancedTrainfile = conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, 20,CNConstants.TABLE_IN_UNLABCORPUS,false);
 	        System.out.println("enhanced corpus for CRF "+enhancedTrainfile+" "+enhancedTestfile);
-	    	f1=conll.trainStanfordCRF(CNConstants.ALL, false, true,false);
+	    	f1=conll.trainStanfordCRF(CNConstants.ALL, false, false, true,false);
 	    	System.out.println("enhancedCRF "+f1);
 		}
 	}

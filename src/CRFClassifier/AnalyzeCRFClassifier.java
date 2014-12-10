@@ -64,8 +64,9 @@ public class AnalyzeCRFClassifier {
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
     public static int TRAINSIZE=Integer.MAX_VALUE;
-    public static String TKPREDTRAIN="scripts/ner.modeltk.pt.train";
-    public static String TKPREDTEST="scripts/ner.modeltk.pt.test";
+    public static String TKPREDTRAIN="scripts/ner.ester.modeltk.pt.train";
+    public static String TKPREDTEST="scripts/ner.ester.modeltk.pt.test";
+    
     public static String WSUPMODEL="scripts/bin.pn.modelwsup.CForm_2337Iter";
    
     public static String OUTFILE="analysis/CRF/test.%S.log";
@@ -1178,7 +1179,7 @@ public class AnalyzeCRFClassifier {
                 analyzing.detectingNEOnEster(false,true,CNConstants.BIO,true,false);                
             case "esterPN":
                 //analyzing.properNounDetectionOnEster(isSavingFiles,isGaz,typeOfClasses (e.g., IO, BIO, BILOU);
-                analyzing.properNounDetectionOnEster(false,false,CNConstants.IO, false, false);
+                analyzing.properNounDetectionOnEster(true,false,CNConstants.IO, false, false);
                 break;
             case "esterTKPN":
                 analyzing.properNounDetectionOnEsterTk(true,false, CNConstants.IO);

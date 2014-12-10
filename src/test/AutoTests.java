@@ -66,17 +66,17 @@ public class AutoTests {
 	 * Also check that adding a new feature column (in this case, an "oracle" feature) is correctly taken into account
 	 */
 	void testCRFquick() throws Exception {
-        conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true,20,CNConstants.CHAR_NULL);
-        conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.CHAR_NULL);
-    	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false,false);
+        conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true,20,CNConstants.CHAR_NULL,false);
+        conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.CHAR_NULL,false);
+    	float f1=conll.trainStanfordCRF(CNConstants.ALL, false, false,false,false);
     	// check that the CRF gives reasonnable F1
     	if (f1<40f||f1>100f) throw new Exception("CRF F1 with 20 training utts is too low "+f1);
     	
     	// Test by training a CRF on a small training corpus with an extra-column-feature that contains oracle class
     	// and check that the F1 of the CRF is close to 100%
-    	conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, 20, CNConstants.AUTOTESTORACLE);
-    	conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.AUTOTESTORACLE);
-    	float f1_oracle=conll.trainStanfordCRF(CNConstants.ALL, false, true,false);
+    	conll.generatingStanfordInputFiles(CNConstants.ALL, "train", true, 20, CNConstants.AUTOTESTORACLE,false);
+    	conll.generatingStanfordInputFiles(CNConstants.ALL, "test", true,CNConstants.AUTOTESTORACLE,false);
+    	float f1_oracle=conll.trainStanfordCRF(CNConstants.ALL, false, false, true,false);
     	System.out.println("testCRFF1s "+f1+" "+f1_oracle);
     	if (f1_oracle<=f1) throw new Exception("ORACLE F1 is not better than F1");
     	if (f1_oracle<70) throw new Exception("ORACLE F1 is too low "+f1_oracle);
@@ -94,8 +94,8 @@ public class AutoTests {
 	void testGigaquick() throws Exception {
         GeneralConfig.corpusGigaDir="res/";
         GeneralConfig.corpusGigaTrain="giga1000.conll03";
-        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
-        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL,false);
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL,false);
         // which GMMDiag is used ? GMMD1Diag or GMMDiag ?
         // GMMDiag.nitersTraining=1000;
         conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,false,Integer.MAX_VALUE,Integer.MAX_VALUE,100,false,false);
