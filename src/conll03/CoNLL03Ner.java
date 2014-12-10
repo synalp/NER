@@ -338,8 +338,8 @@ public class CoNLL03Ner {
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
     }
     
-    public void trainLC(String entity,boolean savingFiles, boolean useExistingModels){
-        AnalyzeLClassifier.TRAINSIZE=Integer.MAX_VALUE;
+    public void trainLC(String entity,boolean savingFiles, int trainSize, boolean useExistingModels){
+        AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
             generatingStanfordInputFiles(entity, "train", false,CNConstants.CHAR_NULL);
             generatingStanfordInputFiles(entity, "test", false,CNConstants.CHAR_NULL);
@@ -353,7 +353,10 @@ public class CoNLL03Ner {
         File mfile2 = new File(AnalyzeLClassifier.MODELFILE+"_COPY");
         if(mfile.exists()){
             try {
-                Files.copy(mfile.toPath(), mfile2.toPath(),StandardCopyOption.REPLACE_EXISTING);
+                if(!useExistingModels)
+                    mfile.delete();
+                else
+                    Files.copy(mfile.toPath(), mfile2.toPath(),StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -635,8 +638,18 @@ public class CoNLL03Ner {
         }
         
     }
+        public static void evaluatingCRFResultsFile(String  resultFile){
+        AnalyzeCRFClassifier crfclass= new AnalyzeCRFClassifier(); 
+        String[] labels = { "B-PER","I-PER","B-LOC","I-LOC","B-PROD","I-PROD","B-ORG","I-ORG"};
+        for(Object label:labels){
+            
+            crfclass.evaluationCONLLBIOCLASSRESULTS((String) label, resultFile);
+            
+        }
+        
+    }
   
-    public float conllEvaluation(String results){
+    public static float conllEvaluation(String results){
     	float f1=0;
         try {
             //command
@@ -933,7 +946,8 @@ public class CoNLL03Ner {
     
     public static final String[] TASKS = {
     	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags",  // 0 ... 4
-    	"weaklySupConll", "expGWord", "dev","priors","conv", "lc","crfwsgoal"
+    	"weaklySupConll", "expGWord", "dev","priors","conv", "lc","crfwsgoal",//5-11
+        "evalResults"
 
     };
     
@@ -994,12 +1008,14 @@ public class CoNLL03Ner {
                break;
             
         case 10:
-               conll.trainLC(CNConstants.PRNOUN,true, false);
+               conll.trainLC(CNConstants.PRNOUN,true,Integer.MAX_VALUE, false);
                break;
         case 11:
                conll.trainCRFPlusWkSupGold(CNConstants.ALL, true);
                break;
-
+        case 12:
+               conll.evaluatingCRFResultsFile("analysis/CRF/test.all.logESTER");
+               break;
         }
         
         // PLEASE DONT UNCOMMENT ANY LINE BELOW! rather add a task and arg on the command-line  
