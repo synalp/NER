@@ -632,6 +632,7 @@ public class CoNLL03Ner {
      * @param entity  classifier "all" for all the entities "pn" for the binary classification : proper noun/ not proper noun
      * @param savingFiles, true if it must generate the input files to StanfordNER
      * @param wSupFeat, true if it uses the weakly supervised model as feature "NOT WORKING YET"
+     * @param tkFeat, true if it uses the tree kernel predictions already computed on the train and test data
      * @param useExistingModel , true if it uses an existing binary model file
      * @return the F1 of the CRF on the test corpus
      */
