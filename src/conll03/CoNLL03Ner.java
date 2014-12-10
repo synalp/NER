@@ -102,7 +102,7 @@ public class CoNLL03Ner {
    // so I'ved added this method but still keeping the default behavior the same with the previous method
    public String generatingStanfordInputFiles(String entity, String dataset, boolean isCRF, int limitsize, String wSupModelFile, boolean usetkFeat){
        LinearClassifier wsupModel = null;
-       if(!wSupModelFile.equals(CNConstants.CHAR_NULL))
+       if(!(wSupModelFile.equals(CNConstants.CHAR_NULL)||wSupModelFile.equals(CNConstants.TABLE_IN_UNLABCORPUS)))
            wsupModel = AnalyzeLClassifier.loadModelFromFile(wSupModelFile);
        
         BufferedReader inFile = null;
