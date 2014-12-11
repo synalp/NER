@@ -4,6 +4,7 @@
  */
 package CRFClassifier;
 
+import conll03.CoNLL03Ner;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.ie.NERFeatureFactory;
@@ -63,8 +64,9 @@ public class AnalyzeCRFClassifier {
     public static String ONLYONEPNOUNCLASS=CNConstants.PRNOUN;
     public static String[] groupsOfNE = {CNConstants.PERS,CNConstants.ORG, CNConstants.LOC, CNConstants.PROD};
     public static int TRAINSIZE=Integer.MAX_VALUE;
-    public static String TKPREDTRAIN="scripts/ner.modeltk.pt.train";
-    public static String TKPREDTEST="scripts/ner.modeltk.pt.test";
+    public static String TKPREDTRAIN="scripts/ner.ester.modeltk.pt.train";
+    public static String TKPREDTEST="scripts/ner.ester.modeltk.pt.test";
+    
     public static String WSUPMODEL="scripts/bin.pn.modelwsup.CForm_2337Iter";
    
     public static String OUTFILE="analysis/CRF/test.%S.log";
@@ -1096,13 +1098,13 @@ public class AnalyzeCRFClassifier {
             POSFILTER=false;
         if(isGaz)
             PROPERTIES_FILE="scrfGaz.props";      
-
+        
         if(savingFiles){
             File mfile = new File(MODELFILE.replace("%S", str));
-            mfile.delete();             
+            mfile.delete();       
             saveFilesForLClassifier(str,true,false,useTKFeat,useWSupFeat);
-            saveFilesForLClassifier(str,false,false,useTKFeat,useWSupFeat);
-        }
+        }    
+        
         if(useTKFeat && useWSupFeat)
             updatingMappingBkGPropFile(CNConstants.PRNOUN,CNConstants.NOCLASS,"word=0,tag=1,feattk=2,feat=3,answer=4");
         else if(useTKFeat && !useWSupFeat)
@@ -1131,6 +1133,7 @@ public class AnalyzeCRFClassifier {
                 double macroRec=0.0;
                 double macroF1=0.0;
                 for(Object label:crf.labels()){
+
                     if(((String)label).equals(CNConstants.NOCLASS))
                         continue;
                     int[] tfVals= evaluationCONLLBIOCLASSRESULTS((String)label,OUTFILE.replace("%S", str));  
@@ -1147,6 +1150,7 @@ public class AnalyzeCRFClassifier {
                     macroPrec+=precision;
                     macroRec+=recall;
                     //macroF1+=f1;
+
                 }
                 double microPrec=tpSum/microPrecDen;
                 double microRec=tpSum/microRecallDen;
@@ -1157,6 +1161,7 @@ public class AnalyzeCRFClassifier {
                 macroF1=(2*macroPrec*macroRec)/(macroPrec+macroRec);
                 System.out.println("Macro prec="+macroPrec+ " Macro rec= "+ macroRec + " Macro f1 ="+ macroF1);
             }
+            CoNLL03Ner.conllEvaluation(OUTFILE.replace("%S", str));
         }    
          
     }   
@@ -1210,11 +1215,17 @@ public class AnalyzeCRFClassifier {
                 analyzing.detectingNEOnEster(false,true,CNConstants.BIO,true,false);                
             case "esterPN":
                 //analyzing.properNounDetectionOnEster(isSavingFiles,isGaz,typeOfClasses (e.g., IO, BIO, BILOU);
-                analyzing.properNounDetectionOnEster(false,false,CNConstants.IO, false, false);
+                analyzing.properNounDetectionOnEster(true,false,CNConstants.IO, false, false);
                 break;
             case "esterTKPN":
                 analyzing.properNounDetectionOnEsterTk(true,false, CNConstants.IO);
-                
+                break;
+            case "esterWsupPN":
+                analyzing.detectingOneEntityOnEster(CNConstants.PRNOUN, true, false, CNConstants.IO, false,true);
+                break;  
+            case "esterWsupTKPN":
+                analyzing.detectingOneEntityOnEster(CNConstants.PRNOUN, true, false, CNConstants.IO, true,true);
+                break;                 
             case "esterMClass":
                 //classifier type, savingFiles, isGaz, typeOfclasses (e.g., BIO), useTKFeat, useWSupFeat
                 analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, false,false);
@@ -1229,7 +1240,7 @@ public class AnalyzeCRFClassifier {
                 break; 
                 
             case "esterWsupTKMClass":
-                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, false,true);
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, true,true);
                 break;                  
                     
         }

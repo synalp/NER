@@ -145,10 +145,10 @@ public class TestingMultiGMM {
             AnalyzeLClassifier.MODELFILE=CoNLL03Ner.WKSUPMODEL.replace("%S", sclass);
             File file = new File(AnalyzeLClassifier.TRAINFILE);
             if(!file.exists())
-                conll.generatingStanfordInputFiles(sclass, "train", false,CNConstants.CHAR_NULL);
+                conll.generatingStanfordInputFiles(sclass, "train", false,CNConstants.CHAR_NULL,false);
             file = new File(AnalyzeLClassifier.TESTFILE);
             if(!file.exists())
-                conll.generatingStanfordInputFiles(sclass, "test", false,CNConstants.CHAR_NULL);
+                conll.generatingStanfordInputFiles(sclass, "test", false,CNConstants.CHAR_NULL,false);
             
             analyzing.trainAllLinearClassifier(sclass, false, false, false);
             

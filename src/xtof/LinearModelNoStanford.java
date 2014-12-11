@@ -131,8 +131,8 @@ public class LinearModelNoStanford {
 		float[] sc = computeAllScores();
 		RiskMachine.GMMDiag gmm = new RiskMachine.GMMDiag();
 		double[] post = gmm.train(sc);
-		System.out.println("post "+post[0]+" "+post[1]);
-		System.out.println("means "+gmm.mean0+" "+gmm.mean1);
+		System.out.println("initGMM post "+post[0]+" "+post[1]+" "+sc.length);
+		System.out.println("initGMM means "+gmm.mean0+" "+gmm.mean1);
 		return gmm;
 	}
 	

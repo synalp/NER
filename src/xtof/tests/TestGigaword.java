@@ -18,18 +18,18 @@ public class TestGigaword {
 //        GeneralConfig.corpusGigaDir="res/";
 //        GeneralConfig.corpusGigaTrain="giga1000.conll03";
 		System.out.println("generating train...");
-        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL,false);
 		System.out.println("generating unlab...");
-        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL,false);
 		Corpus c = Corpus.buildFeatureFile("conll.pn.tab.LC.train", "gw.pn.tab.LC.test");
 	}
 	
 	private static void mediumgiga() {
 		CoNLL03Ner conll = new CoNLL03Ner();
 		System.out.println("generating train...");
-        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL,false);
         System.out.println("generating unlab...");
-        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL,false);
         
         System.out.println("creating corpus...");
 		Corpus c = new Corpus("conll.pn.tab.LC.train", "gw.pn.tab.LC.test", null, null);
@@ -42,8 +42,8 @@ public class TestGigaword {
 		CoNLL03Ner conll = new CoNLL03Ner();
         GeneralConfig.corpusGigaDir="res/";
         GeneralConfig.corpusGigaTrain="giga1000.conll03";
-        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL);
-        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL);
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "train", false, 20, CNConstants.CHAR_NULL,false);
+        conll.generatingStanfordInputFiles(CNConstants.PRNOUN, "gigaw", false,CNConstants.CHAR_NULL,false);
 
 		Corpus c = new Corpus("conll.pn.tab.LC.train", "gw.pn.tab.LC.test", null, null);
 		Parms.nitersRiskOptim=1000;

@@ -101,7 +101,7 @@
 	   fork="true"
            failonerror="true"
            maxmemory="7g">
-           <arg value="expGWord"/>
+           <arg value="basecrf"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>
@@ -125,17 +125,30 @@
 	   <classpath refid="run.classpath" />
        </java>
     </target>
-    <target name="ester" depends="compile" description="xtof manual tests" >
+    <target name="ester" depends="compile" description="lina running experiments" >
 	<java classname="CRFClassifier.AnalyzeCRFClassifier"
 	   fork="true"
            failonerror="true"
            maxmemory="20g">
+           <!--arg value="esterMClass"/-->
+           <!--arg value="esterPN"/-->
            <!--arg value="esterTKPN"/-->
-           <arg value="esterMClass"/>
+	   <!--arg value="esterWsupPN"/-->
+	   <arg value="esterWsupTKPN"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>
-
+    <target name="conll" depends="compile" description="lina running experiments" >
+	<java classname="conll03.CoNLL03Ner"
+	   fork="true"
+           failonerror="true"
+           maxmemory="7g">
+           <!--arg value="lc"/-->
+           <!--arg value="basecrf"/-->
+           <arg value="crftk"/>
+	   <classpath refid="run.classpath" />
+       </java>
+    </target>
     <target name="detsav" depends="compile" description="xtof manual tests" >
 	<java classname="xtof.tests.TestGigaword"
 	   fork="true"
