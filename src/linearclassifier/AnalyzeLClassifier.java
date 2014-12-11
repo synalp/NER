@@ -722,6 +722,7 @@ public class AnalyzeLClassifier {
                 for(String f:features){
                     if(model.featureIndex().indexOf(f)>-1){
                         int idx = model.featureIndex().indexOf(f);
+                        System.out.println("in getValues()  scanning feature "+idx + " found in instance "+ i );
                         feats.add(idx);
                         featArray[fidx]=f;fidx++;
                         instPerFeatures[idx][i]=1;
@@ -3081,7 +3082,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
       }catch(ClassNotFoundException c)
       {
          System.out.println("class not found");
-         c.printStackTrace();
+         
         
       } 
    

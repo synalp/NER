@@ -517,7 +517,6 @@ public class GMMDiag extends GMM {
         }        
         int[] instances = margin.getInstancesCurrThrFeat();
         if(instances == null){
-            ErrorsReporting.report("No instances for that feature");
             return null;
         }
         for (int i=0;i<instances.length;i++) {
@@ -626,6 +625,9 @@ public class GMMDiag extends GMM {
         //System.out.println("previous sum of ss Xpart = "+Arrays.toString(margin.previousSumXPart1));
         //here I have the mean for the instances impacted by the thread        
         double[][] newMuPart1=computePartitionMu( margin,  gmm0, z,nex);
+        if(newMuPart1 == null)
+            return margin.nkAll;
+                    
         if(CURRENTGMMTRITER==0){
             for (int i=0;i<nlabs;i++) 
                 System.arraycopy( newMuPart1[i], 0,margin.previousMuPart[i] , 0, newMuPart1[i].length );  
@@ -731,7 +733,9 @@ public class GMMDiag extends GMM {
         margin.sumXSqPart=new double[z.length];
         
         int[] instances = margin.getInstancesCurrThrFeat();
-            
+        if(instances == null )
+            return;
+        
          for (int i=0;i<instances.length;i++) {
             List<Integer> featuresByInstance = new ArrayList<>();
             int inst= instances[i];

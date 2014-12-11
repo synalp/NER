@@ -145,7 +145,8 @@
            maxmemory="7g">
            <!--arg value="lc"/-->
            <!--arg value="basecrf"/-->
-           <arg value="crftk"/>
+           <!--arg value="crftk"/-->
+	   <arg value="expGWord"/>
 	   <classpath refid="run.classpath" />
        </java>
     </target>
