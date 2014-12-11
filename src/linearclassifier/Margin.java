@@ -628,21 +628,21 @@ public class Margin {
                 
     }
     
-    public boolean areAllInstancesZero(int featIdx){
-        boolean allZeros=true;
+    public boolean isArrayEmpty(int featIdx){
+        boolean isarrempty=true;
         for(int i=0; i<instPerFeatures[featIdx].length;i++ ){
-            if(instPerFeatures[featIdx][i] == 1){
-                allZeros=false;
+            if(instPerFeatures[featIdx][i] != CNConstants.INT_NULL){
+                isarrempty=false;
                 break;
             }    
         } 
         
-        return allZeros;
+        return isarrempty;
             
     }
     
     public int[] getInstancesCurrThrFeat(){
-        if(threadFeatIdx==CNConstants.INT_NULL || !areAllInstancesZero(threadFeatIdx))
+        if(threadFeatIdx==CNConstants.INT_NULL || isArrayEmpty(threadFeatIdx))
             return null;
         
         return instPerFeatures[threadFeatIdx];

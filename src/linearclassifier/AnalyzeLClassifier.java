@@ -600,9 +600,11 @@ public class AnalyzeLClassifier {
             }
             int lineNumber=0;
                        
-            instPerFeatures = new int[model.featureIndex().size()][numInstances];
+            instPerFeatures = new int[model.featureIndex().size()][10];
+            int[] instPerFeatInstIdx = new int[model.featureIndex().size()];
+            Arrays.fill(instPerFeatInstIdx, CNConstants.INT_NULL);
             for(int k=0; k< model.featureIndex().size(); k++)
-                Arrays.fill(instPerFeatures[k], 0);
+                Arrays.fill(instPerFeatures[k], CNConstants.INT_NULL);
             
             for (int i=0;i<numInstances;i++) {
 
@@ -622,7 +624,17 @@ public class AnalyzeLClassifier {
                         int idx = model.featureIndex().indexOf(f);
                         feats.add(idx);
                         featArray[fidx]=f;fidx++;
-                        instPerFeatures[idx][i]=1;
+                        int[] newInstArray =new int[instPerFeatures[idx].length+10];
+                        Arrays.fill(newInstArray, 0);
+                        instPerFeatInstIdx[idx]++;
+                        if(instPerFeatInstIdx[idx]==instPerFeatures[idx].length){
+                            System.arraycopy(instPerFeatures[idx], 0, newInstArray, 0, instPerFeatures[idx].length);
+                            instPerFeatures[idx]= new int[newInstArray.length];
+                            System.arraycopy(newInstArray, 0, instPerFeatures[idx], 0, newInstArray.length);
+                        }
+                        
+                        instPerFeatures[idx][instPerFeatInstIdx[idx]]=i;
+                        
                      
                            
                     }
@@ -706,7 +718,11 @@ public class AnalyzeLClassifier {
                 numInstances++;  
             }
             int lineNumber=0;
-            instPerFeatures = new int[model.featureIndex().size()][numInstances];           
+            instPerFeatures = new int[model.featureIndex().size()][10];
+            int[] instPerFeatInstIdx = new int[model.featureIndex().size()];
+            Arrays.fill(instPerFeatInstIdx, CNConstants.INT_NULL);
+            for(int k=0; k< model.featureIndex().size(); k++)
+                Arrays.fill(instPerFeatures[k], CNConstants.INT_NULL);
             
             for (int i=0;i<numInstances;i++) {
 
@@ -725,7 +741,17 @@ public class AnalyzeLClassifier {
                         System.out.println("in getValues()  scanning feature "+idx + " found in instance "+ i );
                         feats.add(idx);
                         featArray[fidx]=f;fidx++;
-                        instPerFeatures[idx][i]=1;
+                        int[] newInstArray =new int[instPerFeatures[idx].length+10];
+                        Arrays.fill(newInstArray, 0);
+                        instPerFeatInstIdx[idx]++;
+                        if(instPerFeatInstIdx[idx]==instPerFeatures[idx].length){
+                            System.arraycopy(instPerFeatures[idx], 0, newInstArray, 0, instPerFeatures[idx].length);
+                            instPerFeatures[idx]= new int[newInstArray.length];
+                            System.arraycopy(newInstArray, 0, instPerFeatures[idx], 0, newInstArray.length);
+                        }
+                        
+                        instPerFeatures[idx][instPerFeatInstIdx[idx]]=i;
+                        
                            
                     }
                 }
