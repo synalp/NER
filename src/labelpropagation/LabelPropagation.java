@@ -35,7 +35,7 @@ public class LabelPropagation {
         HashMap<String,Integer> dictFeatures=new HashMap<>();
         HashMap<String,Integer> dictWords=new HashMap<>();
         
-        HashMap<Integer,List<String>> stfeats=analiz.deserializingFeatures(false);
+        String[][] stfeats=analiz.deserializingFeatures(false);
         HashMap<Integer,String> wordsperInst=new HashMap<>();
         HashMap<String,List<Double>> vectorfeats=new HashMap<>();
         HashMap<String,String> seedTrain=new HashMap<>();
@@ -83,7 +83,7 @@ public class LabelPropagation {
                 dictFeatures.put(pos,dictFeatures.size()+1);
 
 
-            List<String> restfeats= stfeats.get(linecounter);
+           String[] restfeats= stfeats[linecounter];
             String wshape="";
             String lngram="";
             for(String feat:restfeats){

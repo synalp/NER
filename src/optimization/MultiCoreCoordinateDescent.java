@@ -189,8 +189,8 @@ public class MultiCoreCoordinateDescent  {
         
         final float eps = 0.1f;  
         Integer thrId = classInfoPerThread.first();
-        //PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
-        //PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
+        PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
+        PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
         Margin margin = classInfoPerThread.second();
         String currentClassifier=AnalyzeLClassifier.CURRENTSETCLASSIFIER;
         int nlabels= margin.getNlabs();
@@ -205,14 +205,14 @@ public class MultiCoreCoordinateDescent  {
         Arrays.fill(scores, 0.0);
         //float estimr0=(isCloseForm)?computeROfTheta(margin):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
         float estimr0=AnalyzeLClassifier.CURRENTPARENTESTIMR0;
-        //plotR.addPoint(counter, estimr0);
+        plotR.addPoint(counter, estimr0);
         columnDataClass.testClassifier(model, AnalyzeLClassifier.TESTFILE.replace("%S", currentClassifier));
         double f1=ColumnDataClassifier.macrof1;
         if(!currentClassifier.equals(CNConstants.ALL))
             f1=columnDataClass.fs.get(currentClassifier);
         //the following evaluation is used just to verify that the gradient will not degrade the f-measure on the train set
         double f1trainOr=AnalyzeLClassifier.CURENTPARENTF10;
-        //plotF1.addPoint(counter,f1);   
+        plotF1.addPoint(counter,f1);   
         //copy the orginal weights before applying coordinate gradient
         margin.copyOrWeightsBeforGradient();
         HashSet<String> emptyfeats = new HashSet<>();
@@ -269,7 +269,7 @@ public class MultiCoreCoordinateDescent  {
                     System.out.println("*******************************"); 
                     System.out.println("RMC["+iter+"] = "+estimr0);   
                     lastRisk=(double)estimr0;
-                    //plotR.addPoint(counter, estimr0);
+                    plotR.addPoint(counter, estimr0);
                     System.out.println("*******************************");
 
 
@@ -279,7 +279,7 @@ public class MultiCoreCoordinateDescent  {
                     f1=ColumnDataClassifier.macrof1;
                     if(!currentClassifier.endsWith(CNConstants.ALL))                
                         f1=columnDataClass.fs.get(currentClassifier);
-                    //plotF1.addPoint(counter, f1);
+                    plotF1.addPoint(counter, f1);
                     System.out.println("*******************************"); 
 
                     //Histoplot.showit(margin.getScoreForAllInstancesLabel0( featsperInst, scores), featsperInst.size());

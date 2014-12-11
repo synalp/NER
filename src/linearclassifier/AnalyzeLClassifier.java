@@ -105,9 +105,9 @@ public class AnalyzeLClassifier {
 
     private List<List<Integer>> featperInstance = new ArrayList<>();
     private List<Integer> lblperInstance = new ArrayList<>();
-    private HashMap<Integer,List<Integer>> instPerFeatures= new HashMap<>();
-    private HashMap<Integer,List<String>> stLCDictTrainFeatures=new HashMap<>();
-    private HashMap<Integer,List<String>> stLCDictTestFeatures=new HashMap<>();
+    private int[][] instPerFeatures;
+    private String[][] stLCDictTrainFeatures;
+    private String[][] stLCDictTestFeatures;
     private long elapsedTime;
     
     private HashMap<Integer,Margin> parallelGrad = new HashMap<>();
@@ -600,6 +600,9 @@ public class AnalyzeLClassifier {
             }
             int lineNumber=0;
                        
+            instPerFeatures = new int[model.featureIndex().size()][numInstances];
+            for(int k=0; k< model.featureIndex().size(); k++)
+                Arrays.fill(instPerFeatures[k], 0);
             
             for (int i=0;i<numInstances;i++) {
 
@@ -607,21 +610,20 @@ public class AnalyzeLClassifier {
                 ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
                 Datum<String, String> datum = columnDataClass.makeDatumFromLine(line, 0);
                 Collection<String> features = datum.asFeatures();
+                String[] featArray = new String[features.size()];
+                
                 
                 
                 List<Integer> feats = new ArrayList<>();
                 //take the id (index) of the features
+                int fidx=0;
                 for(String f:features){
                     if(model.featureIndex().indexOf(f)>-1){
                         int idx = model.featureIndex().indexOf(f);
                         feats.add(idx);
-                        
-                        List<Integer> insts= new ArrayList<>();
-                        if(instPerFeatures.containsKey(idx))
-                            insts=new ArrayList(instPerFeatures.get(idx));
-                        
-                        insts.add(i);    
-                        instPerFeatures.put(idx,insts);
+                        featArray[fidx]=f;fidx++;
+                        instPerFeatures[idx][i]=1;
+                     
                            
                     }
                 }
@@ -636,9 +638,9 @@ public class AnalyzeLClassifier {
                 
                 if(serializeFeatures){
                     if(fileName.contains("train"))
-                        stLCDictTrainFeatures.put(numInstances, new ArrayList<>(features));
+                        stLCDictTrainFeatures[numInstances]= featArray;
                     else
-                         stLCDictTestFeatures.put(numInstances, new ArrayList<>(features)); 
+                         stLCDictTestFeatures[numInstances]= featArray; 
                 } 
                                
             }
@@ -690,7 +692,7 @@ public class AnalyzeLClassifier {
             return;
         
         lblperInstance.clear();
-        instPerFeatures.clear();
+        
         BufferedReader inFile = null;
         try {
             inFile = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), CNConstants.UTF8_ENCODING));
@@ -704,7 +706,7 @@ public class AnalyzeLClassifier {
                 numInstances++;  
             }
             int lineNumber=0;
-                       
+            instPerFeatures = new int[model.featureIndex().size()][numInstances];           
             
             for (int i=0;i<numInstances;i++) {
 
@@ -712,21 +714,17 @@ public class AnalyzeLClassifier {
                 ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
                 Datum<String, String> datum = columnDataClass.makeDatumFromLine(line, 0);
                 Collection<String> features = datum.asFeatures();
-                
+                String[] featArray = new String[features.size()];
                 
                 List<Integer> feats = new ArrayList<>();
                 //take the id (index) of the features
+                int fidx=0;
                 for(String f:features){
                     if(model.featureIndex().indexOf(f)>-1){
                         int idx = model.featureIndex().indexOf(f);
                         feats.add(idx);
-                        
-                        List<Integer> insts= new ArrayList<>();
-                        if(instPerFeatures.containsKey(idx))
-                            insts=new ArrayList(instPerFeatures.get(idx));
-                        
-                        insts.add(i);    
-                        instPerFeatures.put(idx,insts);
+                        featArray[fidx]=f;fidx++;
+                        instPerFeatures[idx][i]=1;
                            
                     }
                 }
@@ -741,9 +739,9 @@ public class AnalyzeLClassifier {
                 
                 if(serializeFeatures){
                     if(fileName.contains("train"))
-                        stLCDictTrainFeatures.put(numInstances, new ArrayList<>(features));
+                        stLCDictTrainFeatures[numInstances]= featArray;
                     else
-                         stLCDictTestFeatures.put(numInstances, new ArrayList<>(features)); 
+                         stLCDictTestFeatures[numInstances]= featArray; 
                 } 
                                
             }
@@ -2952,7 +2950,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         }      
    }
 
-    private void serializingFeatures(HashMap vocFeats, boolean isTrain){
+    private void serializingFeatures(String[][] vocFeats, boolean isTrain){
     try{
             String fileName="";
             if(isTrain)
@@ -2972,10 +2970,9 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         }
     }
     
-    public HashMap<Integer,List<String>> deserializingFeatures(boolean isTrain){
+    public String[][] deserializingFeatures(boolean isTrain){
       try
       {
-        HashMap<Integer,List<String>> vocFeats = new HashMap<>();
         String fileName="";
         if(isTrain)
             fileName="StanfordLCTrainfeaturesDict.ser";
@@ -2983,8 +2980,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
             fileName="StanfordLCTestfeaturesDict.ser";          
         FileInputStream fileIn =  new FileInputStream(fileName);
         ObjectInputStream in = new ObjectInputStream(fileIn);
-        vocFeats = (HashMap<Integer,List<String>>) in.readObject();
-        System.out.println("vocabulary of features: "+vocFeats.size());
+        String[][] vocFeats = (String[][]) in.readObject();
+        System.out.println("vocabulary of features: "+vocFeats.length);
         /*
         for(Integer key:vocFeats.keySet()){
             System.out.println("feature id "+ vocFeats.get(key)+" value : "+ key);
@@ -2997,12 +2994,12 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
       }catch(IOException i)
       {
          i.printStackTrace();
-         return new HashMap<>();
+         return null;
       }catch(ClassNotFoundException c)
       {
          System.out.println("class not found");
          c.printStackTrace();
-         return new HashMap<>();
+         return null;
       } 
    
     }   
@@ -3067,8 +3064,8 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         fileIn.close();
         fileIn =  new FileInputStream(instPerFeat);
         in = new ObjectInputStream(fileIn);
-        instPerFeatures = (HashMap<Integer,List<Integer>>) in.readObject();
-        System.out.println("loading labels per instance: "+instPerFeatures.size());
+        instPerFeatures = (int[][]) in.readObject();
+        System.out.println("loading labels per instance: "+instPerFeatures.length);
         in.close();
         fileIn.close();        
         fileIn =  new FileInputStream(lblPerInst);
@@ -3096,7 +3093,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         
         //HashMap<Integer,List<String>> trainfeats= deserializingFeatures(true);
         HashMap<String,Integer> dictFeatures=new HashMap<>();
-        HashMap<Integer,List<String>> feats=deserializingFeatures(istrain);
+        String[][] feats=deserializingFeatures(istrain);
         BufferedReader infile = null;
         
         OutputStreamWriter outFile=null;
@@ -3131,7 +3128,7 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
                 String pos= stdata[2];
                 if(!dictFeatures.containsKey(pos))
                     dictFeatures.put(pos,dictFeatures.size()+1);
-                List<String> restfeats= feats.get(linecounter);
+                String[] restfeats= feats[linecounter];
                 String wshape="";
                 String lngram="";
                 for(String feat:restfeats){

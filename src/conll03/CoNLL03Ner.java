@@ -424,10 +424,10 @@ public class CoNLL03Ner {
         */
         lcclass.setPriors(priorsMap);  
        
-        //lcclass.wkSupParallelCoordD(entity, true);
+        //lcclass.wkSupParallelCoordD(entity, true,2000);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        lcclass.wkSupParallelStocCoordD(entity, true,numIters,true,true,true);
-	//lcclass.wkSupClassifierConstr(entity, true,2000);
+        //lcclass.wkSupParallelStocCoordD(entity, true,numIters,true,true,true);
+	lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     
     /**

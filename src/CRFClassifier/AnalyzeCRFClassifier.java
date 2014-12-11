@@ -963,7 +963,7 @@ public class AnalyzeCRFClassifier {
        
    }      
 
-      public void evaluationCONLLBIOCLASSRESULTS(String goalClass,String filename){
+      public int[] evaluationCONLLBIOCLASSRESULTS(String goalClass,String filename){
 
         BufferedReader testFile = null;
         try {
@@ -985,7 +985,7 @@ public class AnalyzeCRFClassifier {
                     continue;
                 String label = values[1];
                 String recognizedLabel = values[2];
-                
+                           
                 
                 if(recognizedLabel.equals(goalClass) && label.equals(goalClass))
                     tp++;
@@ -1004,20 +1004,23 @@ public class AnalyzeCRFClassifier {
             double precision= (double) tp/(tp+fp);
             double recall= (double) tp/(tp+fn);
             double f1=(2*precision*recall)/(precision+recall);
-
+            //System.out.println(goalClass+"  tp,fp,fn,tn "+tp+","+fp+","+fn+","+tn);
             System.out.println(goalClass+"  precision: "+precision);
             System.out.println(goalClass+"  recall: "+recall);
             System.out.println(goalClass+"  f1: "+f1);
             
-            
+            int[] trueFalseVals = {tp, fp, fn, tn};
+            return trueFalseVals;
             
         } catch (Exception ex) {
             ex.printStackTrace();
+            return new int[4];
         } finally {
             try {
                 testFile.close();
             } catch (IOException ex) {
                 ex.printStackTrace();
+                return new int[4];
             }
         }
        
@@ -1093,11 +1096,10 @@ public class AnalyzeCRFClassifier {
             POSFILTER=false;
         if(isGaz)
             PROPERTIES_FILE="scrfGaz.props";      
-        ///*
-        File mfile = new File(MODELFILE.replace("%S", str));
-        mfile.delete(); 
-        //*/
+
         if(savingFiles){
+            File mfile = new File(MODELFILE.replace("%S", str));
+            mfile.delete();             
             saveFilesForLClassifier(str,true,false,useTKFeat,useWSupFeat);
             saveFilesForLClassifier(str,false,false,useTKFeat,useWSupFeat);
         }
@@ -1111,7 +1113,10 @@ public class AnalyzeCRFClassifier {
             updatingMappingBkGPropFile(CNConstants.PRNOUN,CNConstants.NOCLASS,"word=0,tag=1,answer=2");
         
         trainOneClassifier(str);
+        
         testingClassifier(str,savingFiles,false, useTKFeat,useWSupFeat);
+        CRFClassifier crf=this.modelMap.get(str);
+        
  
         if(!typeofClass.startsWith(CNConstants.BIO.substring(0,2)))
             AnalyzeLClassifier.evaluationCLASSRESULTS(CNConstants.PRNOUN,OUTFILE.replace("%S", str));
@@ -1119,10 +1124,38 @@ public class AnalyzeCRFClassifier {
             if(!str.equals(CNConstants.ALL))
                 evaluationBIOCLASSRESULTS(str,OUTFILE.replace("%S", str));   
             else{
-                CRFClassifier crf=this.modelMap.get(str);
+                
+                double tpSum= 0.0,microPrecDen= 0.0;
+                double microRecallDen=0.0;
+                double macroPrec=0.0;
+                double macroRec=0.0;
+                double macroF1=0.0;
                 for(Object label:crf.labels()){
-                    evaluationBIOCLASSRESULTS((String)label,OUTFILE.replace("%S", str));   
+                    if(((String)label).equals(CNConstants.NOCLASS))
+                        continue;
+                    int[] tfVals= evaluationCONLLBIOCLASSRESULTS((String)label,OUTFILE.replace("%S", str));  
+                    int tp=tfVals[0];
+                    int fp=tfVals[1];
+                    int fn=tfVals[2];
+                    System.out.println(label+"  tp,fp,fn,tn "+tp+","+fp+","+fn+","+tfVals[3]);
+                    double precision= (double) tp/(tp+fp);
+                    double recall= (double) tp/(tp+fn);
+                    //double f1=(2*precision*recall)/(precision+recall);
+                    tpSum+=tp; 
+                    microPrecDen+=(tp+fp);
+                    microRecallDen+=(tp+fn);
+                    macroPrec+=precision;
+                    macroRec+=recall;
+                    //macroF1+=f1;
                 }
+                double microPrec=tpSum/microPrecDen;
+                double microRec=tpSum/microRecallDen;
+                double microf1=(2*microPrec*microRec)/(microPrec+microRec);
+                System.out.println("Micro prec="+microPrec+ " Micro rec= "+ microRec + " Micro f1 ="+ microf1);
+                macroPrec/=crf.labels().size();
+                macroRec/=crf.labels().size();
+                macroF1=(2*macroPrec*macroRec)/(macroPrec+macroRec);
+                System.out.println("Macro prec="+macroPrec+ " Macro rec= "+ macroRec + " Macro f1 ="+ macroF1);
             }
         }    
          
@@ -1183,7 +1216,8 @@ public class AnalyzeCRFClassifier {
                 analyzing.properNounDetectionOnEsterTk(true,false, CNConstants.IO);
                 
             case "esterMClass":
-                analyzing.detectingOneEntityOnEster(CNConstants.ALL, true, false, CNConstants.BIO, false,false);
+                //classifier type, savingFiles, isGaz, typeOfclasses (e.g., BIO), useTKFeat, useWSupFeat
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, false,false);
                 break;
                 
             case "esterTKMClass":
@@ -1191,7 +1225,7 @@ public class AnalyzeCRFClassifier {
                 break;    
                 
             case "esterWsupMClass":
-                analyzing.detectingOneEntityOnEster(CNConstants.ALL, true, false, CNConstants.BIO, false,true);
+                analyzing.detectingOneEntityOnEster(CNConstants.ALL, false, false, CNConstants.BIO, false,true);
                 break; 
                 
             case "esterWsupTKMClass":

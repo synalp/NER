@@ -42,7 +42,7 @@ public class Margin {
     private float[][] generatedScores;
     private List<List<Integer>> featsperInst = new ArrayList<>();
     private List<Integer> labelperInst = new ArrayList<>(); 
-    private HashMap<Integer,List<Integer>> instPerFeatures= new HashMap<>();
+    private int[][] instPerFeatures;
     //private HashMap<Integer,Double> priorsMap = new HashMap<>();
        
     //paralell coordinate gradient
@@ -543,16 +543,16 @@ public class Margin {
       return this.featsperInst;   
     }  
     
-    public void setInstancesPerFeatures(HashMap<Integer,List<Integer>> insperFeat){
+    public void setInstancesPerFeatures(int[][] insperFeat){
         this.instPerFeatures=insperFeat;
     }
     
-    public HashMap<Integer,List<Integer>> getInstancesPerFeatures(){
+    public int[][] getInstancesPerFeatures(){
         return this.instPerFeatures;
     }
     
-    public List<Integer> getInstancesperFeat(Integer featIdx){
-        return instPerFeatures.get(featIdx);
+    public int[] getInstancesperFeat(Integer featIdx){
+        return instPerFeatures[featIdx];
     }
     
     public void setLabelPerInstance(List<Integer> lblPerInsts){
@@ -625,12 +625,27 @@ public class Margin {
 //    }
     public int getThreadIteration(){
         return this.threadIteration;
+                
     }
-    public List<Integer> getInstancesCurrThrFeat(){
-        if(threadFeatIdx==CNConstants.INT_NULL || !instPerFeatures.containsKey(threadFeatIdx))
-            return new ArrayList<>();
+    
+    public boolean areAllInstancesZero(int featIdx){
+        boolean allZeros=true;
+        for(int i=0; i<instPerFeatures[featIdx].length;i++ ){
+            if(instPerFeatures[featIdx][i] == 1){
+                allZeros=false;
+                break;
+            }    
+        } 
         
-        return new ArrayList<>(instPerFeatures.get(threadFeatIdx));
+        return allZeros;
+            
+    }
+    
+    public int[] getInstancesCurrThrFeat(){
+        if(threadFeatIdx==CNConstants.INT_NULL || !areAllInstancesZero(threadFeatIdx))
+            return null;
+        
+        return instPerFeatures[threadFeatIdx];
     }
     
 //    public void setPriorMap(HashMap<Integer,Double> pMap){

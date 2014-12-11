@@ -64,7 +64,7 @@ public class AnalyzeSVMClassifier implements Serializable{
     
 
     private HashMap<String,Integer> dictFeatures=new HashMap<>();
-    private HashMap<Integer,List<String>> stdictTrainFeatures=new HashMap<>();
+    private String[][] stdictTrainFeatures;
     
     
     public AnalyzeSVMClassifier(){
@@ -325,24 +325,25 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
                                         dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);                                    
                                     */
-                                    List<String> addFeats=new ArrayList<>();
-                                    if(stdictTrainFeatures.containsKey(wordCounter))
-                                        addFeats = stdictTrainFeatures.get(wordCounter);
+                                    String[] addFeats = null;
+                                    if(stdictTrainFeatures[wordCounter]!=null)
+                                        addFeats = stdictTrainFeatures[wordCounter];
                                     
-                                    if(addFeats.isEmpty())
+                                    if(addFeats == null)
                                        ErrorsReporting.report("NOT FEATURES FOUND FOR WORD["+wordCounter+"] = "+word); 
-                                    //List<String> filteredFeats=new ArrayList<>();
+                                    List<String> addListFeats=new ArrayList<>();
                                     for(String feat:addFeats){
                                         /*
                                         if(!feat.contains("#"))
                                             continue;
                                         //extracts the letter ngram features
                                         //filteredFeats.add(feat);//*/
+                                        addListFeats.add(feat);
                                         if(!dictFeatures.containsKey(feat))
                                             dictFeatures.put(feat, dictFeatures.size()+1);
                                     }
                                     //add letter ngram features
-                                    word.setAdditionalFeats(addFeats);                                    
+                                    word.setAdditionalFeats(addListFeats);                                    
                                         
                             }
                             uttCounter++;
@@ -545,24 +546,25 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
                                         dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);                                    
                                     */
-                                    List<String> addFeats=new ArrayList<>();
-                                    if(stdictTrainFeatures.containsKey(wordCounter))
-                                        addFeats = stdictTrainFeatures.get(wordCounter);
+                                    String[] addFeats=null;
+                                    if(stdictTrainFeatures[wordCounter]!=null)
+                                        addFeats = stdictTrainFeatures[wordCounter];
                                     
-                                    if(addFeats.isEmpty())
+                                    if(addFeats==null)
                                        ErrorsReporting.report("NOT FEATURES FOUND FOR WORD["+wordCounter+"] = "+word); 
-                                    //List<String> filteredFeats=new ArrayList<>();
+                                    List<String> addListFeats=new ArrayList<>();
                                     for(String feat:addFeats){
                                         /*
                                         if(!feat.contains("#"))
                                             continue;
                                         //extracts the letter ngram features
                                         //filteredFeats.add(feat);//*/
+                                        addListFeats.add(feat);
                                         if(!dictFeatures.containsKey(feat))
                                             dictFeatures.put(feat, dictFeatures.size()+1);
                                     }
                                     //add letter ngram features
-                                    word.setAdditionalFeats(addFeats);                                    
+                                    word.setAdditionalFeats(addListFeats);                                    
                                         
                             }
                             uttCounter++;
@@ -769,24 +771,25 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
                                         dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);  
                                     */
-                                    List<String> addFeats=new ArrayList<>();
-                                    if(stdictTrainFeatures.containsKey(wordCounter))
-                                        addFeats = stdictTrainFeatures.get(wordCounter);
+                                    String[] addFeats=null;
+                                    if(stdictTrainFeatures[wordCounter]!=null)
+                                        addFeats = stdictTrainFeatures[wordCounter];
                                     
-                                    if(addFeats.isEmpty())
+                                    if(addFeats==null)
                                        ErrorsReporting.report("NOT FEATURES FOUND FOR WORD["+wordCounter+"] = "+word); 
-                                    //List<String> filteredFeats=new ArrayList<>();
+                                    List<String> addListFeats=new ArrayList<>();
                                     for(String feat:addFeats){
                                         /*
                                         if(!feat.contains("#"))
                                             continue;
                                         //extracts the letter ngram features
                                         //filteredFeats.add(feat);//*/
+                                        addListFeats.add(feat);
                                         if(!dictFeatures.containsKey(feat))
                                             dictFeatures.put(feat, dictFeatures.size()+1);
                                     }
                                     //add letter ngram features
-                                    word.setAdditionalFeats(addFeats);
+                                    word.setAdditionalFeats(addListFeats);
                                         
                             }
                             uttCounter++;

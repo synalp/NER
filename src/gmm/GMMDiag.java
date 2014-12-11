@@ -515,11 +515,14 @@ public class GMMDiag extends GMM {
         for (int i=0;i<nlabs;i++) {
             Arrays.fill(muPart1[i], 0);
         }        
-        List<Integer> instances = margin.getInstancesCurrThrFeat();
-        
-        for (int i=0;i<instances.size();i++) {
+        int[] instances = margin.getInstancesCurrThrFeat();
+        if(instances == null){
+            ErrorsReporting.report("No instances for that feature");
+            return null;
+        }
+        for (int i=0;i<instances.length;i++) {
             List<Integer> featuresByInstance = new ArrayList<>();
-            int inst= instances.get(i);
+            int inst= instances[i];
             if(!Margin.GENERATEDDATA)            
                 featuresByInstance = margin.getFeaturesPerInstance(inst);
             if(isBinaryConstrained){
@@ -727,11 +730,11 @@ public class GMMDiag extends GMM {
         
         margin.sumXSqPart=new double[z.length];
         
-        List<Integer> instances = margin.getInstancesCurrThrFeat();
+        int[] instances = margin.getInstancesCurrThrFeat();
             
-         for (int i=0;i<instances.size();i++) {
+         for (int i=0;i<instances.length;i++) {
             List<Integer> featuresByInstance = new ArrayList<>();
-            int inst= instances.get(i);
+            int inst= instances[i];
             if(!Margin.GENERATEDDATA)            
                 featuresByInstance = margin.getFeaturesPerInstance(inst);
             if(isBinaryConstrained){
