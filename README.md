@@ -12,6 +12,13 @@ In addition it access external ressources, namely a database with the wikipedia 
 
 We also implemented a weakly supervised algorithm that is first initialized with the weights given by the stanford linear classifier trained on little data.
 
+Licence
+-------
+
+This software is distributed under the
+[CeCILL-C](http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html)
+license.
+
 Configuration
 -------------
 
