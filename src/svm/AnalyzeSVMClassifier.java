@@ -535,29 +535,34 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     word.setLabel(lab);
                                     word.setUtterance(utt);
                                     words.add(word);
-                                    wordCounter++;
+                                    
                                     /*
                                     if(!dictFeatures.containsKey(word.getContent()))
                                         dictFeatures.put(word.getContent(), dictFeatures.size()+1);
-                                    */
+                                    
                                     if(!dictFeatures.containsKey(word.getPosTag().getFName()))
                                         dictFeatures.put(word.getPosTag().getFName(), dictFeatures.size()+1);
                                     
                                     if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
                                         dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);                                    
                                     //*/
+                                    //System.out.println("word Counter "+ wordCounter);
                                     String[] addFeats=null;
-                                    if(stdictTrainFeatures[wordCounter]!=null)
-                                        addFeats = stdictTrainFeatures[wordCounter];
-                                    
-                                    if(addFeats==null)
+                                    if(stdictTrainFeatures[wordCounter]!=null){
+                                        addFeats = new String[stdictTrainFeatures[wordCounter].length];
+                                        System.arraycopy(stdictTrainFeatures[wordCounter], 0, addFeats, 0, stdictTrainFeatures[wordCounter].length);
+                                    }
+                                    if(addFeats==null){
                                        ErrorsReporting.report("NOT FEATURES FOUND FOR WORD["+wordCounter+"] = "+word); 
+                                       continue;
+                                    }   
                                     List<String> addListFeats=new ArrayList<>();
                                     for(String feat:addFeats){
-                                        
-                                        if(!feat.contains("#"))
+                                        if(feat==null)
                                             continue;
-                                        /*//extracts the letter ngram features
+                                        /*if(!feat.contains("#"))
+                                            continue;
+                                        //extracts the letter ngram features
                                         //filteredFeats.add(feat);//*/
                                         addListFeats.add(feat);
                                         if(!dictFeatures.containsKey(feat))
@@ -565,7 +570,7 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     }
                                     //add letter ngram features
                                     word.setAdditionalFeats(addListFeats);                                    
-                                        
+                                    wordCounter++;   
                             }
                             uttCounter++;
                             utt.setWords(words);
@@ -610,9 +615,10 @@ public class AnalyzeSVMClassifier implements Serializable{
                                 //int wordid= dictFeatures.get(word.getContent());
                                 int posid=dictFeatures.get(word.getPosTag().getFName());
                                 int wsid= dictFeatures.get(word.getLexicalUnit().getPattern());
+                                
                                 //vals.add(wordid);
                                 vals.add(posid);vals.add(wsid);        
-                                Collections.sort(vals);
+                                /*Collections.sort(vals);
                                 String vector="";
                                 for(int i=0; i<vals.size();i++)                                
                                     vector+=vals.get(i)+":1 ";
@@ -663,6 +669,8 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     tree=tree.trim()+ treeBUp.trim();
                                     //outFile.append(word.getLabel()+"\t"+ word.getContent() +" "+tree.trim()+" nnodes= "+ subTree.getNumberOfNodes() + " level= "+subTree.getLevel() +" "+vector+"\n");
                                     //if(!isStopWord(word.getPosTag().getName()))
+                                    String pos=word.getPosTag().getName();
+                                    if(!pos.startsWith(".") || !pos.startsWith("DT")|| !pos.startsWith("IN")||!pos.startsWith(",")||!pos.startsWith("TO")||!pos.startsWith("\""))
                                         outFile.append(word.getLabel()+"\t"+tree.trim() +" "+vector+"\n");
                                 }
                             }   
@@ -1538,6 +1546,7 @@ public class AnalyzeSVMClassifier implements Serializable{
         AnalyzeLClassifier analyzing = new AnalyzeLClassifier();
         stdictTrainFeatures=analyzing.deserializingFeatures(istrain);
         
+        
     }
     
     private void serializingFeatures(){
@@ -1637,7 +1646,7 @@ public class AnalyzeSVMClassifier implements Serializable{
          //svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
          //Pruned trees
          //classifier type, isvector, isCW, isTopDown, isBottomUp, isPOS
-         svmclass.savingWordsPrTrConll(CNConstants.PRNOUN, false,true,true,true,false);
+         svmclass.savingWordsPrTrConll(CNConstants.PRNOUN, false,false,true,true,false);
          //svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, false,true,true,true,false);
          //trees as string features for polynomial kernels
          //svmclass.savingWordsPolyFiles(CNConstants.PRNOUN);
