@@ -539,13 +539,13 @@ public class AnalyzeSVMClassifier implements Serializable{
                                     /*
                                     if(!dictFeatures.containsKey(word.getContent()))
                                         dictFeatures.put(word.getContent(), dictFeatures.size()+1);
-                                    
+                                    */
                                     if(!dictFeatures.containsKey(word.getPosTag().getFName()))
                                         dictFeatures.put(word.getPosTag().getFName(), dictFeatures.size()+1);
                                     
                                     if(!dictFeatures.containsKey(word.getLexicalUnit().getPattern()))
                                         dictFeatures.put(word.getLexicalUnit().getPattern(), dictFeatures.size()+1);                                    
-                                    */
+                                    //*/
                                     String[] addFeats=null;
                                     if(stdictTrainFeatures[wordCounter]!=null)
                                         addFeats = stdictTrainFeatures[wordCounter];
@@ -554,10 +554,10 @@ public class AnalyzeSVMClassifier implements Serializable{
                                        ErrorsReporting.report("NOT FEATURES FOUND FOR WORD["+wordCounter+"] = "+word); 
                                     List<String> addListFeats=new ArrayList<>();
                                     for(String feat:addFeats){
-                                        /*
+                                        
                                         if(!feat.contains("#"))
                                             continue;
-                                        //extracts the letter ngram features
+                                        /*//extracts the letter ngram features
                                         //filteredFeats.add(feat);//*/
                                         addListFeats.add(feat);
                                         if(!dictFeatures.containsKey(feat))

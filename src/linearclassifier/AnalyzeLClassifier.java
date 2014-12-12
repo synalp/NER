@@ -599,7 +599,12 @@ public class AnalyzeLClassifier {
                 numInstances++;  
             }
             int lineNumber=0;
-                       
+            if(serializeFeatures){
+                if(fileName.contains("train"))
+                    stLCDictTrainFeatures = new String[numInstances][]; 
+                else
+                    stLCDictTestFeatures = new String[numInstances][]; 
+            }
             instPerFeatures = new int[model.featureIndex().size()][10];
             int[] instPerFeatInstIdx = new int[model.featureIndex().size()];
             Arrays.fill(instPerFeatInstIdx, CNConstants.INT_NULL);
@@ -649,16 +654,20 @@ public class AnalyzeLClassifier {
 
                 
                 if(serializeFeatures){
-                    if(fileName.contains("train"))
-                        stLCDictTrainFeatures[numInstances]= featArray;
-                    else
-                         stLCDictTestFeatures[numInstances]= featArray; 
+                    if(fileName.contains("train")){
+                        stLCDictTrainFeatures[i] = new String[featArray.length];
+                        System.arraycopy(featArray,0, stLCDictTrainFeatures[i],0, featArray.length);
+                    }else{
+                        stLCDictTestFeatures[i] = new String[featArray.length];
+                        System.arraycopy(featArray,0,stLCDictTestFeatures[i],0, featArray.length); 
+                    }    
                 } 
                                
             }
             
             
             if(serializeFeatures){
+                
                 if(fileName.contains("train"))
                     serializingFeatures(stLCDictTrainFeatures,true);
                 else
@@ -718,6 +727,12 @@ public class AnalyzeLClassifier {
                 numInstances++;  
             }
             int lineNumber=0;
+            if(serializeFeatures){
+                if(fileName.contains("train"))
+                    stLCDictTrainFeatures = new String[numInstances][]; 
+                else
+                    stLCDictTestFeatures = new String[numInstances][]; 
+            }
             instPerFeatures = new int[model.featureIndex().size()][10];
             int[] instPerFeatInstIdx = new int[model.featureIndex().size()];
             Arrays.fill(instPerFeatInstIdx, CNConstants.INT_NULL);
@@ -765,10 +780,13 @@ public class AnalyzeLClassifier {
 
                 
                 if(serializeFeatures){
-                    if(fileName.contains("train"))
-                        stLCDictTrainFeatures[numInstances]= featArray;
-                    else
-                         stLCDictTestFeatures[numInstances]= featArray; 
+                    if(fileName.contains("train")){
+                        stLCDictTrainFeatures[i] = new String[featArray.length];
+                        System.arraycopy(featArray,0, stLCDictTrainFeatures[i],0, featArray.length);
+                    }else{
+                        stLCDictTestFeatures[i] = new String[featArray.length];
+                        System.arraycopy(featArray,0,stLCDictTestFeatures[i],0, featArray.length);
+                    }
                 } 
                                
             }
