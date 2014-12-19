@@ -360,7 +360,11 @@ public class GMMDiag extends GMM {
                 else
                     z[0] = margin.getScore(featuresByInstance,0);
                 z[1]=-z[0];
+                if(Float.isNaN(z[0]))
+                    System.out.println("trainEM() la observacion es NAN " + z[0]+ " instance "+ inst);
                 
+                //System.out.println("z[0]="+z[0]);
+                assert !Float.isNaN(z[0]);
             }else{
                 for (int lab=0;lab<nlabs;lab++) {
                     if(Margin.GENERATEDDATA)
@@ -375,6 +379,12 @@ public class GMMDiag extends GMM {
             //logWeights has already the priors which is the extra pattern pi
             float normConst = logMath.linearToLog(0);
             for (int y=0;y<nlabs;y++){ 
+                if(Double.isNaN(gmm0.getLoglike(y, z))){
+                    System.out.println("Thread"+margin.currThread+" trainEM() loglike is NaN instance " + inst);
+                }
+                if(Double.isNaN(gmm0.logWeights[y])){
+                    System.out.println("Thread"+margin.currThread+" trainEM() prior is NaN instance " + inst);
+                }                
                 tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
                 if(y==0)
                     normConst=(float)tmp[y];
@@ -387,6 +397,13 @@ public class GMMDiag extends GMM {
                 nex[y]++;
                 //ex2lab[inst]=y;
                 double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                if(Double.isNaN(posterior)){
+                    System.out.println("Thread"+margin.currThread+" trainEM() posterior is NaN instance " + inst+ " tmp = " + Arrays.toString(tmp)+ "normConst "+ normConst);
+                    System.out.println("gmm0 means : " ); printMatrix(gmm0.means);
+                    System.out.println("gmm0 loglike : " +gmm0.getLoglike(y, z));
+                    break;
+                }    
+                
                 margin.nkAll[y]+=posterior;
                 margin.sumXSqAll[y]+=posterior*z[y]*z[y];
                 for (int l=0;l<nlabs;l++){ 
@@ -522,6 +539,8 @@ public class GMMDiag extends GMM {
         for (int i=0;i<instances.length;i++) {
             List<Integer> featuresByInstance = new ArrayList<>();
             int inst= instances[i];
+            if(inst==CNConstants.INT_NULL)
+                continue;            
             if(!Margin.GENERATEDDATA)            
                 featuresByInstance = margin.getFeaturesPerInstance(inst);
             if(isBinaryConstrained){
@@ -739,6 +758,8 @@ public class GMMDiag extends GMM {
          for (int i=0;i<instances.length;i++) {
             List<Integer> featuresByInstance = new ArrayList<>();
             int inst= instances[i];
+            if(inst==CNConstants.INT_NULL)
+                continue;
             if(!Margin.GENERATEDDATA)            
                 featuresByInstance = margin.getFeaturesPerInstance(inst);
             if(isBinaryConstrained){
@@ -748,6 +769,8 @@ public class GMMDiag extends GMM {
                     z[0] = margin.getScore(featuresByInstance,0);
                 
                 z[1]=-z[0];
+                if(Float.isNaN(z[0]))
+                    System.out.println("Updating XXX la observacion es NAN " + z[0]+ " instance "+ inst);
                 //double tmpval = margin.getScore(featuresByInstance,1);
                 //System.out.println(" tmp vs z[1]: "+ tmpval + " - " + z[1]);
                 
@@ -759,6 +782,9 @@ public class GMMDiag extends GMM {
             //logWeights has already the priors which is the extra pattern pi
             float normConst = logMath.linearToLog(0);
             for (int y=0;y<nlabs;y++){ 
+                if(Double.isNaN(gmm0.getLoglike(y, z)))
+                        System.out.println("Thread "+ margin.currThread + " instance "+ inst +" log likehood is NaN");
+                
                 tmp[y]=gmm0.logWeights[y] + gmm0.getLoglike(y, z);
                 if(y==0)
                     normConst=(float)tmp[y];
@@ -771,6 +797,8 @@ public class GMMDiag extends GMM {
                 
                 //ex2lab[inst]=y;
                 double posterior=logMath.logToLinear((float)tmp[y]-normConst);
+                if(Double.isNaN(posterior))
+                    System.out.println("Thread "+ margin.currThread +" Updating XXX posterior is NaN instance " + inst+ " tmp = " + Arrays.toString(tmp)+ "normConst "+ normConst);                
                 //double posterior = margin.post[y];
                 nkPart[y]+=posterior;
                 margin.sumXSqPart[y]+=posterior*(z[y]*z[y]);
@@ -800,10 +828,10 @@ public class GMMDiag extends GMM {
         for(int i=0; i<means.length;i++)
             System.arraycopy(means[i], 0, margin.previousMean[i], 0, means[i].length);  
         
-        System.out.println("In updatingGMMAfterRiskGradientStep");
-        //printMean();
-        //printVariace();
-        
+        System.out.println("Thread:"+margin.currThread+" Iter["+ margin.getThreadIteration()+"] In updatingGMMAfterRiskGradientStep");
+        printMean();
+        printVariace();
+        System.out.println("Thread:"+margin.currThread+" Out updatingGMMAfterRiskGradientStep");
 //        for (int i=0;i<instances.size();i++){
 //                postsum0+=gmm.postPerEx[ex];
 //        }        
@@ -911,7 +939,10 @@ public class GMMDiag extends GMM {
                 if(Margin.GENERATEDDATA)
                     z[0] = margin.getGenScore(ex, 0);
                 else                
-                    z[0] = margin.getScore(featuresByInstance,0);               
+                    z[0] = margin.getScore(featuresByInstance,0);  
+                
+                //System.out.println("lab="+0+" z[lab]="+z[0]);
+                assert !Float.isNaN(z[0]);
                 z[1] = -z[0];
                         
             }else{

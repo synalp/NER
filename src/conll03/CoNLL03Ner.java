@@ -379,6 +379,19 @@ public class CoNLL03Ner {
         columnDataClass.testClassifier(lcclass.getModel(entity), AnalyzeLClassifier.TESTFILE);  
     }
     
+        public void testingWSupModel(){
+        AnalyzeLClassifier.TRAINFILE=TRAINFILE.replace("%S", CNConstants.PRNOUN).replace("%CLASS", "LC");
+        AnalyzeLClassifier.TESTFILE=TESTFILE.replace("%S", CNConstants.PRNOUN).replace("%CLASS", "LC");
+        AnalyzeLClassifier.MODELFILE=WKSUPMODEL.replace("%S", CNConstants.PRNOUN);        
+
+        AnalyzeLClassifier lcclass= new AnalyzeLClassifier();
+        LinearClassifier lc= AnalyzeLClassifier.loadModelFromFile(AnalyzeLClassifier.MODELFILE);
+        ErrorsReporting.report("Training only on trainset");
+        generatingStanfordInputFiles(CNConstants.PRNOUN, "test", false,CNConstants.CHAR_NULL,false);
+        ColumnDataClassifier columnDataClass = new ColumnDataClassifier(AnalyzeLClassifier.PROPERTIES_FILE);
+        columnDataClass.testClassifier(lc, AnalyzeLClassifier.TESTFILE);  
+    }
+    
     public void trainLC(String entity,boolean savingFiles, int trainSize, boolean useExistingModels){
         AnalyzeLClassifier.TRAINSIZE=trainSize;
         if(savingFiles){
@@ -470,8 +483,8 @@ public class CoNLL03Ner {
        
         //lcclass.wkSupParallelCoordD(entity, true,2000);
         //lcclass.wkSupParallelFSCoordD(entity, true,2000);
-        //lcclass.wkSupParallelStocCoordD(entity, true,numIters,true,true,true);
-	lcclass.wkSupClassifierConstr(entity, true,2000);
+        lcclass.wkSupParallelStocCoordD(entity, true,numIters,true,true,true);
+	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     
     /**
@@ -933,6 +946,50 @@ public class CoNLL03Ner {
             ex.printStackTrace();
         }
     }
+    public void convertingConll03to09(String dataset){
+        try {
+            BufferedReader inFile = null;
+            OutputStreamWriter outFile = null;
+            switch(dataset){
+                case "train":
+                    inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTrain)); 
+                    outFile = new OutputStreamWriter(new FileOutputStream(corpusDir+System.getProperty("file.separator")+corpusTrain+".conll09"),CNConstants.UTF8_ENCODING);
+                    break;                            
+                case "dev": 
+                    inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusDev));
+                    outFile = new OutputStreamWriter(new FileOutputStream(corpusDir+System.getProperty("file.separator")+corpusDev+".conll09"),CNConstants.UTF8_ENCODING);
+                    break;
+                case "test":    
+                    inFile = new BufferedReader(new FileReader(corpusDir+System.getProperty("file.separator")+corpusTest));
+                    outFile = new OutputStreamWriter(new FileOutputStream(corpusDir+System.getProperty("file.separator")+corpusTest+".conll09"),CNConstants.UTF8_ENCODING);                    
+                    break;                            
+            }
+            int wordCounter=1;
+            for(;;){
+                
+               String line = inFile.readLine();
+                if(line == null)
+                   break;
+               if(line.startsWith("-DOCSTART-"))
+                   continue;
+               //utterance breaking
+               if(line.equals("")){
+                   wordCounter=1;
+                   outFile.append("\n");
+                   continue;
+               }    
+                   
+               String[] cols= line.split("\\s");
+               
+               outFile.append(wordCounter+"\t"+cols[0]+"\t"+cols[0]+"\t"+cols[1]+"\t"+cols[1]+"\t_\t_\t_\t_\t_\t_\t_\t_\t_\t_\t_\t_\t_\t_\t_\n");
+               wordCounter++;
+            } 
+            outFile.flush();
+            outFile.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }    
     public void parsing(String dataset){
             try {
                 GraphIO gio = new GraphIO(null);
@@ -996,7 +1053,7 @@ public class CoNLL03Ner {
     public static final String[] TASKS = {
     	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags",  // 0 ... 4
     	"weaklySupConll", "expGWord", "dev","priors","conv", "lc","crfwsgoal",//5-11
-        "evalResults","crftk","crftkwsup"
+        "evalResults","crftk","crftkwsup","testWsup"
 
     };
     
@@ -1026,7 +1083,7 @@ public class CoNLL03Ner {
                 conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,500,1000,true,true);
                 break;
         case 3:
-                conll.trainStanfordCRF(CNConstants.ALL, false, false,true,false);
+                conll.trainStanfordCRF(CNConstants.ALL, true, false,true,false);
                 break;            
         case 4:
         	// retag the Conll03 corpus with openNLP: this'll be used to run weakly supervised training of the linear classifier on it
@@ -1034,13 +1091,15 @@ public class CoNLL03Ner {
         	break;
         case 5:
         	// what's the difference between case 5 and 6 ?
-                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,1000,false);
+                //args String entity,boolean savingFiles, int trainSize, int numIters,boolean useExistingModels
+                conll.runningWeaklySupStanfordLC(CNConstants.PRNOUN,true,500,100,false);
                 //conll.testingNewWeightsLC(CNConstants.PRNOUN, true, 500);
                 break;
         case 6:
+               // trainSize,  testSize,  useExistingWSModel,  useSerializedFeats
                //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
-               //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, 3000000,false);
-               conll.experimentsCRFPlusWkSupGWord(500, 50,false,true);
+               conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, 500000,false,true);
+               //conll.experimentsCRFPlusWkSupGWord(500, 50,false,true);
                break;
         case 7:
         	// TODO: tune parameters on dev
@@ -1051,9 +1110,9 @@ public class CoNLL03Ner {
                conll.computePriors(CNConstants.ALL,"dev");
                break;
         case 9:
-               conll.convertingConll03to06("train");
-               conll.convertingConll03to06("test");
-               conll.convertingConll03to06("dev");
+               conll.convertingConll03to09("train");
+               conll.convertingConll03to09("test");
+               conll.convertingConll03to09("dev");
                break;
             
         case 10:
@@ -1070,7 +1129,10 @@ public class CoNLL03Ner {
                 break;
         case 14:
                 conll.trainStanfordCRF(CNConstants.ALL, true, true,true,false);
-                break;           
+                break;      
+        case 15:
+                conll.testingWSupModel();
+                break;
         }
         
         // PLEASE DONT UNCOMMENT ANY LINE BELOW! rather add a task and arg on the command-line  

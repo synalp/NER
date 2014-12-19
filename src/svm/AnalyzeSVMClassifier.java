@@ -1637,7 +1637,7 @@ public class AnalyzeSVMClassifier implements Serializable{
          //entity class / vector feature
          // svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
          //svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
-         //svmclass.evaluationSVMLightRESULTS("analysis/SVM/groups.pn.tab.treek.test", "analysis/SVM/outputPrunedtkJul282014");
+         svmclass.evaluationSVMLightRESULTS("analysis/SVM/groups.pn.tab.treek.test", "scripts/ner.conll.modeltk.sst.test");
          //svmclass.savingSpansFiles(CNConstants.PRNOUN, false);
          //svmclass.savingAllSpansFiles(CNConstants.PRNOUN, false);
          //Chunking
@@ -1646,7 +1646,7 @@ public class AnalyzeSVMClassifier implements Serializable{
          //svmclass.savingWordsFiles(CNConstants.PRNOUN, false);
          //Pruned trees
          //classifier type, isvector, isCW, isTopDown, isBottomUp, isPOS
-         svmclass.savingWordsPrTrConll(CNConstants.PRNOUN, false,false,true,true,false);
+         //svmclass.savingWordsPrTrConll(CNConstants.PRNOUN, false,false,true,true,false);
          //svmclass.savingWordsPrTrFiles(CNConstants.PRNOUN, false,true,true,true,false);
          //trees as string features for polynomial kernels
          //svmclass.savingWordsPolyFiles(CNConstants.PRNOUN);

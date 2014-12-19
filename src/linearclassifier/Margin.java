@@ -67,6 +67,7 @@ public class Margin {
     private int[] samples= null;    
     private Random rnd = new Random();
     
+    public  int currThread=CNConstants.INT_NULL;
     private int threadIteration = CNConstants.INT_NULL;
     private int threadFeatIdx=CNConstants.INT_NULL;
     
@@ -80,6 +81,7 @@ public class Margin {
     public double[] nkAll;
     public double[] post;
     public GMMDiag previousGmm=null;
+    
      
     public Margin(){
         
@@ -630,6 +632,8 @@ public class Margin {
     
     public boolean isArrayEmpty(int featIdx){
         boolean isarrempty=true;
+        if(featIdx>instPerFeatures.length)
+            return true;
         for(int i=0; i<instPerFeatures[featIdx].length;i++ ){
             if(instPerFeatures[featIdx][i] != CNConstants.INT_NULL){
                 isarrempty=false;

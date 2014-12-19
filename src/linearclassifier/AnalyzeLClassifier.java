@@ -112,7 +112,7 @@ public class AnalyzeLClassifier {
     
     private HashMap<Integer,Margin> parallelGrad = new HashMap<>();
     private Random rnd = new Random();
-    
+    private GMMDiag currGmm = null;
     
     
     
@@ -753,7 +753,7 @@ public class AnalyzeLClassifier {
                 for(String f:features){
                     if(model.featureIndex().indexOf(f)>-1){
                         int idx = model.featureIndex().indexOf(f);
-                        System.out.println("in getValues()  scanning feature "+idx + " found in instance "+ i );
+                        //System.out.println("in getValues()  scanning feature "+idx + " found in instance "+ i );
                         feats.add(idx);
                         featArray[fidx]=f;fidx++;
                         int[] newInstArray =new int[instPerFeatures[idx].length+10];
@@ -1318,19 +1318,19 @@ public class AnalyzeLClassifier {
         //final float[] priors = computePriors(sclassifier,model);
         float[] priors = getPriors();
         // get scores
-        GMMDiag gmm = new GMMDiag(priors.length, priors,true);
+        currGmm = new GMMDiag(priors.length, priors,true);
         // what is in marginMAP ? It maps a Margin, which contains the corpus for train, or test, or both ? and it is mapped to what ?
-        gmm.train(marginMAP.get(sclassifier));
+        currGmm.train(marginMAP.get(sclassifier));
         //gmm.trainEstimatedGaussians(marginMAP.get(sclassifier));
-        System.out.println("mean=[ "+gmm.getMean(0, 0)+" , "+gmm.getMean(0, 1)+";\n"+
-        +gmm.getMean(1, 0)+" , "+gmm.getMean(1, 1)+"]");
-        System.out.println("sigma=[ "+gmm.getVar(0, 0, 0)+" , "+gmm.getVar(0, 1, 1)+";\n"+
-        +gmm.getVar(1, 0, 0)+" , "+gmm.getVar(1, 1, 1));
+        System.out.println("mean=[ "+currGmm.getMean(0, 0)+" , "+currGmm.getMean(0, 1)+";\n"+
+        +currGmm.getMean(1, 0)+" , "+currGmm.getMean(1, 1)+"]");
+        System.out.println("sigma=[ "+currGmm.getVar(0, 0, 0)+" , "+currGmm.getVar(0, 1, 1)+";\n"+
+        +currGmm.getVar(1, 0, 0)+" , "+currGmm.getVar(1, 1, 1));
         System.out.println("GMM trained");
         
         //return computeR(gmm, priorsMap,marginMAP.get(sclassifier).getNlabs() );
         long beforeR=System.nanoTime();
-        float r= computeR(gmm, priors,true); //xtof
+        float r= computeR(currGmm, priors,true); //xtof
         long afterR=System.nanoTime();
         elapsedTime = afterR-beforeR;
         return r;
@@ -1865,7 +1865,7 @@ public class AnalyzeLClassifier {
         double[][] sameWeights = margin.getWeights();
         float partiSize = (float) sameWeights.length/numberOfThreads;
         int partSize= Math.round(partiSize);
-        MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1);
+        MultiCoreStocCoordDescent mthread = new MultiCoreStocCoordDescent(niters,numberOfThreads, closedForm, isMC,numIntIters, computeF1,currGmm);
         double[][] allfeats = new double[margin.getNfeats()][margin.getNlabs()];
         
         /*
@@ -1904,7 +1904,7 @@ public class AnalyzeLClassifier {
             marginThr.setWeights(margin.getWeights());
             marginThr.copySharedyInfoParallelGrad(margin);
             marginThr.setInstancesPerFeatures(instPerFeatures);
-             
+            
             //marginThr.setSamples(margin.getSamples());
             
 

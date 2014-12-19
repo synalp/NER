@@ -39,9 +39,9 @@ public class MultiCoreStocCoordDescent  {
   private int nThreads;
   public float delta = 0.01f;
   final static float[] priors = AnalyzeLClassifier.getPriors();
-  public static GMMDiag gmm = null;
   
-  public static float computeROfTheta(Margin margin, float gradStep) {
+  
+  public float computeROfTheta(GMMDiag gmm, Margin margin, float gradStep) {
   
       gmm.updatingGMMAfterRiskGradientStep(margin, gradStep);
       float r= computeR(gmm, priors,true); //xtof
@@ -144,10 +144,11 @@ public class MultiCoreStocCoordDescent  {
   }    
 
   
-  public MultiCoreStocCoordDescent(int niters, int nThreads, boolean isclose, boolean ismontecarlo, int numniiters, boolean computeF1){
+  public MultiCoreStocCoordDescent(int niters, int nThreads, boolean isclose, boolean ismontecarlo, int numniiters, boolean computeF1, GMMDiag gmm){
       this.nThreads = nThreads;
       coordGradThr = new CoordinateGradThreadProcessor(niters, isclose,ismontecarlo,numniiters, computeF1);
       wrapper = new MulticoreWrapper(nThreads,coordGradThr);
+      
   }
   
 
@@ -171,6 +172,7 @@ public class MultiCoreStocCoordDescent  {
       private int niters=100;
       private int numIterNumIntegr=100;
       private boolean computeF1=true;
+      
 
     public CoordinateGradThreadProcessor(){
 
@@ -182,6 +184,7 @@ public class MultiCoreStocCoordDescent  {
         this.numIterNumIntegr=numniiters;
         this.niters=niters;
         this.computeF1=computeF1;
+        
     }
     
 
@@ -258,6 +261,7 @@ public class MultiCoreStocCoordDescent  {
         PlotAPI plotR = new PlotAPI("R vs Iterations_Grad Thread_"+thrId,"Iterations", "R");
         //PlotAPI plotF1 = new PlotAPI("F1 vs Iterations_Grad Thread_"+thrId,"Iterations", "F1");        
         Margin margin = classInfoPerThread.second();
+        margin.currThread=thrId;
         String currentClassifier=AnalyzeLClassifier.CURRENTSETCLASSIFIER;
         int nLabels = margin.getNlabs();
         //optimizing gmm training
@@ -303,7 +307,8 @@ public class MultiCoreStocCoordDescent  {
             if(margin.isIndexInSubset(index))
                 testFeatsInSubSet.add(index);
         }  
-        gmm=new GMMDiag(priors.length, priors,true);
+        
+        GMMDiag gmm=new GMMDiag(priors.length, priors,true);
         gmm.train(margin);
         for (int opt=0;opt<1000;opt++) {
             //scd iterations
@@ -343,7 +348,7 @@ public class MultiCoreStocCoordDescent  {
                 weightsForFeat.set(featIdx, deltaW);
                 margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
                 margin.lastRperSCDIter=false;
-                float estimr = (isCloseForm)?computeROfTheta(margin,delta):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
+                float estimr = (isCloseForm)?computeROfTheta(gmm,margin,delta):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
 
                 gradw[0] = (estimr-estimr0)/delta;
                 //System.out.println("grad "+gradw[0]);
@@ -352,9 +357,9 @@ public class MultiCoreStocCoordDescent  {
                 margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
 
                 if (gradw[0]!=0) {
-                    weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- gradw[0] * eps);                    
+                    weightsForFeat.set(featIdx,weightsForFeat.get(featIdx)- (gradw[0] * eps));                    
                     margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
-                    System.out.println("Iteration["+iter+"] Updated feature "+ margin.getOrWeightIndex(featIdx));
+                    System.out.println("Thread_"+thrId+" Iteration["+iter+"] Updated feature "+ margin.getOrWeightIndex(featIdx));
                     if(computeF1){
                         columnDataClass.testClassifier(model, AnalyzeLClassifier.TRAINFILE.replace("%S", currentClassifier));
                         double f1train=ColumnDataClassifier.macrof1;
@@ -367,7 +372,7 @@ public class MultiCoreStocCoordDescent  {
                              * the very large one. So it's probably better to rather combine this "F1-train" term with the risk into a new objective function. 
                              */
                         if(f1train<f1trainOr){
-                            System.out.println("Iteration["+iter+"] Not accepted previous step of gradient "+f1train+" "+f1trainOr);   
+                            System.out.println("Thread_"+thrId+" Iteration["+iter+"] Not accepted previous step of gradient "+f1train+" "+f1trainOr);   
                             weightsForFeat.set(featIdx,w0); 
                             margin.updatingGradientStep(0,featIdx, weightsForFeat.get(featIdx),iter);
                         }    
@@ -376,7 +381,7 @@ public class MultiCoreStocCoordDescent  {
                 counter++;
                 margin.lastRperSCDIter=true;
                 double gwDelta = -gradw[0]*delta;
-                estimr0 =(isCloseForm)?computeROfTheta(margin, (float) gwDelta):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
+                estimr0 =(isCloseForm)?computeROfTheta(gmm,margin, (float) gwDelta):computeROfThetaNumInt(margin,isMonteCarloNI,numIterNumIntegr);
                 /*
                 System.out.println("*******************************"); 
                 System.out.println("RMCSC["+iter+"] = "+estimr0+" "+Thread.currentThread().getId());   
@@ -400,7 +405,7 @@ public class MultiCoreStocCoordDescent  {
             }
             gmm.trainWithoutInit(margin);
             System.out.println("*******************************"); 
-            System.out.println("R["+opt+"] = "+lastRisk+" "+Thread.currentThread().getId()); 
+            System.out.println("R["+opt+"] = "+lastRisk+" Thread "+thrId); 
             plotR.addPoint(counter, lastRisk);
             System.out.println("*******************************");
             //save the model regularly
