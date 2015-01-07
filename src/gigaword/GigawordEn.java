@@ -19,6 +19,7 @@ public class GigawordEn {
 	public GigawordEn() {
 		try {
 			BufferedReader flist = new BufferedReader(new FileReader("res/gigaword1996.list"));
+                        GeneralConfig.loadProperties();
 			for (;;) {
 				String s=flist.readLine();
 				if (s==null) break;

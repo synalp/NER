@@ -105,6 +105,7 @@ public class AnalyzeLClassifier {
 
     private List<List<Integer>> featperInstance = new ArrayList<>();
     private List<Integer> lblperInstance = new ArrayList<>();
+    int[] interestingInstances = new int[1000];
     private int[][] instPerFeatures;
     private String[][] stLCDictTrainFeatures;
     private String[][] stLCDictTestFeatures;
@@ -722,7 +723,8 @@ public class AnalyzeLClassifier {
             List<String> lines = new ArrayList<>();
             for (;;) {
                 String line = inFile.readLine();
-                if (line==null) break;
+                if (line==null) 
+                    break;
                 lines.add(line);
                 numInstances++;  
             }
@@ -746,7 +748,7 @@ public class AnalyzeLClassifier {
                 Datum<String, String> datum = columnDataClass.makeDatumFromLine(line, 0);
                 Collection<String> features = datum.asFeatures();
                 String[] featArray = new String[features.size()];
-                
+                System.out.println("processing instance "+ i + " out of "+ numInstances);
                 List<Integer> feats = new ArrayList<>();
                 //take the id (index) of the features
                 int fidx=0;
@@ -814,7 +816,78 @@ public class AnalyzeLClassifier {
                 ex.printStackTrace();
             }
         }
-    }    
+    }   
+    
+    public void getGWInterestingInstances(boolean useSerializedFeatInst){
+        if(useSerializedFeatInst)
+            deserializingIntrInst();
+        boolean iszeros=true;
+        for(int i=0; i< 5;i++){
+            if(interestingInstances[i]>0){
+                iszeros=false;
+                break;
+            }    
+        }
+        if(!iszeros)
+            return;
+        
+        BufferedReader inFile = null;
+        try {
+            inFile = new BufferedReader(new InputStreamReader(new FileInputStream(GeneralConfig.corpusGigaDir+System.getProperty("file.separator")+GeneralConfig.corpusGigaTrainProbs), CNConstants.UTF8_ENCODING));
+            int numLine=0;
+            int i=0;
+            for (;;) {
+                String line = inFile.readLine();
+                if (line==null) 
+                    break;
+                String[] cols = line.split("\t");
+                if(cols.length<4)
+                    continue;
+                
+                String pos = cols[1];
+                double prob = Double.parseDouble(cols[2]);
+                double delta = Double.parseDouble(cols[3]);
+                if((pos.equals("NNP")|| pos.equals("NNPS")|| pos.equals("NN") || pos.equals("NNS"))&& delta == 1.0){
+                    if(i>=interestingInstances.length){
+                        int[] newIntInst = new int[interestingInstances.length+10];
+                        System.arraycopy(interestingInstances, 0, newIntInst, 0, interestingInstances.length);
+                        interestingInstances = new int[newIntInst.length];
+                        System.arraycopy(newIntInst, 0, interestingInstances, 0, newIntInst.length);
+                    }
+                        
+                    interestingInstances[i]=numLine; 
+                    i++;
+                }
+                else if((!pos.equals("NNP")&& !pos.equals("NNPS")&& !pos.equals("NN") && !pos.equals("NNS"))&& (delta < 0.3 || prob < 0.9)){
+                    if(i>=interestingInstances.length){
+                        int[] newIntInst = new int[interestingInstances.length+10];
+                        System.arraycopy(interestingInstances, 0, newIntInst, 0, interestingInstances.length);
+                        interestingInstances = new int[newIntInst.length];
+                        System.arraycopy(newIntInst, 0, interestingInstances, 0, newIntInst.length);
+                    }
+                        
+                    interestingInstances[i]=numLine; 
+                    i++;
+                }                
+                
+                numLine++;
+                
+               
+            }  
+            serializingIntrInst();
+            
+        }catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                inFile.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }     
+    }
+    
+    
     public void setNumberOfInstances(int numInst){
         this.numInstances=numInst;
     }
@@ -1831,7 +1904,8 @@ public class AnalyzeLClassifier {
         margin.setLabelPerInstance(lblperInstance);  
         margin.setInstancesPerFeatures(instPerFeatures);
         margin.setNumberOfInstances(numInstances);
-           
+        getGWInterestingInstances(useSerializedFeatInst);   
+        margin.setInterestingInstances(interestingInstances);
         
         //checks whether or not the classifier is multiclass, if that is the case it uses numerical integration by default
         if(margin.getNlabs()>2){
@@ -3132,7 +3206,45 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
    
     } 
     
+    private void serializingIntrInst(){
+    try{
+            String intrInst="GWInterestingInstances.ser";
+                
+            FileOutputStream fileOut =  new FileOutputStream(intrInst);
+            ObjectOutputStream out =  new ObjectOutputStream(fileOut);
+            out.writeObject(interestingInstances);
+            out.close();
+            fileOut.close();
+            
+        }catch(Exception i)
+        {
+            i.printStackTrace();
+        }
+    }
     
+    public void deserializingIntrInst(){
+      try
+      {
+        
+        String intrInst="GWInterestingInstances.ser";
+        FileInputStream fileIn =  new FileInputStream(intrInst);
+        ObjectInputStream in = new ObjectInputStream(fileIn);
+        interestingInstances = (int[]) in.readObject();
+        System.out.println("loading features per instance: "+interestingInstances.length);
+        in.close();
+        fileIn.close();
+          
+      }catch(IOException i)
+      {
+         interestingInstances=new int[1000];
+         
+      }catch(ClassNotFoundException c)
+      {
+         System.out.println("class not found");
+         
+        
+      } 
+    }  
     
     public void generatingArffData(boolean istrain){
         
@@ -3551,8 +3663,9 @@ private HashMap<Integer, Double> readingRiskFromFile(String filename, int startI
         updatingPropFile(entity, false);
         ColumnDataClassifier columnDataClass = new ColumnDataClassifier(PROPERTIES_FILE);
         // how to be sure that the features index read here are the same than below ?
-        // because this train file is the first to appear in the merge train+test file read below ?
+        // because this train file is the first to appear in the merge train+test file read below ? yes
         // it's a bit risky, because if both corpora are put in reverse order one day...
+        //The train set must be processed first and the test set after
         GeneralDataset datatr = columnDataClass.readTrainingExamples(tmpRealTrain);        
         LinearClassifier model = null;
         if(!mfile.exists()){

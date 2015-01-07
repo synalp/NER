@@ -487,6 +487,22 @@ public class CoNLL03Ner {
 	//lcclass.wkSupClassifierConstr(entity, true,2000);
     }
     
+    public void loadParsedResults(String parsedFile){
+        
+        GraphIO gio = new GraphIO(null);
+        
+        String path=System.getProperty("user.dir")+System.getProperty("file.separator")+parsedFile;
+        List<DetGraph>[] tmpgs = GraphIO.loadConll09(path);
+        gio.save(tmpgs[0], parsedFile.replace("parsed", ".xml"));
+        
+    }
+    
+    public void loadCoNLL03ParsedAsCoNLL09Format(){
+        loadParsedResults("corpus/CoNLL-2003/eng.train.conll09.parsed");
+        loadParsedResults("corpus/CoNLL-2003/eng.testa.conll09.parsed");
+        loadParsedResults("corpus/CoNLL-2003/eng.testb.conll09.parsed");
+    }
+    
     /**
      * Uses GigaWord as testdata (unlabeled data)
      * @param entity
@@ -1053,7 +1069,7 @@ public class CoNLL03Ner {
     public static final String[] TASKS = {
     	"basecrf", "buildGigaword","weaklySupGW","crfwsfeat","opennlptags",  // 0 ... 4
     	"weaklySupConll", "expGWord", "dev","priors","conv", "lc","crfwsgoal",//5-11
-        "evalResults","crftk","crftkwsup","testWsup"
+        "evalResults","crftk","crftkwsup","testWsup","convparsed"
 
     };
     
@@ -1098,7 +1114,7 @@ public class CoNLL03Ner {
         case 6:
                // trainSize,  testSize,  useExistingWSModel,  useSerializedFeats
                //conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, Integer.MAX_VALUE,true);
-               conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, 500000,false,true);
+               conll.experimentsCRFPlusWkSupGWord(Integer.MAX_VALUE, 100000,false,true);
                //conll.experimentsCRFPlusWkSupGWord(500, 50,false,true);
                break;
         case 7:
@@ -1132,6 +1148,9 @@ public class CoNLL03Ner {
                 break;      
         case 15:
                 conll.testingWSupModel();
+                break;
+        case 16:
+                conll.loadCoNLL03ParsedAsCoNLL09Format();
                 break;
         }
         

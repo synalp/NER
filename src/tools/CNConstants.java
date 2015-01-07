@@ -79,7 +79,7 @@ package tools;
     public static String CORPUSGIGATRAINPROP="corpusGigaTrain";
     public static String CORPUSGIGADIRPROP="corpusGigaDir";   
     public static String CORPUSGIGAWORDPROP="corpusGigaword";   
-    
+    public static String CORPUSGIGATRAINPROBPROP="corpusGigaTrainProbs"; 
     //RI
     public static String WVDIR="wvdir";
     public static String DEFWVDIR="wordvects";

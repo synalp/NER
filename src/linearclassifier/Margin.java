@@ -43,6 +43,7 @@ public class Margin {
     private List<List<Integer>> featsperInst = new ArrayList<>();
     private List<Integer> labelperInst = new ArrayList<>(); 
     private int[][] instPerFeatures;
+    private int[] iterestingInstances= new int[1000];
     //private HashMap<Integer,Double> priorsMap = new HashMap<>();
        
     //paralell coordinate gradient
@@ -652,11 +653,17 @@ public class Margin {
         return instPerFeatures[threadFeatIdx];
     }
     
-//    public void setPriorMap(HashMap<Integer,Double> pMap){
-//        this.priorsMap=pMap;
-//    }
-//    
-//    public HashMap<Integer,Double> getPriorMap(){
-//        return this.priorsMap;
-//    }
+    /**
+     * Instances that reduce the search space, because they are ambiguous
+     * @param inst 
+     */
+    public void setInterestingInstances(int[] inst){
+       iterestingInstances = new int[inst.length];
+       System.arraycopy(inst, 0, iterestingInstances, 0, inst.length);
+       
+    }
+    
+    public int[] getInterestingInstances(){
+        return this.iterestingInstances;
+    }
 }

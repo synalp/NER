@@ -74,6 +74,7 @@ public class GeneralConfig {
     public static String corpusGigaword;
     public static String corpusGigaDir;
     public static String corpusGigaTrain;
+    public static String corpusGigaTrainProbs;
     
     //Random Indexing
     public static String wvdir;
@@ -146,6 +147,7 @@ public class GeneralConfig {
            
            // Gigaword config
            corpusGigaTrain=properties.getProperty(CNConstants.CORPUSGIGATRAINPROP);
+           corpusGigaTrainProbs=properties.getProperty(CNConstants.CORPUSGIGATRAINPROBPROP);
            
            // look for a directory that exists
            {

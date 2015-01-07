@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+
 import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
@@ -18,6 +19,7 @@ import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
+import opennlp.tools.util.Sequence;
 
 /**
  * Preprocessing of gigaword EN to get Conll03-like data files
@@ -26,9 +28,13 @@ import opennlp.tools.tokenize.TokenizerModel;
  *
  */
 public class Conll03Preprocess {
+    
+       double[][] probabilities = null;
+       double[][] deltas=null;
 	
 	public static void main(String[] args) {
-		
+		Conll03Preprocess.tagGigaword(args);
+                
 	}
 	public static void tagGigaword(String[] args) {
 		Conll03Preprocess m = new Conll03Preprocess();
@@ -43,7 +49,7 @@ public class Conll03Preprocess {
 			}
 		}
 		List<String[]> tags = m.postagger(toks);
-		m.saveConll03("giga.conll03",toks,tags);
+		m.saveConll03("giga.conll03.probs",toks,tags);
 	}
 	
 	/**
@@ -113,7 +119,7 @@ public class Conll03Preprocess {
 				String[] pos = tags.get(i);
 				assert words.length==pos.length;
 				for (int j=0;j<words.length;j++)
-					f.println(words[j]+"\t"+pos[j]);
+					f.println(words[j]+"\t"+pos[j]+"\t"+probabilities[i][j]+"\t"+deltas[i][j]);
 				f.println();
 			}
 			f.close();
@@ -185,10 +191,31 @@ public class Conll03Preprocess {
 			modelIn = new FileInputStream("res/en-pos-maxent.bin");
 			POSModel model = new POSModel(modelIn);
 			POSTaggerME tagger = new POSTaggerME(model);
+                        probabilities = new double[words.size()][10];
+                        deltas = new double[words.size()][10];
 			for (int i=0;i<words.size();i++) {
 				String tags[] = tagger.tag(words.get(i));
-				for (String t : tags) pos.add(t);
+                                double probs[]= tagger.probs();
+                                Sequence[] seqs = tagger.topKSequences(words.get(i));
+                                
+                                double[] delta = new double[probs.length];
+				for (int t=0; t< tags.length;t++){
+                                    pos.add(tags[t]);
+                                    if(seqs.length>2){
+                                        if(seqs[0].getOutcomes().get(t).equals(seqs[1].getOutcomes().get(t)))
+                                            delta[t]=1.0;
+                                        else
+                                            delta[t]=seqs[0].getProbs()[t]-seqs[1].getProbs()[t];
+                                    }
+                                                                       
+                                }    
 				res.add(tags);
+                                probabilities[i] = new double[probs.length];
+                                probabilities[i] = probs;
+                                deltas[i] = new double[delta.length];
+                                deltas[i] = delta;                               
+                                
+                                
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

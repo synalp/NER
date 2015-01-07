@@ -302,10 +302,15 @@ public class MultiCoreStocCoordDescent  {
         }    
         
         List<Integer> testFeatsInSubSet = new ArrayList<>();
-        for(int index=margin.getTrainFeatureSize(); index<margin.getTestFeatureSize();index++){
 
-            if(margin.isIndexInSubset(index))
-                testFeatsInSubSet.add(index);
+        //for(int index=0; index<margin.getTestFeatureSize();index++){
+        for(int inst=0; inst<margin.getInterestingInstances().length;inst++){
+            List<Integer> intrFeats = margin.getFeaturesPerInstance(inst);
+            for(int index=0; index<intrFeats.size();index++ ){
+                if(margin.isIndexInSubset(index))
+                    testFeatsInSubSet.add(index);
+            }
+
         }  
         
         GMMDiag gmm=new GMMDiag(priors.length, priors,true);
@@ -326,6 +331,8 @@ public class MultiCoreStocCoordDescent  {
                 double rndVal = rnd.nextDouble();   
                 int featIdx=rnd.nextInt(weightsForFeat.size());
                 if(rndVal<0.9 && !testFeatsInSubSet.isEmpty()){
+                    //int selrndInst= rnd.nextInt(margin.getInterestingInstances().length);
+                    //margin.getFeaturesPerInstance(selrndInst);
                     int selfeatIdx=rnd.nextInt(testFeatsInSubSet.size());
                     featIdx=testFeatsInSubSet.get(selfeatIdx)-margin.getSubSetStartIndex();
 
