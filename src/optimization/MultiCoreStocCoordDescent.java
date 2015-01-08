@@ -7,6 +7,7 @@ package optimization;
 import edu.stanford.nlp.classify.ColumnDataClassifier;
 import edu.stanford.nlp.classify.LinearClassifier;
 import edu.stanford.nlp.io.IOUtils;
+import edu.stanford.nlp.util.Index;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.concurrent.MulticoreWrapper;
 import edu.stanford.nlp.util.concurrent.ThreadsafeProcessor;
@@ -273,6 +274,9 @@ public class MultiCoreStocCoordDescent  {
         
         Double lastRisk=0.0;
         int counter=0;
+//        Index<String> lblIndex = margin.getLabelIndex();
+//        int lblidx = lblIndex.indexOf(AnalyzeLClassifier.CURRENTSETCLASSIFIER);
+
         double[] scores= new double[featsperInst.size()];
         Arrays.fill(scores, 0.0);
         float estimr0=AnalyzeLClassifier.CURRENTPARENTESTIMR0;
@@ -304,11 +308,15 @@ public class MultiCoreStocCoordDescent  {
         List<Integer> testFeatsInSubSet = new ArrayList<>();
 
         //for(int index=0; index<margin.getTestFeatureSize();index++){
-        for(int inst=0; inst<margin.getInterestingInstances().length;inst++){
+        for(int i=0; i<margin.getInterestingInstances().length;i++){
+            int inst=margin.getInterestingInstances()[i];
             List<Integer> intrFeats = margin.getFeaturesPerInstance(inst);
             for(int index=0; index<intrFeats.size();index++ ){
-                if(margin.isIndexInSubset(index))
+                double[] sc = new double[margin.getNlabs()];
+                if(margin.isIndexInSubset(index)){
+
                     testFeatsInSubSet.add(index);
+                }    
             }
 
         }  
